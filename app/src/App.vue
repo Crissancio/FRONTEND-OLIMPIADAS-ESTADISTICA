@@ -1,10 +1,8 @@
 <script setup lang="ts">
-//import HelloWorld from './components/HelloWorld.vue'
+import { Toaster } from 'vue-sonner'
 </script>
+
 <template>
-  <div class="min-h-screen flex items-center justify-center">
-    <h1 class="text-3xl font-bold text-primary">
-      Proyecto limpio 🚀
-    </h1>
-  </div>
+  <router-view />
+  <Toaster position="top-right" rich-colors />
 </template>
