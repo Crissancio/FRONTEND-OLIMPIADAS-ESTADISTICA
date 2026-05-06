@@ -12,8 +12,7 @@ import {
   BarChart4, 
   LogOut,
   Menu,
-  X,
-  Search
+  X
 } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 
