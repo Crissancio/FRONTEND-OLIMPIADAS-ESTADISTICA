@@ -15,6 +15,7 @@ import {
   Users,
   Eye,
   FileText,
+  Image as ImageIcon,
 } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
@@ -250,14 +251,41 @@ const statusClass = (status: string) => {
           </div>
         </div>
       </CardHeader>
-      <CardContent class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div><label class="mb-1 block text-sm font-bold text-text-main">Nombre</label><input v-model="localConvocatoria.nombre" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-        <div><label class="mb-1 block text-sm font-bold text-text-main">Gestión</label><input v-model="localConvocatoria.gestion" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-        <div><label class="mb-1 block text-sm font-bold text-text-main">Inicio Olimpiadas</label><input v-model="localConvocatoria.inicioOlimpiada" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-        <div><label class="mb-1 block text-sm font-bold text-text-main">Fin Olimpiadas</label><input v-model="localConvocatoria.finOlimpiada" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-        <div><label class="mb-1 block text-sm font-bold text-text-main">Inicio Inscripción</label><input v-model="localConvocatoria.inicioInscripcion" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-        <div><label class="mb-1 block text-sm font-bold text-text-main">Fin Inscripción</label><input v-model="localConvocatoria.finInscripcion" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-        <div class="md:col-span-2"><label class="mb-1 block text-sm font-bold text-text-main">Descripción</label><textarea v-model="localConvocatoria.descripcion" :disabled="!isEditingData" class="min-h-28 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted"></textarea></div>
+      <CardContent class="flex flex-col md:flex-row gap-6">
+        <div class="w-full md:w-1/3 shrink-0 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden min-h-[300px] border border-gray-200">
+           <img v-if="false" src="" class="w-full h-full object-cover" alt="Afiche" />
+           <div v-else class="text-gray-400 flex flex-col items-center gap-2">
+             <ImageIcon class="h-8 w-8" />
+             <span class="text-sm font-medium">Sin afiche</span>
+           </div>
+        </div>
+        <div class="w-full md:w-2/3 grid grid-cols-1 gap-4 md:grid-cols-2 content-start">
+          <div class="md:col-span-2"><label class="mb-1 block text-sm font-bold text-text-main">Nombre</label><input v-model="localConvocatoria.nombre" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
+          <div><label class="mb-1 block text-sm font-bold text-text-main">Gestión</label><input v-model="localConvocatoria.gestion" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
+          <div><label class="mb-1 block text-sm font-bold text-text-main">Inicio Olimpiadas</label><input v-model="localConvocatoria.inicioOlimpiada" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
+          <div><label class="mb-1 block text-sm font-bold text-text-main">Fin Olimpiadas</label><input v-model="localConvocatoria.finOlimpiada" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
+          <div><label class="mb-1 block text-sm font-bold text-text-main">Inicio Inscripción</label><input v-model="localConvocatoria.inicioInscripcion" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
+          <div><label class="mb-1 block text-sm font-bold text-text-main">Fin Inscripción</label><input v-model="localConvocatoria.finInscripcion" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
+          <div class="md:col-span-2"><label class="mb-1 block text-sm font-bold text-text-main">Descripción</label><textarea v-model="localConvocatoria.descripcion" :disabled="!isEditingData" class="min-h-28 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted"></textarea></div>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card class="border-gray-200 shadow-soft bg-white">
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2"><FileText class="h-5 w-5 text-primary" />Documentos de la convocatoria</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-6 text-text-muted min-h-[250px]">
+             <FileText class="h-10 w-10 mb-2 text-gray-400" />
+             <span class="text-sm font-semibold">Convocatoria PDF</span>
+          </div>
+          <div class="rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-6 text-text-muted min-h-[250px]">
+             <FileText class="h-10 w-10 mb-2 text-gray-400" />
+             <span class="text-sm font-semibold">Reglamento PDF</span>
+          </div>
+        </div>
       </CardContent>
     </Card>
     </div>
