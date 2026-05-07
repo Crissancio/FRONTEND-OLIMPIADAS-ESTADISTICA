@@ -166,7 +166,7 @@ const statusClass = (status: string) => {
     <Button class="mt-5" @click="router.push('/admin/convocatorias')"><ArrowLeft class="h-4 w-4" />Volver</Button>
   </div>
 
-  <div v-else class="space-y-6">
+  <div v-else class="space-y-6 p-4">
     
     <header class="sticky top-0 z-20 rounded-xl border border-gray-200 bg-white p-4 shadow-soft">
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -187,40 +187,6 @@ const statusClass = (status: string) => {
       </div>
     </header>
     
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-      <Card class="shadow-soft border-gray-200 bg-white">
-        <CardContent class="p-5">
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-primary/10 p-2.5"><Users class="h-5 w-5 text-primary" /></div>
-            <div><p class="text-xl font-bold text-text-main">{{ convocatoria.inscritos }}</p><p class="text-xs text-text-muted">Inscritos</p></div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card class="shadow-soft border-gray-200 bg-white">
-        <CardContent class="p-5">
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-info/10 p-2.5"><BookOpen class="h-5 w-5 text-info" /></div>
-            <div><p class="text-xl font-bold text-text-main">{{ convocatoria.categorias }}</p><p class="text-xs text-text-muted">Categorías</p></div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card class="shadow-soft border-gray-200 bg-white">
-        <CardContent class="p-5">
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-secondary/10 p-2.5"><BarChart3 class="h-5 w-5 text-secondary" /></div>
-            <div><p class="text-xl font-bold text-text-main">{{ convocatoria.fases }}</p><p class="text-xs text-text-muted">Fases</p></div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card class="shadow-soft border-gray-200 bg-white">
-        <CardContent class="p-5">
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-accent/10 p-2.5"><Trophy class="h-5 w-5 text-accent" /></div>
-            <div><p class="text-xl font-bold text-text-main">0</p><p class="text-xs text-text-muted">Ganadores</p></div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
     <div v-if="localConvocatoria.estado === 'Borrador'" class="rounded-xl border border-warning/20 bg-warning/10 p-4">
       <div class="flex items-start gap-3">
         <AlertCircle class="mt-0.5 h-5 w-5 shrink-0 text-warning" />
@@ -229,13 +195,49 @@ const statusClass = (status: string) => {
     </div>
 
     <div class="flex flex-wrap gap-2">
-      <button class="rounded-md px-3 py-2 text-sm font-semibold transition-colors" :class="activeTab === 'general' ? 'bg-primary text-white' : 'border border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'general'">Información General</button>
-      <button class="rounded-md px-3 py-2 text-sm font-semibold transition-colors" :class="activeTab === 'categorias' ? 'bg-primary text-white' : 'border border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'categorias'">Categorías</button>
-      <button class="rounded-md px-3 py-2 text-sm font-semibold transition-colors" :class="activeTab === 'inscritos' ? 'bg-primary text-white' : 'border border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'inscritos'">Estudiantes Inscritos</button>
-      <button class="rounded-md px-3 py-2 text-sm font-semibold transition-colors" :class="activeTab === 'configuracion' ? 'bg-primary text-white' : 'border border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'configuracion'">Configuración</button>
+      <button class="rounded-md px-3 py-2 border text-sm font-semibold transition-colors" :class="activeTab === 'general' ? 'bg-primary border-primary text-white' : 'border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'general'">Información General</button>
+      <button class="rounded-md px-3 py-2 border text-sm font-semibold transition-colors" :class="activeTab === 'categorias' ? 'bg-primary border-primary text-white' : 'border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'categorias'">Categorías</button>
+      <button class="rounded-md px-3 py-2 border text-sm font-semibold transition-colors" :class="activeTab === 'inscritos' ? 'bg-primary border-primary text-white' : 'border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'inscritos'">Estudiantes Inscritos</button>
+      <button class="rounded-md px-3 py-2 border text-sm font-semibold transition-colors" :class="activeTab === 'configuracion' ? 'bg-primary border-primary text-white' : 'border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'configuracion'">Configuración</button>
     </div>
 
-    <Card v-if="activeTab === 'general'" class="border-gray-200 shadow-soft bg-white">
+    <div v-if="activeTab === 'general'" class="space-y-6">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <Card class="shadow-soft border-gray-200 bg-white">
+          <CardContent class="p-5">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg bg-primary/10 p-2.5"><Users class="h-5 w-5 text-primary" /></div>
+              <div><p class="text-xl font-bold text-text-main">{{ convocatoria.inscritos }}</p><p class="text-xs text-text-muted">Inscritos</p></div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card class="shadow-soft border-gray-200 bg-white">
+          <CardContent class="p-5">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg bg-info/10 p-2.5"><BookOpen class="h-5 w-5 text-info" /></div>
+              <div><p class="text-xl font-bold text-text-main">{{ convocatoria.categorias }}</p><p class="text-xs text-text-muted">Categorías</p></div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card class="shadow-soft border-gray-200 bg-white">
+          <CardContent class="p-5">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg bg-secondary/10 p-2.5"><BarChart3 class="h-5 w-5 text-secondary" /></div>
+              <div><p class="text-xl font-bold text-text-main">{{ convocatoria.fases }}</p><p class="text-xs text-text-muted">Fases</p></div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card class="shadow-soft border-gray-200 bg-white">
+          <CardContent class="p-5">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg bg-accent/10 p-2.5"><Trophy class="h-5 w-5 text-accent" /></div>
+              <div><p class="text-xl font-bold text-text-main">0</p><p class="text-xs text-text-muted">Ganadores</p></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card class="border-gray-200 shadow-soft bg-white">
       <CardHeader>
         <div class="flex items-center justify-between">
           <CardTitle class="flex items-center gap-2"><Settings class="h-5 w-5 text-primary" />Datos de la convocatoria</CardTitle>
@@ -258,6 +260,7 @@ const statusClass = (status: string) => {
         <div class="md:col-span-2"><label class="mb-1 block text-sm font-bold text-text-main">Descripción</label><textarea v-model="localConvocatoria.descripcion" :disabled="!isEditingData" class="min-h-28 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted"></textarea></div>
       </CardContent>
     </Card>
+    </div>
 
     <Card v-if="activeTab === 'categorias'" class="border-gray-200 shadow-soft bg-white">
       <CardHeader>
