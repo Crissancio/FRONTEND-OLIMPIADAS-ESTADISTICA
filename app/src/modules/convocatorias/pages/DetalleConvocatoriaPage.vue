@@ -10,6 +10,7 @@ import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
+import CategorySymbol from '@/shared/components/ui/atoms/CategorySymbol.vue'
 
 const route = useRoute()
 const activeTab = ref(0)
@@ -135,9 +136,10 @@ const togglePhase = (phaseId: string) => {
                     v-for="(cat, idx) in conv.categorias"
                     :key="cat.id"
                     @click="activeTab = idx"
-                    class="py-4 px-2 font-semibold text-sm whitespace-nowrap transition-colors border-b-2"
+                    class="flex items-center gap-2 py-4 px-2 font-semibold text-sm whitespace-nowrap transition-colors border-b-2"
                     :class="activeTab === idx ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text-main hover:border-gray-300'"
                   >
+                    <CategorySymbol :name="cat.nombre" class="h-7 w-7 text-sm" />
                     {{ cat.nombre }}
                   </button>
                 </div>

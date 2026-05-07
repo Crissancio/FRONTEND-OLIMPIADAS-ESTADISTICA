@@ -16,6 +16,8 @@ import {
   Eye,
   FileText,
   Image as ImageIcon,
+  BarChart3,
+  Trophy,
 } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
@@ -23,9 +25,13 @@ import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
 import CardTitle from '@/shared/components/ui/atoms/CardTitle.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
+import CategorySymbol from '@/shared/components/ui/atoms/CategorySymbol.vue'
+import ConvocatoriaDetailTabs from '@/modules/admin/components/ConvocatoriaDetailTabs.vue'
+import MaterialCard from '@/modules/admin/components/MaterialCard.vue'
 import { useConvocatoria } from '@/modules/admin/composables/useConvocatorias'
+import { adminMaterialesMock, type AdminConvocatoria } from '@/modules/admin/data/admin.data'
 
-type TabKey = 'general' | 'categorias' | 'inscritos' | 'configuracion'
+type TabKey = 'general' | 'categorias' | 'inscritos' | 'material' | 'configuracion'
 
 interface CategoriaRow {
   id: string
@@ -44,7 +50,7 @@ const activeTab = ref<TabKey>('general')
 watch(
   () => route.query.tab,
   (tab) => {
-    if (tab === 'general' || tab === 'categorias' || tab === 'inscritos' || tab === 'configuracion') {
+    if (tab === 'general' || tab === 'categorias' || tab === 'inscritos' || tab === 'material' || tab === 'configuracion') {
       activeTab.value = tab
     }
   },
@@ -65,23 +71,27 @@ const localConvocatoria = ref({
   fases: 0,
 })
 
+const resetLocalConvocatoria = (value: AdminConvocatoria) => {
+  localConvocatoria.value = {
+    nombre: value.nombre,
+    gestion: String(value.gestion),
+    descripcion: value.descripcion,
+    inicioOlimpiada: value.inicioOlimpiada,
+    finOlimpiada: value.finOlimpiada,
+    inicioInscripcion: value.inicioInscripcion,
+    finInscripcion: value.finInscripcion,
+    estado: value.estado,
+    inscritos: value.inscritos,
+    categorias: value.categorias,
+    fases: value.fases,
+  }
+}
+
 watch(
   convocatoria,
   (value) => {
     if (!value) return
-    localConvocatoria.value = {
-      nombre: value.nombre,
-      gestion: String(value.gestion),
-      descripcion: value.descripcion,
-      inicioOlimpiada: value.inicioOlimpiada,
-      finOlimpiada: value.finOlimpiada,
-      inicioInscripcion: value.inicioInscripcion,
-      finInscripcion: value.finInscripcion,
-      estado: value.estado,
-      inscritos: value.inscritos,
-      categorias: value.categorias,
-      fases: value.fases,
-    }
+    resetLocalConvocatoria(value)
   },
   { immediate: true },
 )
@@ -115,6 +125,10 @@ const removeCategoria = (id: string) => {
   localConvocatoria.value.categorias = categorias.value.length
 }
 
+const manageCategoria = (id: string) => {
+  router.push(`/admin/convocatoria/${convocatoriaId}/categoria/${id}/gestionar`)
+}
+
 const archivos = ref<{ convocatoriaPDF: File | null; reglamentoPDF: File | null; aficheJPG: File | null }>({
   convocatoriaPDF: null,
   reglamentoPDF: null,
@@ -122,6 +136,8 @@ const archivos = ref<{ convocatoriaPDF: File | null; reglamentoPDF: File | null;
 })
 
 const fileReady = computed(() => Boolean(archivos.value.convocatoriaPDF && archivos.value.reglamentoPDF && archivos.value.aficheJPG))
+
+const materialesConvocatoria = computed(() => adminMaterialesMock.filter((item) => item.convocatoriaId === convocatoriaId))
 
 const setFile = (event: Event, field: 'convocatoriaPDF' | 'reglamentoPDF' | 'aficheJPG') => {
   const target = event.target as HTMLInputElement
@@ -139,9 +155,16 @@ const saveData = () => {
     finOlimpiada: localConvocatoria.value.finOlimpiada,
     inicioInscripcion: localConvocatoria.value.inicioInscripcion,
     finInscripcion: localConvocatoria.value.finInscripcion,
-    categorias: localConvocatoria.value.categorias,
-    fases: localConvocatoria.value.fases,
+    estado: localConvocatoria.value.estado as AdminConvocatoria['estado'],
+    inscritos: Number(localConvocatoria.value.inscritos),
+    categorias: Number(localConvocatoria.value.categorias),
+    fases: Number(localConvocatoria.value.fases),
   })
+  isEditingData.value = false
+}
+
+const cancelDataEdit = () => {
+  if (convocatoria.value) resetLocalConvocatoria(convocatoria.value)
   isEditingData.value = false
 }
 
@@ -169,7 +192,7 @@ const statusClass = (status: string) => {
 
   <div v-else class="space-y-6 p-4">
     
-    <header class="sticky top-0 z-20 rounded-xl border border-gray-200 bg-white p-4 shadow-soft">
+    <header class="sticky top-0 z-20 rounded-xl border border-gray-200 border-t-4 border-t-accent bg-white p-4 shadow-soft">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <Button variant="ghost" @click="router.push('/admin/convocatorias')"><ArrowLeft class="h-4 w-4" />Volver</Button>
@@ -181,7 +204,7 @@ const statusClass = (status: string) => {
             </div>
           </div>
         </div>
-        <Button v-if="localConvocatoria.estado === 'Borrador'" class="bg-success text-white hover:bg-emerald-600 flex items-center gap-2" @click="publish">
+        <Button v-if="localConvocatoria.estado === 'Borrador'" variant="accent" class="flex items-center gap-2" @click="publish">
           <CheckCheck class="h-4 w-4" />
           TODO LISTO?
         </Button>
@@ -195,16 +218,19 @@ const statusClass = (status: string) => {
       </div>
     </div>
 
-    <div class="flex flex-wrap gap-2">
-      <button class="rounded-md px-3 py-2 border text-sm font-semibold transition-colors" :class="activeTab === 'general' ? 'bg-primary border-primary text-white' : 'border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'general'">Información General</button>
-      <button class="rounded-md px-3 py-2 border text-sm font-semibold transition-colors" :class="activeTab === 'categorias' ? 'bg-primary border-primary text-white' : 'border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'categorias'">Categorías</button>
-      <button class="rounded-md px-3 py-2 border text-sm font-semibold transition-colors" :class="activeTab === 'inscritos' ? 'bg-primary border-primary text-white' : 'border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'inscritos'">Estudiantes Inscritos</button>
-      <button class="rounded-md px-3 py-2 border text-sm font-semibold transition-colors" :class="activeTab === 'configuracion' ? 'bg-primary border-primary text-white' : 'border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'configuracion'">Configuración</button>
-    </div>
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-start">
+      <ConvocatoriaDetailTabs
+        v-model:active-tab="activeTab"
+        :categorias="categorias"
+        @create-categoria="isCategoriaModalOpen = true"
+        @manage-categoria="manageCategoria"
+      />
+
+      <main class="min-w-0 flex-1 space-y-6">
 
     <div v-if="activeTab === 'general'" class="space-y-6">
       <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <Card class="shadow-soft border-gray-200 bg-white">
+        <Card class="shadow-soft border-gray-200 border-l-4 border-l-primary bg-white">
           <CardContent class="p-5">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-primary/10 p-2.5"><Users class="h-5 w-5 text-primary" /></div>
@@ -212,7 +238,7 @@ const statusClass = (status: string) => {
             </div>
           </CardContent>
         </Card>
-        <Card class="shadow-soft border-gray-200 bg-white">
+        <Card class="shadow-soft border-gray-200 border-l-4 border-l-info bg-white">
           <CardContent class="p-5">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-info/10 p-2.5"><BookOpen class="h-5 w-5 text-info" /></div>
@@ -220,7 +246,7 @@ const statusClass = (status: string) => {
             </div>
           </CardContent>
         </Card>
-        <Card class="shadow-soft border-gray-200 bg-white">
+        <Card class="shadow-soft border-gray-200 border-l-4 border-l-secondary bg-white">
           <CardContent class="p-5">
             <div class="flex items-center gap-3">
               <div class="rounded-lg bg-secondary/10 p-2.5"><BarChart3 class="h-5 w-5 text-secondary" /></div>
@@ -228,28 +254,19 @@ const statusClass = (status: string) => {
             </div>
           </CardContent>
         </Card>
-        <Card class="shadow-soft border-gray-200 bg-white">
+        <Card class="shadow-soft border-gray-200 border-l-4 border-l-accent bg-white">
           <CardContent class="p-5">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-accent/10 p-2.5"><Trophy class="h-5 w-5 text-accent" /></div>
+              <div class="rounded-lg bg-accent/15 p-2.5"><Trophy class="h-5 w-5 text-accent" /></div>
               <div><p class="text-xl font-bold text-text-main">0</p><p class="text-xs text-text-muted">Ganadores</p></div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card class="border-gray-200 shadow-soft bg-white">
+      <Card class="border-gray-200 border-l-4 border-l-accent shadow-soft bg-white">
       <CardHeader>
-        <div class="flex items-center justify-between">
-          <CardTitle class="flex items-center gap-2"><Settings class="h-5 w-5 text-primary" />Datos de la convocatoria</CardTitle>
-          <div class="flex gap-2">
-            <Button v-if="!isEditingData" variant="outline" @click="isEditingData = true" class="flex items-center gap-2"><Edit class="h-4 w-4" />Editar Información</Button>
-            <template v-else>
-              <Button variant="outline" @click="isEditingData = false" class="flex items-center gap-2"><X class="h-4 w-4" />Cancelar</Button>
-              <Button @click="saveData" class="flex items-center gap-2"><Save class="h-4 w-4" />Guardar Cambios</Button>
-            </template>
-          </div>
-        </div>
+        <CardTitle class="flex items-center gap-2"><Settings class="h-5 w-5 text-accent" />Datos de la convocatoria</CardTitle>
       </CardHeader>
       <CardContent class="flex flex-col md:flex-row gap-6">
         <div class="w-full md:w-1/3 shrink-0 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden min-h-[300px] border border-gray-200">
@@ -259,19 +276,39 @@ const statusClass = (status: string) => {
              <span class="text-sm font-medium">Sin afiche</span>
            </div>
         </div>
-        <div class="w-full md:w-2/3 grid grid-cols-1 gap-4 md:grid-cols-2 content-start">
-          <div class="md:col-span-2"><label class="mb-1 block text-sm font-bold text-text-main">Nombre</label><input v-model="localConvocatoria.nombre" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-          <div><label class="mb-1 block text-sm font-bold text-text-main">Gestión</label><input v-model="localConvocatoria.gestion" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-          <div><label class="mb-1 block text-sm font-bold text-text-main">Inicio Olimpiadas</label><input v-model="localConvocatoria.inicioOlimpiada" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-          <div><label class="mb-1 block text-sm font-bold text-text-main">Fin Olimpiadas</label><input v-model="localConvocatoria.finOlimpiada" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-          <div><label class="mb-1 block text-sm font-bold text-text-main">Inicio Inscripción</label><input v-model="localConvocatoria.inicioInscripcion" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-          <div><label class="mb-1 block text-sm font-bold text-text-main">Fin Inscripción</label><input v-model="localConvocatoria.finInscripcion" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted" /></div>
-          <div class="md:col-span-2"><label class="mb-1 block text-sm font-bold text-text-main">Descripción</label><textarea v-model="localConvocatoria.descripcion" :disabled="!isEditingData" class="min-h-28 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors disabled:bg-gray-50 disabled:text-text-muted"></textarea></div>
+        <div class="w-full md:w-2/3 flex flex-col gap-4 content-start">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-heading font-bold text-text-main">{{ localConvocatoria.nombre || 'Sin nombre' }}</h2>
+            <p class="text-base font-medium text-text-muted mt-1">Gestión {{ localConvocatoria.gestion || '-' }}</p>
+          </div>
+          <div>
+            <p class="text-sm text-text-main whitespace-pre-wrap leading-relaxed">{{ localConvocatoria.descripcion || 'Sin descripción detallada.' }}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-4 mt-2">
+            <div>
+              <p class="text-xs text-text-muted font-bold uppercase tracking-wider mb-1">Inicio Olimpiadas</p>
+              <p class="text-sm font-medium text-text-main">{{ localConvocatoria.inicioOlimpiada || 'Por definir' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-text-muted font-bold uppercase tracking-wider mb-1">Fin Olimpiadas</p>
+              <p class="text-sm font-medium text-text-main">{{ localConvocatoria.finOlimpiada || 'Por definir' }}</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 mt-2 rounded-xl bg-accent/10 border border-accent/20 p-4">
+            <div>
+              <p class="text-xs text-accent-dark font-bold uppercase tracking-wider mb-1">Inicio Inscripción</p>
+              <p class="text-sm font-medium text-text-main">{{ localConvocatoria.inicioInscripcion || 'Por definir' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-accent-dark font-bold uppercase tracking-wider mb-1">Fin Inscripción</p>
+              <p class="text-sm font-medium text-text-main">{{ localConvocatoria.finInscripcion || 'Por definir' }}</p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
 
-    <Card class="border-gray-200 shadow-soft bg-white">
+    <Card class="border-gray-200 border-l-4 border-l-accent shadow-soft bg-white">
       <CardHeader>
         <CardTitle class="flex items-center gap-2"><FileText class="h-5 w-5 text-primary" />Documentos de la convocatoria</CardTitle>
       </CardHeader>
@@ -294,13 +331,13 @@ const statusClass = (status: string) => {
       <CardHeader>
         <div class="flex items-center justify-between">
           <CardTitle class="flex items-center gap-2"><BookOpen class="h-5 w-5 text-primary" />Categorías</CardTitle>
-          <Button @click="isCategoriaModalOpen = true" class="flex items-center gap-2"><Plus class="h-4 w-4" />Nueva Categoría</Button>
+          <Button variant="accent" @click="isCategoriaModalOpen = true" class="flex items-center gap-2"><Plus class="h-4 w-4" />Nueva Categoría</Button>
         </div>
       </CardHeader>
       <CardContent class="space-y-3">
-        <div v-for="item in categorias" :key="item.id" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div v-for="item in categorias" :key="item.id" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-accent/40">
           <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-primary/10 p-2"><BookOpen class="h-5 w-5 text-primary" /></div>
+            <CategorySymbol :name="item.nombre" class="h-10 w-10 text-xl" />
             <div>
               <p class="font-bold text-text-main">{{ item.nombre }}</p>
               <div class="mt-1 flex items-center gap-2">
@@ -310,7 +347,7 @@ const statusClass = (status: string) => {
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <Button variant="outline" @click="router.push(`/admin/convocatoria/${convocatoriaId}/categoria/${item.id}/gestionar`)" class="flex items-center gap-1.5"><Eye class="h-4 w-4" />Gestionar</Button>
+            <Button variant="outline" @click="manageCategoria(item.id)" class="flex items-center gap-1.5 hover:border-accent/40 hover:bg-accent/10"><Eye class="h-4 w-4" />Gestionar</Button>
             <Button variant="ghost" @click="removeCategoria(item.id)"><Trash2 class="h-4 w-4 text-error" /></Button>
           </div>
         </div>
@@ -325,7 +362,95 @@ const statusClass = (status: string) => {
       </CardContent>
     </Card>
 
-    <Card v-if="activeTab === 'configuracion'" class="border-gray-200 shadow-soft bg-white">
+    <div v-if="activeTab === 'material'" class="space-y-4">
+      <div class="flex flex-col justify-between gap-3 rounded-xl border border-gray-200 bg-white p-5 shadow-soft sm:flex-row sm:items-center">
+        <div>
+          <h2 class="font-heading text-xl font-bold text-text-main">Material adjunto</h2>
+          <p class="mt-1 text-sm text-text-muted">Recursos educativos globales asociados a esta convocatoria.</p>
+        </div>
+        <Badge variant="outline" class="w-fit border-info/20 bg-info/10 px-3 py-1 text-info">
+          {{ materialesConvocatoria.length }} materiales
+        </Badge>
+      </div>
+
+      <div v-if="materialesConvocatoria.length" class="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        <MaterialCard v-for="material in materialesConvocatoria" :key="material.id_material" :material="material" />
+      </div>
+
+      <Card v-else class="border-gray-200 bg-white shadow-soft">
+        <CardContent class="py-14 text-center">
+          <FileText class="mx-auto mb-3 h-10 w-10 text-gray-300" />
+          <p class="font-bold text-text-main">Sin material adjunto</p>
+          <p class="mt-1 text-sm text-text-muted">Esta convocatoria no tiene recursos educativos registrados.</p>
+        </CardContent>
+      </Card>
+    </div>
+
+    <Card v-if="activeTab === 'configuracion'" class="border-gray-200 border-l-4 border-l-accent shadow-soft bg-white">
+      <CardHeader>
+        <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <CardTitle class="flex items-center gap-2"><Settings class="h-5 w-5 text-accent" />Edición de datos</CardTitle>
+          <div class="flex flex-wrap gap-2">
+            <Button v-if="!isEditingData" variant="outline" class="flex items-center gap-2" @click="isEditingData = true">
+              <Edit class="h-4 w-4" />
+              Editar datos
+            </Button>
+            <template v-else>
+              <Button variant="outline" class="flex items-center gap-2" @click="cancelDataEdit">
+                <X class="h-4 w-4" />
+                Cancelar
+              </Button>
+              <Button variant="accent" class="flex items-center gap-2" @click="saveData">
+                <Save class="h-4 w-4" />
+                Guardar cambios
+              </Button>
+            </template>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent class="space-y-5">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-bold text-text-main">Nombre</label>
+            <input v-model="localConvocatoria.nombre" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-bold text-text-main">Gestión</label>
+            <input v-model="localConvocatoria.gestion" type="number" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-bold text-text-main">Estado</label>
+            <select v-model="localConvocatoria.estado" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              <option value="Borrador">Borrador</option>
+              <option value="Activa">Activa</option>
+              <option value="Finalizada">Finalizada</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-bold text-text-main">Descripción</label>
+            <textarea v-model="localConvocatoria.descripcion" rows="4" :disabled="!isEditingData" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-bold text-text-main">Inicio Olimpiada</label>
+            <input v-model="localConvocatoria.inicioOlimpiada" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-bold text-text-main">Fin Olimpiada</label>
+            <input v-model="localConvocatoria.finOlimpiada" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-bold text-text-main">Inicio Inscripción</label>
+            <input v-model="localConvocatoria.inicioInscripcion" type="date" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-bold text-text-main">Fin Inscripción</label>
+            <input v-model="localConvocatoria.finInscripcion" type="date" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card v-if="activeTab === 'configuracion'" class="border-gray-200 border-l-4 border-l-accent shadow-soft bg-white">
       <CardHeader>
         <div class="flex items-center justify-between">
           <CardTitle class="flex items-center gap-2"><FileText class="h-5 w-5 text-accent" />Documentos requeridos</CardTitle>
@@ -361,8 +486,11 @@ const statusClass = (status: string) => {
       </CardContent>
     </Card>
 
+      </main>
+    </div>
+
     <div v-if="isCategoriaModalOpen" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
-      <Card class="w-full max-w-md border-gray-200">
+      <Card class="w-full max-w-md border-gray-200 bg-white">
         <CardHeader>
           <CardTitle>Nueva Categoría</CardTitle>
         </CardHeader>

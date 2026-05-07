@@ -52,7 +52,7 @@ const statusClass = (status: string) => {
       Volver a convocatorias
     </Button>
 
-    <div>
+    <div class="border-l-4 border-accent pl-4">
       <div class="mb-2 flex items-center gap-3">
         <h1 class="font-heading text-3xl font-bold text-text-main">{{ convocatoria.nombre }}</h1>
         <Badge variant="outline" :class="`border px-2.5 py-1 ${statusClass(convocatoria.estado)}`">
@@ -73,7 +73,7 @@ const statusClass = (status: string) => {
     </div>
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-      <Card class="shadow-soft border-gray-200 bg-white">
+      <Card class="shadow-soft border-gray-200 bg-white transition-colors hover:border-accent/40">
         <CardContent class="p-5">
           <div class="flex items-center gap-3">
             <div class="rounded-lg bg-primary/10 p-2.5"><Users class="h-5 w-5 text-primary" /></div>
@@ -81,7 +81,7 @@ const statusClass = (status: string) => {
           </div>
         </CardContent>
       </Card>
-      <Card class="shadow-soft border-gray-200 bg-white">
+      <Card class="shadow-soft border-gray-200 bg-white transition-colors hover:border-accent/40">
         <CardContent class="p-5">
           <div class="flex items-center gap-3">
             <div class="rounded-lg bg-info/10 p-2.5"><BookOpen class="h-5 w-5 text-info" /></div>
@@ -89,7 +89,7 @@ const statusClass = (status: string) => {
           </div>
         </CardContent>
       </Card>
-      <Card class="shadow-soft border-gray-200 bg-white">
+      <Card class="shadow-soft border-gray-200 bg-white transition-colors hover:border-accent/40">
         <CardContent class="p-5">
           <div class="flex items-center gap-3">
             <div class="rounded-lg bg-secondary/10 p-2.5"><BarChart3 class="h-5 w-5 text-secondary" /></div>
@@ -97,7 +97,7 @@ const statusClass = (status: string) => {
           </div>
         </CardContent>
       </Card>
-      <Card class="shadow-soft border-gray-200 bg-white">
+      <Card class="shadow-soft border-gray-200 bg-white transition-colors hover:border-accent/40">
         <CardContent class="p-5">
           <div class="flex items-center gap-3">
             <div class="rounded-lg bg-accent/10 p-2.5"><Trophy class="h-5 w-5 text-accent" /></div>

@@ -9,6 +9,7 @@ import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
+import CategorySymbol from '@/shared/components/ui/atoms/CategorySymbol.vue'
 
 const activeConv = computed(() => {
   return convocatoriasMock.find(c => c.estado === 'ACTIVA') || convocatoriasMock[0]
@@ -143,7 +144,8 @@ const activeConv = computed(() => {
                         <h4 class="font-semibold text-sm text-text-main">Categorías</h4>
                       </div>
                       <div class="flex flex-wrap gap-1.5 mt-1">
-                        <span v-for="cat in activeConv.categorias" :key="cat.id" class="text-xs font-medium bg-white border border-gray-200 text-text-main px-2 py-1 rounded">
+                        <span v-for="cat in activeConv.categorias" :key="cat.id" class="inline-flex items-center gap-1.5 text-xs font-medium bg-white border border-gray-200 text-text-main px-2 py-1 rounded">
+                          <CategorySymbol :name="cat.nombre" class="h-5 w-5 rounded text-[10px]" />
                           {{ cat.nombre }}
                         </span>
                       </div>

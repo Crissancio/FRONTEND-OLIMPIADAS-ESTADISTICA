@@ -43,7 +43,8 @@ const estadoClass = (estado: string) => {
       </div>
       <Button 
         @click="isDialogOpen = true"
-        class="bg-accent hover:bg-accent-dark text-white px-4 py-2.5 rounded-md text-sm font-semibold transition-all shadow-sm flex items-center gap-2"
+        variant="accent"
+        class="h-auto px-4 py-2.5 flex items-center gap-2"
       >
         <Plus class="w-4 h-4" />
         Crear Convocatoria

@@ -16,13 +16,16 @@ export interface AdminConvocatoria {
 }
 
 export interface AdminMaterial {
-  id: string
-  nombre: string
-  descripcion: string
-  tipo: 'Videos' | 'Formularios' | 'Temarios' | 'Practicas' | 'Examenes'
-  convocatoria: string
+  id_material: number
+  nombre_material: string
+  descripcion?: string
+  fecha_creacion: string
+  tipo_material: 'VIDEO' | 'EXAMEN' | 'SOLUCIONARIO' | 'EJERCICIOS' | 'OTRO'
+  fecha_publicacion?: string
+  convocatoriaId: string
+  nombreConvocatoria: string
   fase?: string
-  enlace: string
+  enlace?: string
 }
 
 export interface AdminColegio {
@@ -128,38 +131,62 @@ export const adminConvocatoriasMock: AdminConvocatoria[] = [
 
 export const adminMaterialesMock: AdminMaterial[] = [
   {
-    id: '1',
-    nombre: 'Temario Oficial 2024',
+    id_material: 1,
+    nombre_material: 'Temario Oficial 2024',
     descripcion: 'Contenidos a evaluar en la primera y segunda fase.',
-    tipo: 'Temarios',
-    convocatoria: 'Olimpiadas 2024',
+    fecha_creacion: '2024-03-01 09:00',
+    tipo_material: 'OTRO',
+    fecha_publicacion: '2024-03-10 08:00',
+    convocatoriaId: '1',
+    nombreConvocatoria: 'Olimpiadas 2024',
     enlace: 'https://example.com/temario',
   },
   {
-    id: '2',
-    nombre: 'Introduccion a la Probabilidad',
+    id_material: 2,
+    nombre_material: 'Introduccion a la Probabilidad',
     descripcion: 'Clase grabada sobre conceptos basicos.',
-    tipo: 'Videos',
-    convocatoria: 'Olimpiadas 2024',
+    fecha_creacion: '2024-03-12 16:30',
+    tipo_material: 'VIDEO',
+    fecha_publicacion: '2024-03-15 10:00',
+    convocatoriaId: '1',
+    nombreConvocatoria: 'Olimpiadas 2024',
     fase: 'Fase 1',
     enlace: 'https://youtube.com/video',
   },
   {
-    id: '3',
-    nombre: 'Practica Nivel Secundario',
+    id_material: 3,
+    nombre_material: 'Practica Nivel Secundario',
     descripcion: 'Ejercicios propuestos para la primera fase.',
-    tipo: 'Practicas',
-    convocatoria: 'Olimpiadas 2023',
+    fecha_creacion: '2023-04-04 11:45',
+    tipo_material: 'EJERCICIOS',
+    fecha_publicacion: '2023-04-08 08:30',
+    convocatoriaId: '2',
+    nombreConvocatoria: 'Olimpiadas 2023',
     enlace: 'https://example.com/practica',
   },
   {
-    id: '4',
-    nombre: 'Examen Pasado - Final 2023',
+    id_material: 4,
+    nombre_material: 'Examen Pasado - Final 2023',
     descripcion: 'Prueba oficial aplicada en la fase final.',
-    tipo: 'Examenes',
-    convocatoria: 'Olimpiadas 2023',
+    fecha_creacion: '2023-10-25 14:00',
+    tipo_material: 'EXAMEN',
+    fecha_publicacion: '2023-11-05 09:00',
+    convocatoriaId: '2',
+    nombreConvocatoria: 'Olimpiadas 2023',
     fase: 'Fase Final',
     enlace: 'https://example.com/examen',
+  },
+  {
+    id_material: 5,
+    nombre_material: 'Solucionario Primera Fase',
+    descripcion: 'Resolucion guia para revisar procedimientos y respuestas esperadas.',
+    fecha_creacion: '2024-06-20 15:20',
+    tipo_material: 'SOLUCIONARIO',
+    fecha_publicacion: '2024-06-25 12:00',
+    convocatoriaId: '1',
+    nombreConvocatoria: 'Olimpiadas 2024',
+    fase: 'Fase 1',
+    enlace: 'https://example.com/solucionario',
   },
 ]
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Plus, Search, Filter, BookOpen, PlayCircle, FileText, ClipboardList, Edit, Trash2, ExternalLink } from 'lucide-vue-next'
+import { Plus, Search, Filter, PlayCircle, FileText, ListChecks, Edit, Trash2, ExternalLink, ScrollText } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
@@ -14,24 +14,22 @@ const materiales = ref<AdminMaterial[]>([...adminMaterialesMock])
 
 const filteredMaterials = computed(() => {
   return materiales.value.filter((item) => {
-    const matchesSearch = item.nombre.toLowerCase().includes(searchTerm.value.toLowerCase())
-    const matchesType = selectedType.value === 'all' || item.tipo === selectedType.value
+    const matchesSearch = item.nombre_material.toLowerCase().includes(searchTerm.value.toLowerCase())
+    const matchesType = selectedType.value === 'all' || item.tipo_material === selectedType.value
     return matchesSearch && matchesType
   })
 })
 
-const getTipoConfig = (tipo: AdminMaterial['tipo']) => {
+const getTipoConfig = (tipo: AdminMaterial['tipo_material']) => {
   switch (tipo) {
-    case 'Videos':
+    case 'VIDEO':
       return { color: 'bg-error/10 text-error border-error/20', icon: PlayCircle }
-    case 'Formularios':
-      return { color: 'bg-info/10 text-info border-info/20', icon: ClipboardList }
-    case 'Temarios':
-      return { color: 'bg-success/10 text-success border-success/20', icon: BookOpen }
-    case 'Practicas':
-      return { color: 'bg-warning/10 text-warning border-warning/20', icon: FileText }
-    case 'Examenes':
+    case 'EXAMEN':
       return { color: 'bg-secondary/10 text-secondary border-secondary/20', icon: FileText }
+    case 'SOLUCIONARIO':
+      return { color: 'bg-success/10 text-success border-success/20', icon: ScrollText }
+    case 'EJERCICIOS':
+      return { color: 'bg-warning/10 text-warning border-warning/20', icon: ListChecks }
     default:
       return { color: 'bg-gray-100 text-text-muted border-gray-200', icon: FileText }
   }
@@ -65,11 +63,11 @@ const getTipoConfig = (tipo: AdminMaterial['tipo']) => {
           </div>
           <select v-model="selectedType" class="h-auto w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm sm:w-44 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors">
             <option value="all">Tipo de material</option>
-            <option value="Videos">Videos</option>
-            <option value="Formularios">Formularios</option>
-            <option value="Temarios">Temarios</option>
-            <option value="Practicas">Prácticas</option>
-            <option value="Examenes">Exámenes</option>
+            <option value="VIDEO">Video</option>
+            <option value="EXAMEN">Examen</option>
+            <option value="SOLUCIONARIO">Solucionario</option>
+            <option value="EJERCICIOS">Ejercicios</option>
+            <option value="OTRO">Otro</option>
           </select>
           <Button variant="outline" class="h-auto w-full justify-center gap-2 py-2.5 sm:w-auto">
             <Filter class="h-4 w-4" />
@@ -88,23 +86,23 @@ const getTipoConfig = (tipo: AdminMaterial['tipo']) => {
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-              <tr v-for="mat in filteredMaterials" :key="mat.id" class="group transition-colors hover:bg-gray-50/50">
+              <tr v-for="mat in filteredMaterials" :key="mat.id_material" class="group transition-colors hover:bg-gray-50/50">
                 <td class="px-6 py-4">
                   <div class="flex flex-col">
-                    <span class="font-bold text-text-main">{{ mat.nombre }}</span>
+                    <span class="font-bold text-text-main">{{ mat.nombre_material }}</span>
                     <span class="mt-0.5 text-sm text-text-muted">{{ mat.descripcion }}</span>
                   </div>
                 </td>
                 <td class="px-6 py-4">
-                  <Badge variant="outline" :class="`inline-flex items-center gap-1.5 border px-2.5 py-1 text-xs font-bold ${getTipoConfig(mat.tipo).color}`">
-                    <component :is="getTipoConfig(mat.tipo).icon" class="h-3.5 w-3.5" />
-                    {{ mat.tipo }}
+                  <Badge variant="outline" :class="`inline-flex items-center gap-1.5 border px-2.5 py-1 text-xs font-bold ${getTipoConfig(mat.tipo_material).color}`">
+                    <component :is="getTipoConfig(mat.tipo_material).icon" class="h-3.5 w-3.5" />
+                    {{ mat.tipo_material }}
                   </Badge>
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex flex-wrap gap-2">
                     <Badge variant="secondary" class="border border-gray-200 bg-white text-xs font-bold text-text-muted">
-                      {{ mat.convocatoria }}
+                      {{ mat.nombreConvocatoria }}
                     </Badge>
                     <Badge v-if="mat.fase" variant="secondary" class="border border-gray-200 bg-white text-xs font-bold text-text-muted">
                       {{ mat.fase }}

@@ -19,6 +19,8 @@ import {
   XCircle,
   Search,
   BookOpen,
+  Settings,
+  Save,
   Mail,
   Phone,
   Building2,
@@ -29,8 +31,10 @@ import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
 import CardTitle from '@/shared/components/ui/atoms/CardTitle.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
+import CategorySymbol from '@/shared/components/ui/atoms/CategorySymbol.vue'
+import CategoriaGestionTabs from '@/modules/admin/components/CategoriaGestionTabs.vue'
 
-type CategoriaTab = 'fases' | 'estudiantes' | 'resultados'
+type CategoriaTab = 'fases' | 'estudiantes' | 'resultados' | 'configuracion'
 
 type FaseTipo = 'preparacion' | 'prueba'
 type Modalidad = 'virtual' | 'presencial' | 'semipresencial'
@@ -79,6 +83,21 @@ const categoria = computed(() => {
 })
 
 const activeTab = ref<CategoriaTab>('fases')
+const isEditingCategory = ref(false)
+const categoriaForm = ref({ ...categoria.value })
+
+const saveCategoria = () => {
+  isEditingCategory.value = false
+}
+
+const cancelCategoriaEdit = () => {
+  categoriaForm.value = { ...categoria.value }
+  isEditingCategory.value = false
+}
+
+const deleteCategoria = () => {
+  router.push(`/admin/convocatoria/${convocatoriaId}/gestionar?tab=categorias`)
+}
 
 const fases = ref<FaseItem[]>([
   {
@@ -305,8 +324,8 @@ const faseTypeClass = (type: FaseTipo) => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <header class="rounded-xl border border-gray-200 bg-white p-4 shadow-soft">
+  <div class="space-y-6 p-4">
+    <header class="sticky top-0 z-20 rounded-xl border border-gray-200 border-t-4 border-t-accent bg-white p-4 shadow-soft">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <Button variant="ghost" @click="router.push(`/admin/convocatoria/${convocatoriaId}/gestionar?tab=categorias`)">
@@ -320,32 +339,23 @@ const faseTypeClass = (type: FaseTipo) => {
       </div>
 
       <div class="mt-4 flex items-center gap-3">
-        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-sm">
-          <BookOpen class="h-6 w-6 text-white" />
-        </div>
+        <CategorySymbol :name="categoriaForm.nombre" class="h-12 w-12 bg-accent text-2xl text-primary shadow-sm" />
         <div>
-          <h1 class="font-heading text-2xl font-bold text-text-main">{{ categoria.nombre }}</h1>
+          <h1 class="font-heading text-2xl font-bold text-text-main">{{ categoriaForm.nombre }}</h1>
           <div class="mt-1 flex items-center gap-2">
-            <Badge variant="outline" class="border-info/20 bg-info/10 text-info">{{ categoria.curso }}</Badge>
-            <Badge variant="outline" class="border-secondary/20 bg-secondary/10 text-secondary">{{ categoria.grado }}</Badge>
+            <Badge variant="outline" class="border-info/20 bg-info/10 text-info">{{ categoriaForm.curso }}</Badge>
+            <Badge variant="outline" class="border-secondary/20 bg-secondary/10 text-secondary">{{ categoriaForm.grado }}</Badge>
           </div>
         </div>
       </div>
     </header>
 
-    <div class="flex flex-wrap gap-2">
-      <button class="rounded-md px-3 py-2 text-sm font-semibold transition-colors" :class="activeTab === 'fases' ? 'bg-primary text-white' : 'border border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'fases'">
-        <CalendarDays class="mr-2 inline h-4 w-4" />Fases
-      </button>
-      <button class="rounded-md px-3 py-2 text-sm font-semibold transition-colors" :class="activeTab === 'estudiantes' ? 'bg-primary text-white' : 'border border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'estudiantes'">
-        <Users class="mr-2 inline h-4 w-4" />Estudiantes
-      </button>
-      <button class="rounded-md px-3 py-2 text-sm font-semibold transition-colors" :class="activeTab === 'resultados' ? 'bg-primary text-white' : 'border border-gray-200 bg-white text-text-muted hover:bg-gray-50'" @click="activeTab = 'resultados'">
-        <Trophy class="mr-2 inline h-4 w-4" />Resultados
-      </button>
-    </div>
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-start">
+      <CategoriaGestionTabs v-model:active-tab="activeTab" />
 
-    <Card v-if="activeTab === 'fases'" class="border-gray-200 shadow-soft bg-white">
+      <main class="min-w-0 flex-1 space-y-6">
+
+    <Card v-if="activeTab === 'fases'" class="border-gray-200 border-l-4 border-l-accent shadow-soft bg-white">
       <CardHeader class="border-b border-gray-200">
         <div class="flex items-center justify-between">
           <div>
@@ -356,7 +366,7 @@ const faseTypeClass = (type: FaseTipo) => {
         </div>
       </CardHeader>
       <CardContent class="space-y-3 p-6">
-        <div v-for="fase in fases" :key="fase.id" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div v-for="fase in fases" :key="fase.id" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-colors hover:border-accent/40">
           <div class="p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="flex min-w-0 flex-1 items-center gap-3">
@@ -378,7 +388,7 @@ const faseTypeClass = (type: FaseTipo) => {
                   <ChevronUp v-if="expanded.includes(fase.id)" class="h-5 w-5" />
                   <ChevronDown v-else class="h-5 w-5" />
                 </Button>
-                <Button variant="outline" size="sm" @click="openMaterialModal(fase.id)" class="flex items-center gap-1.5"><Upload class="h-4 w-4" />Material</Button>
+                <Button variant="outline" size="sm" @click="openMaterialModal(fase.id)" class="flex items-center gap-1.5 hover:border-accent/40 hover:bg-accent/10"><Upload class="h-4 w-4" />Material</Button>
                 <Button variant="outline" size="sm" @click="openEditFase(fase)" class="text-text-muted"><Edit class="h-4 w-4" /></Button>
                 <Button variant="ghost" size="sm" class="text-error hover:bg-error/10" @click="removeFase(fase.id)"><Trash2 class="h-4 w-4" /></Button>
               </div>
@@ -409,7 +419,7 @@ const faseTypeClass = (type: FaseTipo) => {
       </CardContent>
     </Card>
 
-    <Card v-if="activeTab === 'estudiantes'" class="border-gray-200 shadow-soft bg-white">
+    <Card v-if="activeTab === 'estudiantes'" class="border-gray-200 border-l-4 border-l-accent shadow-soft bg-white">
       <CardHeader class="border-b border-gray-200">
         <CardTitle class="flex items-center gap-2"><Users class="h-5 w-5 text-primary" />Estudiantes Inscritos</CardTitle>
       </CardHeader>
@@ -453,13 +463,63 @@ const faseTypeClass = (type: FaseTipo) => {
       </CardContent>
     </Card>
 
-    <Card v-if="activeTab === 'resultados'" class="border-gray-200 shadow-soft bg-white">
+    <Card v-if="activeTab === 'resultados'" class="border-gray-200 border-l-4 border-l-accent shadow-soft bg-white">
       <CardContent class="py-16 text-center">
         <Trophy class="mx-auto mb-3 h-10 w-10 text-gray-300" />
         <p class="font-bold text-text-main">Resultados y Clasificación</p>
         <p class="text-sm text-text-muted mt-1">Sección preparada para publicar resultados por fase.</p>
       </CardContent>
     </Card>
+
+    <Card v-if="activeTab === 'configuracion'" class="border-gray-200 border-l-4 border-l-accent shadow-soft bg-white">
+      <CardHeader class="border-b border-gray-200">
+        <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div>
+            <CardTitle class="flex items-center gap-2"><Settings class="h-5 w-5 text-accent" />Configuración de categoría</CardTitle>
+            <p class="mt-1 text-sm text-text-muted">Edita los datos principales de la categoría.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <Button v-if="!isEditingCategory" variant="outline" class="flex items-center gap-2" @click="isEditingCategory = true">
+              <Edit class="h-4 w-4" />
+              Editar datos
+            </Button>
+            <template v-else>
+              <Button variant="outline" class="flex items-center gap-2" @click="cancelCategoriaEdit">
+                <XCircle class="h-4 w-4" />
+                Cancelar
+              </Button>
+              <Button variant="accent" class="flex items-center gap-2" @click="saveCategoria">
+                <Save class="h-4 w-4" />
+                Guardar cambios
+              </Button>
+            </template>
+            <Button class="bg-error text-white hover:bg-error/90 flex items-center gap-2" @click="deleteCategoria">
+              <Trash2 class="h-4 w-4" />
+              Eliminar
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent class="space-y-5 p-6">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-bold text-text-main">Nombre</label>
+            <input v-model="categoriaForm.nombre" :disabled="!isEditingCategory" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-bold text-text-main">Curso</label>
+            <input v-model="categoriaForm.curso" :disabled="!isEditingCategory" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-bold text-text-main">Grado</label>
+            <input v-model="categoriaForm.grado" :disabled="!isEditingCategory" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+      </main>
+    </div>
 
     <!-- Modals (Fase, Material, Estudiante) -->
     <div v-if="isFaseModalOpen" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
@@ -510,7 +570,7 @@ const faseTypeClass = (type: FaseTipo) => {
 
           <div class="flex justify-end gap-2 mt-6">
             <Button variant="outline" @click="isMaterialModalOpen = false">Cancelar</Button>
-            <Button @click="saveMaterial" class="flex items-center gap-2"><Plus class="h-4 w-4" />Agregar Material</Button>
+            <Button variant="accent" @click="saveMaterial" class="flex items-center gap-2"><Plus class="h-4 w-4" />Agregar Material</Button>
           </div>
         </CardContent>
       </Card>
