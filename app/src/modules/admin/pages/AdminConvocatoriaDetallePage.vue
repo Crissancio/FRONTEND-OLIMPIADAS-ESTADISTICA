@@ -200,7 +200,7 @@ const statusClass = (status: string) => {
             <h1 class="font-heading text-xl font-bold text-text-main">{{ localConvocatoria.nombre }}</h1>
             <div class="mt-1 flex items-center gap-2 text-sm text-text-muted">
               <span>Gestión {{ localConvocatoria.gestion }}</span>
-              <Badge variant="outline" :class="`border px-2 py-0.5 ${statusClass(localConvocatoria.estado)}`">{{ localConvocatoria.estado }}</Badge>
+              <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border', statusClass(localConvocatoria.estado)]">{{ localConvocatoria.estado }}</span>
             </div>
           </div>
         </div>
