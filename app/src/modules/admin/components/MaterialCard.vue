@@ -5,10 +5,10 @@ import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
-import type { AdminMaterial } from '@/modules/admin/data/admin.data'
+import type { MaterialResponseDTO } from '@/modules/convocatorias/types/materiales.api'
 
 const props = defineProps<{
-  material: AdminMaterial
+  material: MaterialResponseDTO
 }>()
 
 const typeConfig = computed(() => {
@@ -27,6 +27,7 @@ const typeConfig = computed(() => {
 })
 
 const publicationLabel = computed(() => props.material.fecha_publicacion ?? 'Sin publicar')
+const accessUrl = computed(() => props.material.enlace_acceso)
 </script>
 
 <template>
@@ -65,7 +66,7 @@ const publicationLabel = computed(() => props.material.fecha_publicacion ?? 'Sin
           {{ material.fase }}
         </Badge>
         <span v-else class="text-xs font-semibold text-text-muted">Material global</span>
-        <Button v-if="material.enlace" as="a" :href="material.enlace" target="_blank" rel="noreferrer" variant="outline" size="sm">
+        <Button v-if="accessUrl" as="a" :href="accessUrl" target="_blank" rel="noreferrer" variant="outline" size="sm">
           <ExternalLink class="h-4 w-4" />
           Abrir
         </Button>

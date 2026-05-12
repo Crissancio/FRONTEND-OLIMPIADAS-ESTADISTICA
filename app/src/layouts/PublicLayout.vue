@@ -7,7 +7,11 @@ import Footer from '@/shared/components/ui/organisms/Footer.vue'
   <div class="flex flex-col min-h-screen font-sans">
     <Navbar />
     <main class="flex-grow flex flex-col w-full">
-      <router-view />
+      <router-view v-slot="{ Component, route }">
+        <transition name="page-fade" mode="out-in">
+          <component :is="Component" :key="route.fullPath" />
+        </transition>
+      </router-view>
     </main>
     <Footer />
   </div>

@@ -15,7 +15,7 @@ const router = useRouter()
 const isDialogOpen = ref(false)
 const searchTerm = ref('')
 const selectedStatus = ref('all')
-const { convocatorias } = useConvocatorias()
+const { convocatorias, isLoading, error, total } = useConvocatorias()
 
 const filteredConvocatorias = computed(() => {
   return convocatorias.value.filter((conv) => {
@@ -85,6 +85,8 @@ const estadoClass = (estado: string) => {
 
         <!-- Table -->
         <div class="overflow-x-auto">
+          <div v-if="isLoading" class="px-6 py-8 text-sm text-text-muted">Cargando convocatorias...</div>
+          <div v-else-if="error" class="px-6 py-8 text-sm text-error">{{ error }}</div>
           <table class="w-full text-left border-collapse">
             <thead class="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -141,13 +143,18 @@ const estadoClass = (estado: string) => {
                   </div>
                 </td>
               </tr>
+              <tr v-if="!isLoading && !error && filteredConvocatorias.length === 0">
+                <td colspan="5" class="px-6 py-10 text-center text-sm text-text-muted">Sin resultados</td>
+              </tr>
             </tbody>
           </table>
         </div>
 
         <!-- Pagination placeholder -->
         <div class="p-4 border-t border-gray-200 flex items-center justify-between text-sm text-text-muted bg-gray-50/50">
-          <span>Mostrando {{ filteredConvocatorias.length }} de {{ convocatorias.length }} convocatorias</span>
+          <span>
+            Mostrando {{ filteredConvocatorias.length }} de {{ total || convocatorias.length }} convocatorias
+          </span>
           <div class="flex gap-1">
             <Button variant="outline" size="sm" class="text-text-muted border-gray-200" disabled>Anterior</Button>
             <Button variant="outline" size="sm" class="text-text-muted border-gray-200" disabled>Siguiente</Button>

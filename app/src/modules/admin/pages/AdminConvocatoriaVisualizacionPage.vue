@@ -107,10 +107,10 @@ const statusClass = (status: string) => {
       </Card>
     </div>
 
-    <Card class="shadow-soft border-gray-200 bg-white">
-      <CardHeader><CardTitle class="text-text-main">Descripción</CardTitle></CardHeader>
-      <CardContent><p class="text-sm leading-relaxed text-text-muted">{{ convocatoria.descripcion }}</p></CardContent>
-    </Card>
+     <Card class="shadow-soft border-gray-200 bg-white">
+       <CardHeader><CardTitle class="text-text-main">Descripción</CardTitle></CardHeader>
+       <CardContent><p class="text-sm leading-relaxed text-text-muted">{{ convocatoria.descripcion }}</p></CardContent>
+     </Card>
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
       <Card class="shadow-soft border-gray-200 bg-white">

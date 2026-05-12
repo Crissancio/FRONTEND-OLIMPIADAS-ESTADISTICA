@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/app/stores/auth.store'
 import { 
   LayoutDashboard, 
   FileText, 
@@ -18,8 +20,9 @@ import Button from '@/shared/components/ui/atoms/Button.vue'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
+const { isAuthenticated } = storeToRefs(authStore)
 const isSidebarOpen = ref(false)
-const isAuthenticated = ref(false)
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Convocatorias', href: '/admin/convocatorias', icon: FileText },
@@ -31,13 +34,13 @@ const navigation = [
   { name: 'Auditoría', href: '/admin/auditoria', icon: BarChart4 },
 ]
 
-const handleLogout = () => {
-  sessionStorage.removeItem('adminAuth')
-  router.push('/admin/login')
+const handleLogout = async () => {
+  isSidebarOpen.value = false
+  await authStore.logout()
+  await router.push('/')
 }
 
 onMounted(() => {
-  isAuthenticated.value = sessionStorage.getItem('adminAuth') === 'true'
   if (!isAuthenticated.value) {
     router.replace('/admin/login')
   }
@@ -144,7 +147,11 @@ onMounted(() => {
       </header>
     
       <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-background">
-        <router-view />
+        <router-view v-slot="{ Component, route }">
+          <transition name="page-fade" mode="out-in">
+            <component :is="Component" :key="route.fullPath" />
+          </transition>
+        </router-view>
       </main>
     </div>
   </div>

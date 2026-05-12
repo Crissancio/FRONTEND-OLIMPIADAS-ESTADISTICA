@@ -25,3 +25,107 @@
 }
 
 @import "./styles/theme.css";
+
+.ope-calendar-theme {
+  --vc-accent-50: #f3f6fb;
+  --vc-accent-100: #dfe8f4;
+  --vc-accent-200: #c2d1e7;
+  --vc-accent-300: #99b2d5;
+  --vc-accent-400: #6689bd;
+  --vc-accent-500: #315a94;
+  --vc-accent-600: #113264;
+  --vc-accent-700: #0f2b56;
+  --vc-accent-800: #0c2448;
+  --vc-accent-900: #0A1E3C;
+  --vc-hover-bg: rgba(17, 50, 100, 0.1);
+  --vc-focus-ring: 0 0 0 2px rgba(17, 50, 100, 0.28);
+  --vc-header-arrow-color: #113264;
+  --vc-header-arrow-hover-bg: rgba(17, 50, 100, 0.1);
+  --vc-header-title-color: #1E293B;
+  --vc-weekday-color: #113264;
+  --vc-nav-item-active-bg: #113264;
+  --vc-nav-item-current-color: #113264;
+  --vc-time-month-color: #113264;
+  --vc-time-day-color: #113264;
+  --vc-time-select-group-icon-color: #113264;
+  --vc-select-hover-bg: rgba(17, 50, 100, 0.1);
+  --vc-day-content-hover-bg: rgba(17, 50, 100, 0.1);
+  --vc-day-content-disabled-color: rgba(17, 50, 100, 0.38);
+}
+
+.ope-calendar-theme .vc-container {
+  width: 100%;
+  border-color: rgba(17, 50, 100, 0.16);
+  border-radius: 0.75rem;
+  font-family: var(--font-sans);
+}
+
+.ope-calendar-theme .vc-highlight-light {
+  background-color: rgba(17, 50, 100, 0.16);
+}
+
+.ope-calendar-theme .vc-highlight-outline {
+  border-color: rgba(17, 50, 100, 0.55);
+}
+
+.ope-calendar-theme .vc-highlight-solid {
+  background-color: #113264;
+}
+
+.ope-calendar-theme .vc-day-content.vc-disabled {
+  background-color: rgba(17, 50, 100, 0.06);
+  color: rgba(17, 50, 100, 0.42);
+}
+
+.ope-calendar-theme .vc-time-picker {
+  border-color: rgba(17, 50, 100, 0.16);
+}
+
+@media (max-width: 640px) {
+  .ope-calendar-theme .vc-container {
+    --vc-text-sm: 13px;
+    --vc-text-base: 14px;
+  }
+
+  .ope-calendar-theme .vc-weeks {
+    padding: 4px;
+  }
+}
+
+.route-fade-enter-active,
+.route-fade-leave-active,
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.route-fade-enter-from,
+.route-fade-leave-to {
+  opacity: 0;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-fade-enter-active,
+  .route-fade-leave-active,
+  .page-fade-enter-active,
+  .page-fade-leave-active {
+    transition: none;
+  }
+
+  .page-fade-enter-from,
+  .page-fade-leave-to {
+    transform: none;
+  }
+}
