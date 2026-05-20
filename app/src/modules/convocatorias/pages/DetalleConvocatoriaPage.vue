@@ -175,7 +175,7 @@ onMounted(() => {
               class="inline-flex items-center gap-3 bg-accent hover:bg-accent/90 text-white px-8 py-6 rounded-xl font-bold transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(184,77,53,0.4)] h-auto"
             >
               <Trophy class="w-6 h-6" />
-              InscrÃ­bete ahora
+              Inscríbete ahora
             </Button>
           </div>
         </div>
@@ -210,7 +210,7 @@ onMounted(() => {
               <CardContent class="p-8 sm:p-10">
                 <h2 class="text-2xl font-heading font-bold text-text-main mb-6 flex items-center gap-3">
                   <InfoIcon class="w-6 h-6 text-primary" />
-                  DescripciÃ³n General
+                  Descripción General
                 </h2>
                 <div class="text-text-muted">
                   <p>{{ conv.descripcionCompleta }}</p>
@@ -218,12 +218,12 @@ onMounted(() => {
               </CardContent>
             </Card>
 
-            <!-- CategorÃ­as y Fases -->
+            <!-- Categorías y Fases -->
             <Card class="rounded-2xl shadow-sm border-gray-100 overflow-hidden">
               <div class="bg-gray-50 border-b border-gray-200 px-8 py-6">
                 <h2 class="text-2xl font-heading font-bold text-text-main flex items-center gap-3">
                   <Users class="w-6 h-6 text-primary" />
-                  CategorÃ­as Habilitadas
+                  Categorías Habilitadas
                 </h2>
               </div>
               
@@ -257,8 +257,8 @@ onMounted(() => {
                           <CardContent class="p-0">
                             <div class="flex flex-wrap items-center gap-3 mb-3">
                               <Badge 
-                                :variant="fase.tipo === 'PreparaciÃ³n' ? 'outline' : 'default'"
-                                :class="`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded border ${fase.tipo === 'PreparaciÃ³n' ? 'bg-warning/10 text-warning hover:bg-warning/10 border-warning/20' : 'bg-info/10 text-info hover:bg-info/10 border-blue-200'}`"
+                                :variant="fase.tipo === 'Preparación' ? 'outline' : 'default'"
+                                :class="`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded border ${fase.tipo === 'Preparación' ? 'bg-warning/10 text-warning hover:bg-warning/10 border-warning/20' : 'bg-info/10 text-info hover:bg-info/10 border-blue-200'}`"
                               >
                                 {{ fase.tipo }}{{ fase.subtipo ? ` - ${fase.subtipo}` : '' }}
                               </Badge>
@@ -312,7 +312,7 @@ onMounted(() => {
                                          <p class="text-sm font-semibold text-text-main group-hover:text-primary transition-colors line-clamp-1">{{ mat.nombre }}</p>
                                          <p class="text-xs text-text-muted flex gap-2">
                                            <span>{{ mat.tipo }}</span>
-                                           <span v-if="mat.tamano">â€¢ {{ mat.tamano }}</span>
+                                           <span v-if="mat.tamano">• {{ mat.tamano }}</span>
                                          </p>
                                        </div>
                                      </div>
@@ -330,7 +330,7 @@ onMounted(() => {
                 <Card v-else class="text-center py-12 bg-gray-50 border-dashed border-gray-200">
                   <CardContent class="p-0 flex flex-col items-center">
                     <Calendar class="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p class="text-text-muted font-medium">No hay fases programadas para esta categorÃ­a.</p>
+                    <p class="text-text-muted font-medium">No hay fases programadas para esta categoría.</p>
                   </CardContent>
                 </Card>
 
@@ -370,7 +370,7 @@ onMounted(() => {
                 </div>
                 <CardContent class="p-8 sm:p-10 bg-white">
                   <p class="text-text-muted mb-6">
-                    A continuaciÃ³n se presenta el material oficial y general para esta convocatoria.
+                    A continuación se presenta el material oficial y general para esta convocatoria.
                   </p>
                   <div class="grid gap-4 sm:grid-cols-2">
                     <a
@@ -393,7 +393,7 @@ onMounted(() => {
                           <p class="font-semibold text-text-main group-hover:text-primary transition-colors line-clamp-1">{{ mat.nombre }}</p>
                           <p class="text-sm text-text-muted flex gap-2">
                             <span>{{ mat.tipo }}</span>
-                            <span v-if="mat.tamano">â€¢ {{ mat.tamano }}</span>
+                            <span v-if="mat.tamano">• {{ mat.tamano }}</span>
                           </p>
                         </div>
                       </div>
@@ -436,7 +436,7 @@ onMounted(() => {
                 <a v-if="reglamentoUrl" :href="reglamentoUrl" target="_blank" rel="noreferrer" class="group flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-6 shadow-sm transition-all hover:border-blue-200 hover:bg-info/10 hover:shadow">
                   <div class="flex items-center gap-3">
                     <CheckCircle class="w-5 h-5 text-text-muted group-hover:text-primary" />
-                    <span class="font-semibold text-text-main group-hover:text-primary/90 text-left whitespace-normal">Reglamento EspecÃ­fico</span>
+                    <span class="font-semibold text-text-main group-hover:text-primary/90 text-left whitespace-normal">Reglamento Específico</span>
                   </div>
                   <Download class="w-5 h-5 shrink-0 text-text-muted group-hover:text-primary" />
                 </a>
@@ -451,7 +451,7 @@ onMounted(() => {
                     Resultados Finales
                   </h3>
                   <p class="text-slate-300 text-sm mb-6 leading-relaxed">
-                    Esta convocatoria ha finalizado. Puedes consultar el cuadro de honor y los resultados oficiales de todas las categorÃ­as.
+                    Esta convocatoria ha finalizado. Puedes consultar el cuadro de honor y los resultados oficiales de todas las categorías.
                   </p>
                   <Button 
                     as="router-link"
@@ -469,8 +469,8 @@ onMounted(() => {
             <!-- Need help? -->
             <Card class="bg-info/10 rounded-2xl border-blue-100">
               <CardContent class="p-6">
-                <h4 class="font-heading font-bold text-primary/90 mb-2">Â¿Tienes dudas?</h4>
-                <p class="text-sm text-blue-800/80 mb-4">Estamos aquÃ­ para ayudarte. ContÃ¡ctanos si necesitas mÃ¡s informaciÃ³n sobre la convocatoria.</p>
+                <h4 class="font-heading font-bold text-primary/90 mb-2">¿Tienes dudas?</h4>
+                <p class="text-sm text-blue-800/80 mb-4">Estamos aquí para ayudarte. Contáctanos si necesitas más información sobre la convocatoria.</p>
                 <router-link 
                   to="/contacto" 
                   class="text-sm font-bold text-primary hover:text-primary/90 underline underline-offset-4 flex items-center gap-1"

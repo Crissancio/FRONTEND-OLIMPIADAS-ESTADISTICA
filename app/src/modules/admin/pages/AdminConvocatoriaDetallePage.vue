@@ -785,6 +785,10 @@ const statusClass = (status: string) => {
               <p class="text-xs text-text-muted font-bold uppercase tracking-wider mb-1">Fin Olimpiadas</p>
               <p class="text-sm font-medium text-text-main">{{ localConvocatoria.finOlimpiada || 'Por definir' }}</p>
             </div>
+            <div class="col-span-2">
+              <p class="text-xs text-text-muted font-bold uppercase tracking-wider mb-1">Monto de inscripción (Bs)</p>
+              <p class="text-sm font-medium text-text-main">{{ convocatoria.montoInscripcion ?? 'No aplica' }}</p>
+            </div>
           </div>
           <div class="grid grid-cols-2 gap-4 mt-2 rounded-xl bg-accent/10 border border-accent/20 p-4">
             <div>
