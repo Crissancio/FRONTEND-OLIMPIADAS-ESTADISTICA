@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { ref, computed } from 'vue'
+﻿<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
 import { 
   Lightbulb, Compass, Users, 
   BookOpen, Star
@@ -7,68 +7,72 @@ import {
 import MemberCard from '@/modules/acerca/components/MemberCard.vue'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
+import { usePublicStore } from '@/modules/public/stores/public.store'
+import type { ColaboradorResponseDTO, TipoColaborador } from '@/modules/public/types/public.api'
 
 type TabType = 'personal' | 'admin' | 'colab'
+type MemberItem = {
+  name: string
+  role: string
+  bio: string
+  email: string
+}
 const activeTab = ref<TabType>('personal')
+const publicStore = usePublicStore()
+const personalApi = ref<Record<TabType, MemberItem[]>>({
+  personal: [],
+  admin: [],
+  colab: [],
+})
+const isLoading = ref(false)
+const loadedTabs = ref<Record<TabType, boolean>>({
+  personal: false,
+  admin: false,
+  colab: false,
+})
 
-const personalAcademico = [
-  { 
-    name: 'Dr. Roberto Mendoza', 
-    role: 'Director de la Carrera', 
-    bio: 'Doctor en Estadística Aplicada con más de 20 años de experiencia docente. Promotor principal de iniciativas académicas y de investigación.', 
-    email: 'rmendoza@umsa.bo' 
-  },
-  { 
-    name: 'MSc. Elena Rojas', 
-    role: 'Coordinadora Académica', 
-    bio: 'Especialista en metodologías de enseñanza matemática. Encargada de la elaboración y revisión de los temarios de las olimpiadas.', 
-    email: 'erojas@umsa.bo' 
-  },
-  { 
-    name: 'Lic. Carlos Vargas', 
-    role: 'Responsable del Comité Evaluador', 
-    bio: 'Encargado principal de la redacción de problemas y casos de estudio, asegurando el nivel adecuado para cada categoría.', 
-    email: 'cvargas@umsa.bo' 
-  }
-]
+const tabTipo: Record<TabType, TipoColaborador> = {
+  personal: 'PERSONAL ACADEMICO',
+  admin: 'ADMINISTRATIVO',
+  colab: 'COLABORADOR',
+}
 
-const personalAdmin = [
-  { 
-    name: 'Lic. Andrea Cortez', 
-    role: 'Coordinadora Administrativa', 
-    bio: 'Responsable de la logística, inscripción y gestión de recintos para las evaluaciones presenciales.', 
-    email: 'acortez@umsa.bo' 
-  },
-  { 
-    name: 'Ing. Mauricio Aliaga', 
-    role: 'Encargado de Sistemas y TI', 
-    bio: 'Administrador de la plataforma web, base de datos y sistemas de inscripción virtual de las olimpiadas.', 
-    email: 'maliaga@umsa.bo' 
-  }
-]
+const tabLabel: Record<TabType, string> = {
+  personal: 'personal academico',
+  admin: 'personal administrativo',
+  colab: 'colaboradores',
+}
 
-const colaboradores = [
-  { 
-    name: 'Sociedad Científica de Estadística', 
-    role: 'Apoyo Logístico', 
-    bio: 'Grupo de estudiantes destacados que colaboran en la supervisión de pruebas, resolución de dudas y talleres de preparación.', 
-    email: 'sce@umsa.bo' 
-  },
-  { 
-    name: 'Docentes Voluntarios FCPN', 
-    role: 'Comité de Revisión', 
-    bio: 'Equipo multidisciplinario que apoya en la calificación y revisión cruzada de los exámenes de la fase final.', 
-    email: 'fcpn.apoyo@umsa.bo' 
+const mapColaborador = (item: ColaboradorResponseDTO) => ({
+  name: [item.nombres, item.paterno, item.materno].filter(Boolean).join(' '),
+  role: item.rol,
+  bio: item.presentacion ?? 'Miembro del comite organizador de las Olimpiadas de Estadistica.',
+  email: item.correo,
+})
+
+const loadPersonal = async (tab: TabType) => {
+  isLoading.value = true
+  try {
+    const data = await publicStore.loadPersonal(tabTipo[tab])
+    personalApi.value[tab] = data.map(mapColaborador)
+  } catch {
+    personalApi.value[tab] = []
+  } finally {
+    loadedTabs.value[tab] = true
+    isLoading.value = false
   }
-]
+}
 
 const activeData = computed(() => {
-  switch (activeTab.value) {
-    case 'personal': return personalAcademico
-    case 'admin': return personalAdmin
-    case 'colab': return colaboradores
-    default: return []
-  }
+  return personalApi.value[activeTab.value]
+})
+
+watch(activeTab, (tab) => {
+  void loadPersonal(tab)
+})
+
+onMounted(() => {
+  void loadPersonal(activeTab.value)
 })
 </script>
 
@@ -88,7 +92,7 @@ const activeData = computed(() => {
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-20 pb-20 space-y-16">
       
-      <!-- Introducción -->
+      <!-- IntroducciÃ³n -->
       <Card class="rounded-2xl shadow-sm border-gray-100">
         <CardContent class="p-8 md:p-12">
           <h2 class="text-3xl font-heading font-bold text-text-main mb-6 border-b border-gray-100 pb-4">Introducción</h2>
@@ -103,7 +107,7 @@ const activeData = computed(() => {
         </CardContent>
       </Card>
 
-      <!-- Misión y Visión -->
+      <!-- MisiÃ³n y VisiÃ³n -->
       <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <Card class="bg-gradient-to-br from-blue-50 to-white rounded-2xl border-blue-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
           <CardContent class="p-8">
@@ -140,7 +144,7 @@ const activeData = computed(() => {
         </Card>
       </section>
 
-      <!-- Comité Organizador -->
+      <!-- ComitÃ© Organizador -->
       <section>
         <div class="text-center mb-10">
           <h2 class="text-3xl font-heading font-bold text-text-main mb-4 flex items-center justify-center gap-3">
@@ -160,7 +164,7 @@ const activeData = computed(() => {
               :class="`flex-1 py-4 px-6 font-heading font-bold text-center transition-colors border-b-2 flex items-center justify-center gap-2 ${activeTab === 'personal' ? 'border-primary text-primary bg-white' : 'border-transparent text-text-muted hover:text-text-main hover:bg-gray-100'}`"
             >
               <Users class="w-5 h-5" />
-              Personal Académico
+              Personal AcadÃ©mico
             </button>
             <button
               @click="activeTab = 'admin'"
@@ -180,7 +184,14 @@ const activeData = computed(() => {
 
           <!-- List -->
           <CardContent class="p-6 sm:p-10 bg-gray-50">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div v-if="isLoading" class="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm font-semibold text-text-muted">
+              Cargando {{ tabLabel[activeTab] }}...
+            </div>
+            <div v-else-if="loadedTabs[activeTab] && activeData.length === 0" class="rounded-xl border-2 border-dashed border-gray-300 bg-white p-10 text-center">
+              <Users class="mx-auto mb-3 h-10 w-10 text-gray-300" />
+              <p class="font-bold text-text-main">Sin {{ tabLabel[activeTab] }} agregado</p>
+            </div>
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <MemberCard 
                 v-for="(member, idx) in activeData" 
                 :key="idx"
@@ -197,3 +208,4 @@ const activeData = computed(() => {
     </div>
   </div>
 </template>
+

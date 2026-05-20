@@ -1,112 +1,447 @@
--<script setup lang="ts">
-import { computed } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { 
   ArrowRight, BookOpen, AlertCircle,
-  Download, Calendar, Users, Award, BarChart2, Target, GraduationCap 
+  Download, Calendar, Users, Target, GraduationCap,
 } from 'lucide-vue-next'
 import { convocatoriasMock, avisosMock } from '@/modules/convocatorias/data/convocatorias.data'
+import { usePublicStore } from '@/modules/public/stores/public.store'
+import type { AvisoInicioDTO, CategoriaResumenDTO, ConvocatoriaResponseDTO } from '@/modules/public/types/public.api'
+import { toApiError } from '@/app/api/api-error'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import CategorySymbol from '@/shared/components/ui/atoms/CategorySymbol.vue'
 
+type HomeConvocatoria = {
+  id: string
+  nombre: string
+  gestion: number
+  estado: string
+  descripcionBreve: string
+  fechas: string
+  categorias: { id: string; nombre: string }[]
+}
+
+type HomeAviso = {
+  id: string
+  titulo: string
+  descripcion: string
+  tipo: 'Importante' | 'Urgente' | 'Info'
+  fecha: string
+}
+
+const inicioLoading = ref(false)
+const inicioError = ref<string | null>(null)
+const aficheUrl = ref<string | null>(null)
+const convocatoriasData = ref<HomeConvocatoria[]>(convocatoriasMock)
+const avisosData = ref<HomeAviso[]>(avisosMock)
+const hasBackendConvocatoria = ref(false)
+const inicioLoadedOk = ref(false)
+const publicStore = usePublicStore()
+
+const mapAvisoTipo = (tipo: string): HomeAviso['tipo'] => {
+  const t = (tipo || '').toLowerCase()
+  if (t.includes('urg')) return 'Urgente'
+  if (t.includes('imp')) return 'Importante'
+  return 'Info'
+}
+
+const formatFechas = (dto: ConvocatoriaResponseDTO): string => {
+  const start = dto.inicio_olimpiadas
+  const end = dto.fin_olimpiadas
+  if (start || end) {
+    return [start, end].filter(Boolean).join(' - ')
+  }
+  const i = dto.fecha_inicio_inscripcion
+  const f = dto.fecha_fin_inscripcion
+  if (i || f) {
+    const iTxt = i ? new Date(i).toLocaleDateString() : ''
+    const fTxt = f ? new Date(f).toLocaleDateString() : ''
+    return [iTxt, fTxt].filter(Boolean).join(' - ')
+  }
+  return ''
+}
+
+const mapCategorias = (categorias: CategoriaResumenDTO[]): HomeConvocatoria['categorias'] => {
+  return (categorias ?? []).map((c, index) => ({
+    id: String(c.id_categoria ?? `${c.curso}-${index}`),
+    nombre: c.nombre_categoria ?? c.nombre_convocatoria ?? `${c.curso} ${c.nivel}`,
+  }))
+}
+
+const mapConvocatoria = (dto: ConvocatoriaResponseDTO, categorias: CategoriaResumenDTO[] = []): HomeConvocatoria => {
+  return {
+    id: String(dto.id_convocatoria),
+    nombre: dto.nombre_convocatoria,
+    gestion: dto.gestion,
+    estado: dto.estado,
+    descripcionBreve: dto.descripcion ?? '',
+    fechas: formatFechas(dto),
+    categorias: mapCategorias(categorias)
+  }
+}
+
+const mapAviso = (dto: AvisoInicioDTO, index: number): HomeAviso => {
+  const rawDate = dto.fecha_publicacion
+  const dateText = rawDate ? new Date(rawDate).toLocaleDateString() : ''
+  return {
+    id: String(index),
+    titulo: dto.titulo,
+    descripcion: dto.descripcion,
+    tipo: mapAvisoTipo(dto.tipo),
+    fecha: dateText
+  }
+}
+
+// --- Hero Carousel Logic ---
 const activeConv = computed(() => {
-  return convocatoriasMock.find(c => c.estado === 'ACTIVA') || convocatoriasMock[0]
+  const list = convocatoriasData.value
+  return list.find(c => c.estado === 'INSCRIPCION EN CURSO') || list.find(c => c.estado === 'ACTIVA') || list[0]
 })
+
+const showPreinscripcion = computed(() => {
+  const estado = (activeConv.value?.estado as string) ?? ''
+  return hasBackendConvocatoria.value && estado === 'INSCRIPCION EN CURSO'
+})
+
+const slides = computed(() => {
+  const hasConv = hasBackendConvocatoria.value && !!activeConv.value
+  return [
+    {
+      id: 1,
+      image: '/inicio-1.jpg',
+      isInfo: true,
+      title: hasConv ? activeConv.value.nombre : 'Olimpiada Paceña de Estadística OPE',
+      subtitle: hasConv ? `Gestión ${activeConv.value.gestion} - ${activeConv.value.estado}` : 'OPE',
+      desc: hasConv ? activeConv.value.descripcionBreve : 'Fomentando el pensamiento lógico, matemático y analítico. Un espacio de excelencia académica para la juventud boliviana, organizado por la UMSA.',
+    },
+    {
+      id: 2,
+      image: '/inicio-2.jpg',
+      isInfo: false,
+      title: 'Análisis',
+      desc: 'Desarrolla habilidades críticas para interpretar y modelar datos del mundo real, fomentando decisiones basadas en evidencia.',
+    },
+    {
+      id: 3,
+      image: '/inicio-3.jpg',
+      isInfo: false,
+      title: 'Conocimiento',
+      desc: 'Fortalece tus bases matemáticas y estadísticas, accediendo a herramientas fundamentales para el avance científico y tecnológico.',
+    },
+    {
+      id: 4,
+      image: '/inicio-4.jpg',
+      isInfo: false,
+      title: 'Competencia',
+      desc: 'Mide tus capacidades en un entorno de sano desafío, compartiendo y compitiendo con estudiantes de alto rendimiento de toda la región.',
+    },
+    {
+      id: 5,
+      image: '/inicio-5.jpg',
+      isInfo: false,
+      title: 'Excelencia',
+      desc: 'Alcanza tu máximo potencial académico. La Olimpiada promueve el rigor, la disciplina y la excelencia en el estudio de la estadística.',
+    }
+  ]
+})
+
+const currentSlide = ref(0)
+let timer: ReturnType<typeof setInterval> | null = null
+
+const typedText = ref('')
+let typeInterval: ReturnType<typeof setInterval> | null = null
+let delayTimeout: ReturnType<typeof setTimeout> | null = null
+
+const currentDescription = computed(() => {
+  if (slides.value[currentSlide.value].isInfo) {
+    if (hasBackendConvocatoria.value && activeConv.value) return activeConv.value.descripcionBreve
+    return 'Fomentando el pensamiento lógico, matemático y analítico. Un espacio de excelencia académica para la juventud boliviana, organizado por la UMSA.'
+  }
+  return slides.value[currentSlide.value].desc
+})
+
+const startTypewriter = () => {
+  if (typeInterval) clearInterval(typeInterval)
+  if (delayTimeout) clearTimeout(delayTimeout)
+  typedText.value = ''
+  
+  delayTimeout = setTimeout(() => {
+    let i = 0
+    const text = currentDescription.value
+    typeInterval = setInterval(() => {
+      if (i < text.length) {
+        typedText.value += text.charAt(i)
+        i++
+      } else {
+        if (typeInterval) clearInterval(typeInterval)
+      }
+    }, 20)
+  }, 800)
+}
+
+watch(currentSlide, startTypewriter)
+
+const nextSlide = () => {
+  currentSlide.value = (currentSlide.value + 1) % slides.value.length
+}
+
+const loadInicio = async () => {
+  inicioLoading.value = true
+  inicioError.value = null
+  try {
+    const dto = await publicStore.loadInicio()
+
+    const conv = dto.convocatoria ? [mapConvocatoria(dto.convocatoria, dto.categorias)] : []
+    hasBackendConvocatoria.value = conv.length > 0
+    inicioLoadedOk.value = true
+    convocatoriasData.value = conv
+    avisosData.value = dto.avisos?.length ? dto.avisos.map(mapAviso) : []
+    aficheUrl.value = dto.material_principal?.enlace_acceso ?? null
+  } catch (err) {
+    // Preserve existing UI by falling back to mocks.
+    inicioError.value = toApiError(err).message
+    inicioLoadedOk.value = false
+    hasBackendConvocatoria.value = false
+    convocatoriasData.value = convocatoriasMock
+    avisosData.value = avisosMock
+  } finally {
+    inicioLoading.value = false
+  }
+}
+
+onMounted(() => {
+  void loadInicio()
+  startTypewriter()
+  timer = setInterval(nextSlide, 15000)
+})
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+  if (typeInterval) clearInterval(typeInterval)
+  if (delayTimeout) clearTimeout(delayTimeout)
+})
+
+// --- Avisos Carousel Logic ---
+const avisosContainerRef = ref<HTMLElement | null>(null)
+const focusedAviso = ref(0)
+
+let isScrolling = false
+const handleWheel = (e: WheelEvent) => {
+  e.preventDefault()
+  if (isScrolling) return
+
+  if (e.deltaY > 0 && focusedAviso.value < avisosData.value.length - 1) {
+    focusedAviso.value++
+    scrollToFocused()
+  } else if (e.deltaY < 0 && focusedAviso.value > 0) {
+    focusedAviso.value--
+    scrollToFocused()
+  }
+}
+
+const scrollToFocused = () => {
+  isScrolling = true
+  const container = avisosContainerRef.value
+  if (!container) return
+  const item = container.children[focusedAviso.value] as HTMLElement
+  if (item) {
+    const isVertical = window.innerWidth >= 1024
+    if (isVertical) {
+      container.scrollTo({ top: item.offsetTop - container.offsetTop, behavior: 'smooth' })
+    } else {
+      container.scrollTo({ left: item.offsetLeft - container.offsetLeft, behavior: 'smooth' })
+    }
+  }
+  setTimeout(() => { isScrolling = false }, 500)
+}
+
 </script>
 
 <template>
   <div class="w-full bg-background min-h-screen">
-    <!-- Hero Section Institucional -->
-    <section class="relative bg-primary overflow-hidden text-white py-20 lg:py-28 border-b-[6px] border-accent">
-      <!-- Patrón geométrico sutil (malla de puntos) -->
-      <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px]"></div>
+    
+    <!-- Hero Section Completo con Carrusel y Avisos -->
+    <section class="relative w-full h-screen min-h-[700px] flex flex-col lg:flex-row overflow-hidden bg-primary text-white border-b-[6px] border-accent">
       
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
-        <div class="flex-1 text-center lg:text-left">
-          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-white text-sm font-semibold mb-8 border border-white/20">
-            <span v-if="activeConv.estado === 'ACTIVA'" class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
-              Gestión Activa: {{ activeConv.gestion }}
-            </span>
-            <span v-else>Última Convocatoria Finalizada</span>
+      <!-- Fondo y Filtros -->
+      <div class="absolute inset-0 z-0">
+        <!-- Imágenes del Carrusel -->
+        <transition-group name="fade" tag="div" class="w-full h-full relative bg-primary">
+          <div v-for="(slide, idx) in slides" :key="slide.id" v-show="currentSlide === idx" class="absolute inset-0 w-full h-full">
+            <img :src="slide.image" class="w-full h-full object-cover object-center" alt="Olimpiada Paceña de Estadística" />
           </div>
-          
-          <h1 class="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 leading-tight tracking-tight">
-            Olimpiada Paceña de <br class="hidden md:block"/>Estadística
-          </h1>
-          <p class="text-lg md:text-xl text-blue-100 mb-10 max-w-2xl mx-auto lg:mx-0 font-sans font-light">
-            Fomentando el pensamiento lógico, matemático y analítico. Un espacio de excelencia académica para la juventud boliviana, organizado por la UMSA.
-          </p>
-          
-          <div class="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-            <Button
-              v-if="activeConv.estado === 'ACTIVA'"
-              as="router-link"
-              to="/inscripcion"
-              variant="accent"
-              size="lg"
-              class="w-full sm:w-auto px-8 py-4 text-lg font-bold shadow-lg flex items-center justify-center gap-2 hover:scale-105 transition-transform"
-            >
-              Inscribirse Ahora
-              <ArrowRight class="w-5 h-5" />
-            </Button>
-            <Button
-              as="router-link"
-              :to="`/convocatoria/${activeConv.id}`"
-              variant="ghost"
-              size="lg"
-              class="w-full sm:w-auto px-8 py-4 text-lg font-semibold flex items-center justify-center gap-2 bg-transparent border border-white text-white hover:bg-white hover:text-primary transition-all"
-            >
-              Bases de la Convocatoria
-            </Button>
-          </div>
+        </transition-group>
+        
+        <!-- Gradiente Azul 
+             Mobile: Filtro azul completo y suave
+             PC: Transición de izquierda a derecha (Izquierda: 0% opacidad hasta más a la derecha, Centro: degrade, Derecha: sólido primary)
+        -->
+        <div class="absolute inset-0 bg-primary/70 lg:bg-transparent lg:bg-gradient-to-r lg:from-transparent lg:from-30% lg:via-primary/90 lg:via-65% lg:to-primary lg:to-85%"></div>
+      </div>
+
+      <!-- Lado Izquierdo: Información Dinámica -->
+      <div class="relative z-10 flex-1 flex flex-col justify-center px-6 lg:px-16 pt-24 pb-8 lg:py-0 w-full lg:w-4/5">
+        
+        <div class="min-h-[280px] lg:min-h-[340px] flex flex-col justify-end pb-6">
+          <transition name="fade" mode="out-in">
+            <div :key="currentSlide">
+              
+              <!-- Slide de Información Principal -->
+              <template v-if="slides[currentSlide].isInfo">
+                <div v-if="hasBackendConvocatoria && activeConv">
+                  <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white text-sm font-semibold mb-6 border border-white/20 shadow-sm">
+                    <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse" v-if="activeConv.estado === 'ACTIVA'" />
+                    Gestión: {{ activeConv.gestion }} - {{ activeConv.estado }}
+                  </div>
+                  <h1 class="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 leading-tight drop-shadow-xl">
+                    {{ activeConv.nombre }}
+                  </h1>
+                  <p class="text-lg md:text-xl text-white font-sans drop-shadow-md leading-relaxed min-h-[80px]">
+                    {{ typedText }}<span class="animate-pulse opacity-70">|</span>
+                  </p>
+                </div>
+                <div v-else>
+                  <h1 class="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-6 leading-tight drop-shadow-xl">
+                    Olimpiada Paceña de <br class="hidden md:block"/>Estadística OPE
+                  </h1>
+                  <p class="text-lg md:text-xl text-white font-sans drop-shadow-md leading-relaxed min-h-[80px]">
+                    {{ typedText }}<span class="animate-pulse opacity-70">|</span>
+                  </p>
+                </div>
+              </template>
+              
+              <!-- Resto de Slides (Análisis, Conocimiento, etc.) -->
+              <template v-else>
+                <h1 class="text-5xl md:text-6xl lg:text-7xl font-heading font-bold mb-6 leading-tight drop-shadow-xl">
+                  {{ slides[currentSlide].title }}
+                </h1>
+                <p class="text-lg md:text-xl text-white font-sans drop-shadow-md leading-relaxed min-h-[80px]">
+                  {{ typedText }}<span class="animate-pulse opacity-70">|</span>
+                </p>
+              </template>
+              
+            </div>
+          </transition>
+        </div>
+
+        <!-- Botones de Acción (Siempre visibles y estáticos) -->
+        <div class="flex flex-col sm:flex-row gap-4 relative z-20">
+          <Button 
+            v-if="showPreinscripcion"
+            as="router-link" 
+            to="/inscripcion" 
+            variant="accent"
+            size="lg"
+            class="px-8 py-4 text-lg font-bold shadow-xl transition-all hover:scale-105 rounded-xl h-auto"
+          >
+            Ir a pre-inscripción
+            <ArrowRight class="w-5 h-5 ml-2" />
+          </Button>
+          <Button 
+            v-if="hasBackendConvocatoria && activeConv"
+            as="router-link" 
+            :to="`/convocatoria/${activeConv.id}`" 
+            variant="ghost"
+            size="lg"
+            class="bg-transparent border-white text-white hover:bg-white hover:text-black px-8 py-4 text-lg font-semibold backdrop-blur-sm transition-all rounded-xl h-auto"
+          >
+            Ver detalles
+          </Button>
+          <Button 
+            v-if="!hasBackendConvocatoria"
+            as="router-link" 
+            to="/acerca" 
+            variant="ghost"
+            size="lg"
+            class="bg-transparent border-white text-white hover:bg-white hover:text-black px-8 py-4 text-lg font-semibold backdrop-blur-sm transition-all rounded-xl h-auto"
+          >
+            Acerca De
+            <ArrowRight class="w-5 h-5 ml-2" />
+          </Button>
         </div>
         
-        <!-- Elemento Gráfico Institucional -->
-        <div class="flex-1 hidden lg:flex justify-center">
-          <div class="relative w-full max-w-md aspect-square bg-primary-dark/50 rounded-2xl border border-white/10 flex items-center justify-center shadow-2xl p-8">
-             <div class="absolute inset-0 bg-gradient-to-br from-secondary/20 to-transparent rounded-2xl"></div>
-             <div class="relative z-10 grid grid-cols-2 gap-4 w-full h-full">
-                <div class="bg-white/5 border border-white/10 rounded-xl flex items-center justify-center flex-col gap-3">
-                   <BarChart2 class="w-12 h-12 text-secondary" />
-                   <span class="text-sm font-medium text-blue-100">Análisis</span>
+        <!-- Indicadores del Carrusel -->
+        <div class="absolute bottom-8 left-6 lg:left-16 flex gap-3 z-10 hidden sm:flex">
+          <button 
+            v-for="(slide, idx) in slides" 
+            :key="slide.id" 
+            @click="currentSlide = idx" 
+            class="w-3 h-3 rounded-full transition-all duration-300 shadow-sm"
+            :class="currentSlide === idx ? 'bg-yellow-400 w-8' : 'bg-white/50 hover:bg-white/80'"
+            aria-label="Ir a diapositiva"
+          ></button>
+        </div>
+      </div>
+
+      <!-- Lado Derecho (PC) / Abajo (Mobile): Avisos -->
+      <div class="relative z-10 w-full lg:w-1/5 lg:min-w-[320px] bg-primary/20 lg:bg-transparent flex flex-col pt-8 pb-12 lg:py-24 pl-4 pr-4 lg:pl-8 lg:pr-6 border-t lg:border-t-0 lg:border-l border-white/10 lg:backdrop-blur-none backdrop-blur-sm">
+        
+        <div class="flex items-center gap-3 mb-6 shrink-0 px-2 lg:px-0">
+          <AlertCircle class="w-7 h-7 text-yellow-400 drop-shadow-sm" />
+          <h2 class="text-2xl font-heading font-bold text-white drop-shadow">Avisos</h2>
+        </div>
+
+        <!-- Contenedor con Scroll para Avisos -->
+        <div 
+          class="flex lg:flex-col gap-0 lg:-gap-2 overflow-hidden lg:h-[calc(100vh-250px)] pb-6 lg:pb-[70vh] px-4 lg:px-0 pt-4"
+          @wheel.prevent="handleWheel"
+          ref="avisosContainerRef"
+        >
+          <div v-if="inicioLoadedOk && avisosData.length === 0" class="rounded-2xl border border-white/20 bg-white/10 p-6 text-sm font-semibold text-white/80">
+            Sin avisos por el momento.
+          </div>
+          <div 
+            v-for="(aviso, i) in avisosData" 
+            :key="aviso.id" 
+            class="shrink-0 w-[300px] lg:w-full transition-all duration-500 origin-center cursor-pointer"
+            :class="focusedAviso === i ? 'scale-100 opacity-100 z-10 drop-shadow-xl' : 'scale-75 opacity-40 hover:opacity-80'"
+            @click="focusedAviso = i; scrollToFocused()"
+          >
+            <div class="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative overflow-hidden group hover:bg-white/15 transition-colors h-full flex flex-col">
+              <div :class="[
+                'absolute left-0 top-0 bottom-0 w-1.5',
+                aviso.tipo === 'Urgente' ? 'bg-danger' : 
+                aviso.tipo === 'Importante' ? 'bg-warning' : 'bg-secondary'
+              ]"></div>
+              <div class="pl-3 flex-1">
+                <div class="flex items-center justify-between mb-3">
+                  <span :class="[
+                    'text-xs font-bold uppercase tracking-widest',
+                    aviso.tipo === 'Urgente' ? 'text-red-400' : 
+                    aviso.tipo === 'Importante' ? 'text-yellow-400' : 'text-blue-300'
+                  ]">
+                    {{ aviso.tipo }}
+                  </span>
+                  <span class="text-xs text-white/60 font-medium">{{ aviso.fecha }}</span>
                 </div>
-                <div class="bg-white/5 border border-white/10 rounded-xl flex items-center justify-center flex-col gap-3">
-                   <BookOpen class="w-12 h-12 text-accent" />
-                   <span class="text-sm font-medium text-blue-100">Conocimiento</span>
-                </div>
-                <div class="bg-white/5 border border-white/10 rounded-xl flex items-center justify-center flex-col gap-3">
-                   <Users class="w-12 h-12 text-blue-200" />
-                   <span class="text-sm font-medium text-blue-100">Competencia</span>
-                </div>
-                <div class="bg-white/5 border border-white/10 rounded-xl flex items-center justify-center flex-col gap-3">
-                   <Award class="w-12 h-12 text-success" />
-                   <span class="text-sm font-medium text-blue-100">Excelencia</span>
-                </div>
-             </div>
+                <h4 class="font-heading font-bold text-white mb-2 text-lg leading-tight">{{ aviso.titulo }}</h4>
+                <p class="text-sm text-white/80 line-clamp-3 leading-relaxed">{{ aviso.descripcion }}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Contenido Principal -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 lg:grid-cols-12 gap-10">
+    <!-- Contenido Restante de la Página -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 gap-10">
       
-      <!-- Columna Izquierda: Convocatoria -->
-      <div class="lg:col-span-8 space-y-8">
-        <div class="flex items-center gap-3 border-b border-gray-200 pb-4">
+      <!-- Detalle de Convocatoria Vigente (Reajustado a ocupar todo el ancho) -->
+      <div v-if="hasBackendConvocatoria && activeConv" class="space-y-8 max-w-4xl mx-auto w-full">
+        <div class="flex items-center gap-3 border-b border-gray-200 pb-4 justify-center md:justify-start">
           <BookOpen class="w-6 h-6 text-primary" />
-          <h2 class="text-2xl font-heading font-bold text-text-main">Convocatoria Vigente</h2>
+          <h2 class="text-2xl font-heading font-bold text-text-main">Detalles de la Convocatoria</h2>
         </div>
         
         <Card class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <CardContent class="p-0">
             <div class="md:flex">
               <!-- Área de Descarga del Afiche -->
-              <div class="md:w-1/3 bg-slate-50 relative flex items-center justify-center p-8 border-r border-gray-200">
-                <div class="w-full aspect-[3/4] bg-white border border-gray-200 shadow-sm flex flex-col items-center justify-center text-text-muted p-4 text-center rounded hover:border-primary transition-colors cursor-pointer group">
+              <div class="md:w-1/3 bg-slate-50 relative flex items-center justify-center p-8 border-b md:border-b-0 md:border-r border-gray-200">
+                <div class="w-full max-w-[200px] aspect-[3/4] bg-white border border-gray-200 shadow-sm flex flex-col items-center justify-center text-text-muted p-4 text-center rounded hover:border-primary transition-colors cursor-pointer group">
                   <Download class="w-10 h-10 mb-3 text-secondary group-hover:text-primary transition-colors" />
                   <span class="text-sm font-semibold text-text-main">Afiche Oficial PDF</span>
                   <span class="text-xs mt-1">Descargar (2.4 MB)</span>
@@ -169,48 +504,6 @@ const activeConv = computed(() => {
           </CardContent>
         </Card>
       </div>
-
-      <!-- Columna Derecha: Boletín Institucional -->
-      <div class="lg:col-span-4 space-y-6">
-        <div class="flex items-center gap-3 border-b border-gray-200 pb-4">
-          <AlertCircle class="w-6 h-6 text-accent" />
-          <h2 class="text-xl font-heading font-bold text-text-main">Boletín Oficial</h2>
-        </div>
-        
-        <div class="flex flex-col gap-4">
-          <div 
-            v-for="aviso in avisosMock" 
-            :key="aviso.id" 
-            class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden"
-          >
-            <!-- Línea indicadora de estado -->
-            <div :class="[
-              'absolute left-0 top-0 bottom-0 w-1.5',
-              aviso.tipo === 'Urgente' ? 'bg-danger' : 
-              aviso.tipo === 'Importante' ? 'bg-warning' : 'bg-secondary'
-            ]"></div>
-            
-            <div class="pl-2">
-              <div class="flex items-center justify-between mb-2">
-                <span :class="[
-                  'text-xs font-bold uppercase tracking-wider',
-                  aviso.tipo === 'Urgente' ? 'text-danger' : 
-                  aviso.tipo === 'Importante' ? 'text-warning' : 'text-secondary'
-                ]">
-                  {{ aviso.tipo }}
-                </span>
-                <span class="text-xs text-text-muted font-medium">{{ aviso.fecha }}</span>
-              </div>
-              <h4 class="font-heading font-semibold text-text-main mb-1.5 text-sm">{{ aviso.titulo }}</h4>
-              <p class="text-sm text-text-muted line-clamp-2 leading-relaxed">{{ aviso.descripcion }}</p>
-            </div>
-          </div>
-          
-          <Button variant="outline" class="w-full mt-2 text-sm">
-            Historial de Avisos
-          </Button>
-        </div>
-      </div>
     </div>
 
     <!-- Sección Institucional -->
@@ -225,7 +518,7 @@ const activeConv = computed(() => {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div class="p-6 bg-background rounded-xl border border-gray-100 flex flex-col items-center text-center">
+          <div class="p-6 bg-background rounded-xl border border-gray-100 flex flex-col items-center text-center hover:border-primary/20 transition-colors">
             <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-secondary mb-4 shadow-sm">
               <Target class="w-6 h-6" />
             </div>
@@ -233,7 +526,7 @@ const activeConv = computed(() => {
             <p class="text-sm text-text-muted">Desarrollar habilidades críticas para la resolución de problemas mediante la aplicación de herramientas estadísticas y matemáticas.</p>
           </div>
 
-          <div class="p-6 bg-background rounded-xl border border-gray-100 flex flex-col items-center text-center">
+          <div class="p-6 bg-background rounded-xl border border-gray-100 flex flex-col items-center text-center hover:border-primary/20 transition-colors">
             <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-secondary mb-4 shadow-sm">
               <Users class="w-6 h-6" />
             </div>
@@ -241,7 +534,7 @@ const activeConv = computed(() => {
             <p class="text-sm text-text-muted">Incentivar la participación de estudiantes de secundaria (1ro a 6to) de todos los sistemas educativos en un entorno académico riguroso.</p>
           </div>
 
-          <div class="p-6 bg-background rounded-xl border border-gray-100 flex flex-col items-center text-center">
+          <div class="p-6 bg-background rounded-xl border border-gray-100 flex flex-col items-center text-center hover:border-primary/20 transition-colors">
             <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-secondary mb-4 shadow-sm">
               <GraduationCap class="w-6 h-6" />
             </div>
@@ -251,5 +544,18 @@ const activeConv = computed(() => {
         </div>
       </div>
     </section>
+
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.8s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

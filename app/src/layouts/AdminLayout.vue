@@ -10,6 +10,7 @@ import {
   Building2, 
   Users, 
   Bell, 
+  Mail,
   UsersRound, 
   BarChart4, 
   LogOut,
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Colegios', href: '/admin/colegios', icon: Building2 },
   { name: 'Estudiantes', href: '/admin/estudiantes', icon: Users },
   { name: 'Avisos', href: '/admin/avisos', icon: Bell },
+  { name: 'Contactos', href: '/admin/contactos', icon: Mail },
   { name: 'Colaboradores', href: '/admin/colaboradores', icon: UsersRound },
   { name: 'Auditoría', href: '/admin/auditoria', icon: BarChart4 },
 ]

@@ -40,12 +40,6 @@ export const adminRoutes: RouteRecordRaw[] = [
         meta: { title: 'Admin - Convocatorias' }
       },
       {
-        path: 'convocatoria/visualizar/:id',
-        name: 'admin-convocatoria-visualizacion',
-        component: () => import('@/modules/admin/pages/AdminConvocatoriaVisualizacionPage.vue'),
-        meta: { title: 'Admin - Visualizacion Convocatoria' }
-      },
-      {
         path: 'material',
         name: 'admin-material',
         component: () => import('@/modules/admin/pages/AdminMaterialPage.vue'),
@@ -68,6 +62,12 @@ export const adminRoutes: RouteRecordRaw[] = [
         name: 'admin-avisos',
         component: () => import('@/modules/admin/pages/AdminAvisosPage.vue'),
         meta: { title: 'Admin - Avisos' }
+      },
+      {
+        path: 'contactos',
+        name: 'admin-contactos',
+        component: () => import('@/modules/admin/pages/AdminContactosPage.vue'),
+        meta: { title: 'Admin - Mensajes de Contacto' }
       },
       {
         path: 'colaboradores',

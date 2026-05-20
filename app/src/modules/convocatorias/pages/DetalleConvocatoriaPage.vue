@@ -1,11 +1,14 @@
-<script setup lang="ts">
-import { computed, ref } from 'vue'
+﻿<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { 
   FileText, Download, Calendar, Monitor, MapPin, ArrowRight, Trophy, Users, 
-  ChevronDown, Video, Link as LinkIcon, File, InfoIcon
+  ChevronDown, Video, Link as LinkIcon, File, InfoIcon, AlertCircle, CheckCircle
 } from 'lucide-vue-next'
 import { convocatoriasMock } from '@/modules/convocatorias/data/convocatorias.data'
+import { PublicService } from '@/modules/public/services/public.service'
+import { usePublicStore } from '@/modules/public/stores/public.store'
+import type { CategoriaResumenDTO, ConvocatoriaDetalleDTO, FaseResponseDTO, MaterialResponseDTO } from '@/modules/public/types/public.api'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
@@ -13,12 +16,66 @@ import Button from '@/shared/components/ui/atoms/Button.vue'
 import CategorySymbol from '@/shared/components/ui/atoms/CategorySymbol.vue'
 
 const route = useRoute()
+const publicStore = usePublicStore()
 const activeTab = ref(0)
 const expandedPhases = ref<Record<string, boolean>>({})
+const detalle = ref<ConvocatoriaDetalleDTO | null>(null)
+const isLoading = ref(false)
+const loadError = ref<string | null>(null)
+const fasesByCategoria = ref<Record<string, FaseResponseDTO[]>>({})
+const materialesByFase = ref<Record<string, MaterialResponseDTO[]>>({})
+
+const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : ''
+const formatRange = (start?: string | null, end?: string | null) => [formatDate(start), formatDate(end)].filter(Boolean).join(' - ')
+const categoriaId = (cat: CategoriaResumenDTO, index: number) => String(cat.id_categoria ?? `${cat.curso}-${index}`)
+const categoriaNombre = (cat: CategoriaResumenDTO) => cat.nombre_categoria ?? cat.nombre_convocatoria ?? `${cat.curso} ${cat.nivel}`
+
+const mapMaterial = (mat: MaterialResponseDTO) => ({
+  id: String(mat.id_material),
+  nombre: mat.nombre_material,
+  url: mat.enlace_acceso,
+  tipo: mat.tipo_material === 'VIDEO' ? 'Video' : mat.tipo_material === 'OTRO' ? 'Documento' : 'PDF',
+  tamano: '',
+})
+
+const mapFase = (fase: FaseResponseDTO) => ({
+  id: String(fase.id_fase),
+  nombre: fase.nombre_fase,
+  descripcion: fase.descripcion ?? 'Sin descripcion registrada.',
+  tipo: fase.estado === 'LISTA' ? 'Prueba' : 'Preparación',
+  subtipo: '',
+  fechas: fase.estado,
+  modalidad: fase.modalidad ? fase.modalidad.charAt(0) + fase.modalidad.slice(1).toLowerCase() : '',
+  materiales: (materialesByFase.value[String(fase.id_fase)] ?? []).map(mapMaterial),
+})
 
 const conv = computed(() => {
-  const id = route.params.id as string
-  return convocatoriasMock.find(c => c.id === id)
+  if (!detalle.value?.convocatoria) {
+    const fallback = convocatoriasMock.find(c => c.id === route.params.id)
+    if (loadError.value && fallback) return fallback
+    return null
+  }
+
+  const dto = detalle.value.convocatoria
+  return {
+    id: String(dto.id_convocatoria),
+    nombre: dto.nombre_convocatoria,
+    gestion: dto.gestion,
+    estado: dto.estado,
+    descripcionBreve: dto.descripcion ?? '',
+    descripcionCompleta: dto.descripcion ?? 'Sin descripcion registrada.',
+    fechas: formatRange(dto.inicio_olimpiadas, dto.fin_olimpiadas) || formatRange(dto.fecha_inicio_inscripcion, dto.fecha_fin_inscripcion),
+    categorias: detalle.value.categorias.map((cat, index) => {
+      const id = categoriaId(cat, index)
+      return {
+        id,
+        nombre: categoriaNombre(cat),
+        fases: (cat.id_categoria ? fasesByCategoria.value[String(cat.id_categoria)] ?? [] : []).map(mapFase),
+        recursos: [],
+      }
+    }),
+    materialGeneral: detalle.value.materiales.map(mapMaterial),
+  }
 })
 
 const activeCategory = computed(() => {
@@ -26,12 +83,52 @@ const activeCategory = computed(() => {
   return conv.value.categorias[activeTab.value] || null
 })
 
+const aficheUrl = computed(() => detalle.value?.afiche?.enlace_acceso ?? null)
+const convocatoriaDocumentoUrl = computed(() => detalle.value?.convocatoria_documento?.enlace_acceso ?? null)
+const reglamentoUrl = computed(() => detalle.value?.reglamento?.enlace_acceso ?? null)
+const primaryVisualUrl = computed(() => aficheUrl.value ?? convocatoriaDocumentoUrl.value)
+const primaryVisualLabel = computed(() => aficheUrl.value ? 'Afiche oficial' : convocatoriaDocumentoUrl.value ? 'Convocatoria oficial' : 'Sin afiche/convocatoria')
+const showInscripcion = computed(() => conv.value?.estado === 'INSCRIPCION EN CURSO')
+
+const loadDetalle = async () => {
+  const id = Number(route.params.id)
+  if (!Number.isFinite(id)) return
+  isLoading.value = true
+  loadError.value = null
+  try {
+    const data = await publicStore.loadDetalle(id)
+    detalle.value = data
+
+    const catsWithId = data.categorias.filter((cat) => cat.id_categoria != null)
+    const faseEntries = await Promise.all(catsWithId.map(async (cat) => {
+      const res = await PublicService.getFasesPorCategoria(cat.id_categoria as number)
+      return [String(cat.id_categoria), res.data] as const
+    }))
+    fasesByCategoria.value = Object.fromEntries(faseEntries)
+
+    const fases = faseEntries.flatMap(([, items]) => items)
+    const materialEntries = await Promise.all(fases.map(async (fase) => {
+      const res = await PublicService.getMaterialesPorFase(fase.id_fase)
+      return [String(fase.id_fase), res.data] as const
+    }))
+    materialesByFase.value = Object.fromEntries(materialEntries)
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : 'No se pudo cargar la convocatoria.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const togglePhase = (phaseId: string) => {
   expandedPhases.value = {
     ...expandedPhases.value,
     [phaseId]: !expandedPhases.value[phaseId]
   }
 }
+
+onMounted(() => {
+  void loadDetalle()
+})
 </script>
 
 <template>
@@ -59,7 +156,7 @@ const togglePhase = (phaseId: string) => {
               </Badge>
               <Badge variant="outline" class="px-3 py-1 text-sm font-bold uppercase tracking-wider rounded border bg-info/10 text-info border-blue-200 hover:bg-info/10 flex items-center gap-1.5">
                 <Calendar class="w-4 h-4" />
-                Gestión {{ conv.gestion }}
+                GestiÃ³n {{ conv.gestion }}
               </Badge>
             </div>
             <h1 class="text-4xl md:text-5xl font-heading font-extrabold mb-4 leading-tight text-white drop-shadow-md">
@@ -70,7 +167,7 @@ const togglePhase = (phaseId: string) => {
             </p>
           </div>
           
-          <div class="shrink-0 pt-4 md:pt-0" v-if="conv?.estado === 'ACTIVA'">
+          <div class="shrink-0 pt-4 md:pt-0" v-if="showInscripcion">
             <Button 
               as="router-link"
               to="/inscripcion"
@@ -78,7 +175,7 @@ const togglePhase = (phaseId: string) => {
               class="inline-flex items-center gap-3 bg-accent hover:bg-accent/90 text-white px-8 py-6 rounded-xl font-bold transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(184,77,53,0.4)] h-auto"
             >
               <Trophy class="w-6 h-6" />
-              Inscríbete ahora
+              InscrÃ­bete ahora
             </Button>
           </div>
         </div>
@@ -89,8 +186,8 @@ const togglePhase = (phaseId: string) => {
       <template v-if="!conv">
         <div class="flex-1 flex flex-col items-center justify-center min-h-[60vh] bg-gray-50">
           <AlertCircle class="w-16 h-16 text-text-muted mb-6" />
-          <h1 class="text-3xl font-heading font-bold text-text-main mb-4">Convocatoria no encontrada</h1>
-          <p class="text-lg text-text-muted mb-8 max-w-md text-center">La convocatoria que buscas no existe o ha sido eliminada del sistema.</p>
+          <h1 class="text-3xl font-heading font-bold text-text-main mb-4">{{ isLoading ? 'Cargando convocatoria' : 'Convocatoria no encontrada' }}</h1>
+          <p class="text-lg text-text-muted mb-8 max-w-md text-center">{{ isLoading ? 'Consultando datos oficiales.' : 'La convocatoria que buscas no existe o ha sido eliminada del sistema.' }}</p>
           <Button 
             as="router-link"
             to="/convocatorias"
@@ -113,7 +210,7 @@ const togglePhase = (phaseId: string) => {
               <CardContent class="p-8 sm:p-10">
                 <h2 class="text-2xl font-heading font-bold text-text-main mb-6 flex items-center gap-3">
                   <InfoIcon class="w-6 h-6 text-primary" />
-                  Descripción General
+                  DescripciÃ³n General
                 </h2>
                 <div class="text-text-muted">
                   <p>{{ conv.descripcionCompleta }}</p>
@@ -121,12 +218,12 @@ const togglePhase = (phaseId: string) => {
               </CardContent>
             </Card>
 
-            <!-- Categorías y Fases -->
+            <!-- CategorÃ­as y Fases -->
             <Card class="rounded-2xl shadow-sm border-gray-100 overflow-hidden">
               <div class="bg-gray-50 border-b border-gray-200 px-8 py-6">
                 <h2 class="text-2xl font-heading font-bold text-text-main flex items-center gap-3">
                   <Users class="w-6 h-6 text-primary" />
-                  Categorías Habilitadas
+                  CategorÃ­as Habilitadas
                 </h2>
               </div>
               
@@ -160,8 +257,8 @@ const togglePhase = (phaseId: string) => {
                           <CardContent class="p-0">
                             <div class="flex flex-wrap items-center gap-3 mb-3">
                               <Badge 
-                                :variant="fase.tipo === 'Preparación' ? 'outline' : 'default'"
-                                :class="`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded border ${fase.tipo === 'Preparación' ? 'bg-warning/10 text-warning hover:bg-warning/10 border-warning/20' : 'bg-info/10 text-info hover:bg-info/10 border-blue-200'}`"
+                                :variant="fase.tipo === 'PreparaciÃ³n' ? 'outline' : 'default'"
+                                :class="`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded border ${fase.tipo === 'PreparaciÃ³n' ? 'bg-warning/10 text-warning hover:bg-warning/10 border-warning/20' : 'bg-info/10 text-info hover:bg-info/10 border-blue-200'}`"
                               >
                                 {{ fase.tipo }}{{ fase.subtipo ? ` - ${fase.subtipo}` : '' }}
                               </Badge>
@@ -215,7 +312,7 @@ const togglePhase = (phaseId: string) => {
                                          <p class="text-sm font-semibold text-text-main group-hover:text-primary transition-colors line-clamp-1">{{ mat.nombre }}</p>
                                          <p class="text-xs text-text-muted flex gap-2">
                                            <span>{{ mat.tipo }}</span>
-                                           <span v-if="mat.tamano">• {{ mat.tamano }}</span>
+                                           <span v-if="mat.tamano">â€¢ {{ mat.tamano }}</span>
                                          </p>
                                        </div>
                                      </div>
@@ -233,7 +330,7 @@ const togglePhase = (phaseId: string) => {
                 <Card v-else class="text-center py-12 bg-gray-50 border-dashed border-gray-200">
                   <CardContent class="p-0 flex flex-col items-center">
                     <Calendar class="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p class="text-text-muted font-medium">No hay fases programadas para esta categoría.</p>
+                    <p class="text-text-muted font-medium">No hay fases programadas para esta categorÃ­a.</p>
                   </CardContent>
                 </Card>
 
@@ -273,7 +370,7 @@ const togglePhase = (phaseId: string) => {
                 </div>
                 <CardContent class="p-8 sm:p-10 bg-white">
                   <p class="text-text-muted mb-6">
-                    A continuación se presenta el material oficial y general para esta convocatoria.
+                    A continuaciÃ³n se presenta el material oficial y general para esta convocatoria.
                   </p>
                   <div class="grid gap-4 sm:grid-cols-2">
                     <a
@@ -296,7 +393,7 @@ const togglePhase = (phaseId: string) => {
                           <p class="font-semibold text-text-main group-hover:text-primary transition-colors line-clamp-1">{{ mat.nombre }}</p>
                           <p class="text-sm text-text-muted flex gap-2">
                             <span>{{ mat.tipo }}</span>
-                            <span v-if="mat.tamano">• {{ mat.tamano }}</span>
+                            <span v-if="mat.tamano">â€¢ {{ mat.tamano }}</span>
                           </p>
                         </div>
                       </div>
@@ -321,27 +418,28 @@ const togglePhase = (phaseId: string) => {
                 <p class="text-sm text-text-muted mb-4">
                   Descarga los documentos oficiales para conocer todos los detalles, temarios y reglamentos de la olimpiada.
                 </p>
-                <Button variant="outline" class="w-full flex items-center justify-between p-6 bg-gray-50 hover:bg-info/10 border border-gray-200 hover:border-blue-200 rounded-xl transition-all group shadow-sm hover:shadow h-auto">
+                <a v-if="primaryVisualUrl" :href="primaryVisualUrl" target="_blank" rel="noreferrer" class="group flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-6 shadow-sm transition-all hover:border-blue-200 hover:bg-info/10 hover:shadow">
                   <div class="flex items-center gap-3">
                     <FileText class="w-5 h-5 text-text-muted group-hover:text-primary" />
-                    <span class="font-semibold text-text-main group-hover:text-primary/90 text-left whitespace-normal">Convocatoria Oficial PDF</span>
+                    <span class="font-semibold text-text-main group-hover:text-primary/90 text-left whitespace-normal">{{ primaryVisualLabel }}</span>
                   </div>
                   <Download class="w-5 h-5 shrink-0 text-text-muted group-hover:text-primary" />
-                </Button>
-                <Button variant="outline" class="w-full flex items-center justify-between p-6 bg-gray-50 hover:bg-info/10 border border-gray-200 hover:border-blue-200 rounded-xl transition-all group shadow-sm hover:shadow h-auto">
+                </a>
+                <div v-else class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-sm font-semibold text-text-muted">Sin afiche/convocatoria</div>
+                <a v-if="convocatoriaDocumentoUrl" :href="convocatoriaDocumentoUrl" target="_blank" rel="noreferrer" class="group flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-6 shadow-sm transition-all hover:border-blue-200 hover:bg-info/10 hover:shadow">
                   <div class="flex items-center gap-3">
                     <BookOpen class="w-5 h-5 text-text-muted group-hover:text-primary" />
-                    <span class="font-semibold text-text-main group-hover:text-primary/90 text-left whitespace-normal">Temario General PDF</span>
+                    <span class="font-semibold text-text-main group-hover:text-primary/90 text-left whitespace-normal">Convocatoria oficial</span>
                   </div>
                   <Download class="w-5 h-5 shrink-0 text-text-muted group-hover:text-primary" />
-                </Button>
-                <Button variant="outline" class="w-full flex items-center justify-between p-6 bg-gray-50 hover:bg-info/10 border border-gray-200 hover:border-blue-200 rounded-xl transition-all group shadow-sm hover:shadow h-auto">
+                </a>
+                <a v-if="reglamentoUrl" :href="reglamentoUrl" target="_blank" rel="noreferrer" class="group flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-6 shadow-sm transition-all hover:border-blue-200 hover:bg-info/10 hover:shadow">
                   <div class="flex items-center gap-3">
                     <CheckCircle class="w-5 h-5 text-text-muted group-hover:text-primary" />
-                    <span class="font-semibold text-text-main group-hover:text-primary/90 text-left whitespace-normal">Reglamento Específico</span>
+                    <span class="font-semibold text-text-main group-hover:text-primary/90 text-left whitespace-normal">Reglamento EspecÃ­fico</span>
                   </div>
                   <Download class="w-5 h-5 shrink-0 text-text-muted group-hover:text-primary" />
-                </Button>
+                </a>
               </CardContent>
             </Card>
 
@@ -353,7 +451,7 @@ const togglePhase = (phaseId: string) => {
                     Resultados Finales
                   </h3>
                   <p class="text-slate-300 text-sm mb-6 leading-relaxed">
-                    Esta convocatoria ha finalizado. Puedes consultar el cuadro de honor y los resultados oficiales de todas las categorías.
+                    Esta convocatoria ha finalizado. Puedes consultar el cuadro de honor y los resultados oficiales de todas las categorÃ­as.
                   </p>
                   <Button 
                     as="router-link"
@@ -371,8 +469,8 @@ const togglePhase = (phaseId: string) => {
             <!-- Need help? -->
             <Card class="bg-info/10 rounded-2xl border-blue-100">
               <CardContent class="p-6">
-                <h4 class="font-heading font-bold text-primary/90 mb-2">¿Tienes dudas?</h4>
-                <p class="text-sm text-blue-800/80 mb-4">Estamos aquí para ayudarte. Contáctanos si necesitas más información sobre la convocatoria.</p>
+                <h4 class="font-heading font-bold text-primary/90 mb-2">Â¿Tienes dudas?</h4>
+                <p class="text-sm text-blue-800/80 mb-4">Estamos aquÃ­ para ayudarte. ContÃ¡ctanos si necesitas mÃ¡s informaciÃ³n sobre la convocatoria.</p>
                 <router-link 
                   to="/contacto" 
                   class="text-sm font-bold text-primary hover:text-primary/90 underline underline-offset-4 flex items-center gap-1"
@@ -389,3 +487,5 @@ const togglePhase = (phaseId: string) => {
     </div>
   </div>
 </template>
+
+

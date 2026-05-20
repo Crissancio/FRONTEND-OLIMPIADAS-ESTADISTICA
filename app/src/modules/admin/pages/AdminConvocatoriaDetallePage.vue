@@ -37,6 +37,7 @@ import { MaterialesService } from '@/modules/convocatorias/services/materiales.s
 import type { CategoriaResponseDTO, NivelEducativo } from '@/modules/convocatorias/types/categorias.api'
 import type { EstadoInscripcion, EstudianteResponseDTO } from '@/modules/convocatorias/types/estudiantes.api'
 import type { MaterialResponseDTO } from '@/modules/convocatorias/types/materiales.api'
+import { toApiError } from '@/app/api/api-error'
 
 type TabKey = 'general' | 'categorias' | 'inscritos' | 'material' | 'configuracion'
 
@@ -63,7 +64,10 @@ const route = useRoute()
 const router = useRouter()
 
 const convocatoriaId = typeof route.params.convocatoriaId === 'string' ? route.params.convocatoriaId : ''
-const numericConvocatoriaId = computed(() => Number(convocatoriaId))
+const numericConvocatoriaId = computed(() => {
+  const value = Number(convocatoriaId)
+  return Number.isFinite(value) && value > 0 ? value : Number.NaN
+})
 const { convocatoria, update } = useConvocatoria(convocatoriaId)
 
 const activeTab = ref<TabKey>('general')
@@ -132,6 +136,47 @@ const estudianteSearch = ref('')
 const estudianteStatusFilter = ref<'TODOS' | EstadoInscripcion | 'SIN_ESTADO'>('TODOS')
 
 const isCategoriaModalOpen = ref(false)
+const documentModifying = ref<'convocatoriaPDF' | 'reglamentoPDF' | 'aficheJPG' | null>(null)
+const documentModalTab = ref<'nuevo' | 'existente'>('nuevo')
+type ConvocatoriaDocTipo = 'CONVOCATORIA' | 'REGLAMENTO' | 'AFICHE'
+type ExistingArchivoItem = { id: number; nombre: string; fecha: string; enlace: string }
+
+const existingArchivosLoading = ref(false)
+const existingArchivosError = ref('')
+const existingArchivos = ref<ExistingArchivoItem[]>([])
+const selectedArchivoExistenteId = ref<number | null>(null)
+
+const getDocTipoFromModifying = (key: typeof documentModifying.value): ConvocatoriaDocTipo | null => {
+  if (!key) return null
+  if (key === 'convocatoriaPDF') return 'CONVOCATORIA'
+  if (key === 'reglamentoPDF') return 'REGLAMENTO'
+  if (key === 'aficheJPG') return 'AFICHE'
+  return null
+}
+
+const loadExistingArchivos = async () => {
+  const tipo = getDocTipoFromModifying(documentModifying.value)
+  if (!tipo) return
+  existingArchivosLoading.value = true
+  existingArchivosError.value = ''
+  try {
+    // listAdmin is secured; documents are managed from admin.
+    const res = await MaterialesService.listAdmin({ page: 1, limit: 200 })
+    existingArchivos.value = res.data.items
+      .filter((m) => (m.tipo_material || '').toUpperCase() === tipo)
+      .map((m) => ({
+        id: m.id_material,
+        nombre: m.nombre_material,
+        fecha: new Date(m.fecha_creacion).toLocaleDateString(),
+        enlace: m.enlace_acceso,
+      }))
+  } catch (err) {
+    existingArchivos.value = []
+    existingArchivosError.value = toApiError(err).message || 'No se pudieron cargar los archivos existentes.'
+  } finally {
+    existingArchivosLoading.value = false
+  }
+}
 const nuevaCategoria = ref({ nombre: '', curso: '', grado: 'SECUNDARIA' })
 const cursosDisponibles = ['1', '2', '3', '4', '5', '6']
 
@@ -276,7 +321,25 @@ const archivos = ref<{ convocatoriaPDF: File | null; reglamentoPDF: File | null;
   aficheJPG: null,
 })
 
-const fileReady = computed(() => Boolean(archivos.value.convocatoriaPDF && archivos.value.reglamentoPDF && archivos.value.aficheJPG))
+type ArchivoSlotKey = 'convocatoria' | 'reglamento' | 'afiche'
+type ArchivoSlots = Record<ArchivoSlotKey, MaterialResponseDTO | null>
+
+const archivosBackend = ref<ArchivoSlots>({
+  convocatoria: null,
+  reglamento: null,
+  afiche: null,
+})
+
+const archivosLoading = ref(false)
+const archivosError = ref('')
+const archivosSaving = ref(false)
+const archivosSaveError = ref('')
+
+const fileReady = computed(() => Boolean(archivosBackend.value.convocatoria && archivosBackend.value.reglamento && archivosBackend.value.afiche))
+
+const resetSelectedFiles = () => {
+  archivos.value = { convocatoriaPDF: null, reglamentoPDF: null, aficheJPG: null }
+}
 
 const materialesConvocatoria = computed(() => materiales.value)
 
@@ -387,6 +450,155 @@ const setFile = (event: Event, field: 'convocatoriaPDF' | 'reglamentoPDF' | 'afi
   archivos.value[field] = file
 }
 
+const loadArchivosRequeridos = async () => {
+  if (!Number.isFinite(numericConvocatoriaId.value)) return
+  archivosLoading.value = true
+  archivosError.value = ''
+  try {
+    const [convocatoriaRes, reglamentoRes, aficheRes] = await Promise.all([
+      MaterialesService.getConvocatoriaPrincipal(numericConvocatoriaId.value).catch((err) => ({ error: err } as any)),
+      MaterialesService.getReglamento(numericConvocatoriaId.value).catch((err) => ({ error: err } as any)),
+      MaterialesService.getAfiche(numericConvocatoriaId.value).catch((err) => ({ error: err } as any)),
+    ])
+
+    const parse = (res: any): MaterialResponseDTO | null => {
+      if (!res || res.error) {
+        const apiErr = toApiError(res?.error)
+        // 404 means "not uploaded yet".
+        if (apiErr.status === 404) return null
+        throw res?.error
+      }
+      return (res.data ?? null) as MaterialResponseDTO | null
+    }
+
+    archivosBackend.value = {
+      convocatoria: parse(convocatoriaRes),
+      reglamento: parse(reglamentoRes),
+      afiche: parse(aficheRes),
+    }
+  } catch (err) {
+    archivosBackend.value = { convocatoria: null, reglamento: null, afiche: null }
+    archivosError.value = 'No se pudieron cargar los documentos requeridos.'
+  } finally {
+    archivosLoading.value = false
+  }
+}
+
+watch(
+  numericConvocatoriaId,
+  () => {
+    resetSelectedFiles()
+    loadArchivosRequeridos()
+  },
+  { immediate: true },
+)
+
+watch(
+  isEditingFiles,
+  (next) => {
+    if (!next) {
+      archivosSaveError.value = ''
+      resetSelectedFiles()
+    }
+  },
+)
+
+watch(
+  documentModifying,
+  (next) => {
+    selectedArchivoExistenteId.value = null
+    existingArchivos.value = []
+    existingArchivosError.value = ''
+    if (next && documentModalTab.value === 'existente') {
+      void loadExistingArchivos()
+    }
+  },
+)
+
+watch(
+  documentModalTab,
+  (next) => {
+    selectedArchivoExistenteId.value = null
+    existingArchivosError.value = ''
+    if (next === 'existente' && documentModifying.value) {
+      void loadExistingArchivos()
+    }
+  },
+)
+
+const saveArchivosRequeridos = async () => {
+
+  if (!Number.isFinite(numericConvocatoriaId.value) || !documentModifying.value) return
+  archivosSaving.value = true
+  archivosSaveError.value = ''
+  try {
+    const id = numericConvocatoriaId.value
+    const type = documentModifying.value
+    let task: Promise<unknown> | null = null
+
+    if (documentModalTab.value === 'existente' && selectedArchivoExistenteId.value) {
+      
+      const materialId = selectedArchivoExistenteId.value
+      if (type === 'convocatoriaPDF') task = MaterialesService.assignConvocatoriaPrincipal(id, materialId)
+      if (type === 'reglamentoPDF') task = MaterialesService.assignReglamento(id, materialId)
+      if (type === 'aficheJPG') task = MaterialesService.assignAfiche(id, materialId)
+    } else if (type === 'convocatoriaPDF' && archivos.value.convocatoriaPDF) {
+      const payload = new FormData()
+      payload.append('archivo', archivos.value.convocatoriaPDF)
+      // "Subir nuevo" debe usar POST según OpenAPI.
+      task = MaterialesService.createConvocatoriaPrincipal(id, payload)
+    } else if (type === 'reglamentoPDF' && archivos.value.reglamentoPDF) {
+      const payload = new FormData()
+      payload.append('archivo', archivos.value.reglamentoPDF)
+      // "Subir nuevo" debe usar POST según OpenAPI.
+      task = MaterialesService.createReglamento(id, payload)
+    } else if (type === 'aficheJPG' && archivos.value.aficheJPG) {
+      const payload = new FormData()
+      payload.append('archivo', archivos.value.aficheJPG)
+      // "Subir nuevo" debe usar POST según OpenAPI.
+      task = MaterialesService.createAfiche(id, payload)
+    }
+
+    if (task) {
+      await task
+      await loadArchivosRequeridos()
+    }
+    closeDocumentModal()
+  } catch (err) {
+    const apiErr = toApiError(err)
+    archivosSaveError.value = apiErr.message || 'No se pudieron guardar los documentos.'
+  } finally {
+    archivosSaving.value = false
+  }
+}
+
+const closeDocumentModal = () => {
+  documentModifying.value = null
+  selectedArchivoExistenteId.value = null
+  existingArchivos.value = []
+  existingArchivosError.value = ''
+  archivosSaveError.value = ''
+}
+
+const fileLabel = (material: MaterialResponseDTO | null) => {
+  if (!material) return 'Sin archivo'
+  return material.nombre_material || 'Archivo'
+}
+
+const fileHref = (material: MaterialResponseDTO | null) => material?.enlace_acceso || ''
+
+const previewHref = computed(() => {
+  if (!documentModifying.value) return ''
+  if (documentModifying.value === 'convocatoriaPDF') return fileHref(archivosBackend.value.convocatoria)
+  if (documentModifying.value === 'reglamentoPDF') return fileHref(archivosBackend.value.reglamento)
+  return fileHref(archivosBackend.value.afiche)
+})
+
+const previewType = computed(() => {
+  if (!documentModifying.value) return 'none'
+  return documentModifying.value === 'aficheJPG' ? 'image' : 'pdf'
+})
+
 const saveData = () => {
   if (!convocatoria.value) return
   update({
@@ -397,7 +609,6 @@ const saveData = () => {
     finOlimpiada: localConvocatoria.value.finOlimpiada,
     inicioInscripcion: localConvocatoria.value.inicioInscripcion,
     finInscripcion: localConvocatoria.value.finInscripcion,
-    estado: localConvocatoria.value.estado as AdminConvocatoria['estado'],
     inscritos: Number(localConvocatoria.value.inscritos),
     categorias: Number(localConvocatoria.value.categorias),
     fases: Number(localConvocatoria.value.fases),
@@ -512,11 +723,11 @@ const statusClass = (status: string) => {
       </CardHeader>
       <CardContent class="flex flex-col md:flex-row gap-6">
         <div class="w-full md:w-1/3 shrink-0 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden min-h-[300px] border border-gray-200">
-           <img v-if="false" src="" class="w-full h-full object-cover" alt="Afiche" />
+           <img v-if="fileHref(archivosBackend.afiche)" :src="fileHref(archivosBackend.afiche)" class="w-full h-full object-cover" alt="Afiche" />
            <div v-else class="text-gray-400 flex flex-col items-center gap-2">
-             <ImageIcon class="h-8 w-8" />
-             <span class="text-sm font-medium">Sin afiche</span>
-           </div>
+              <ImageIcon class="h-8 w-8" />
+              <span class="text-sm font-medium">Sin afiche</span>
+            </div>
         </div>
         <div class="w-full md:w-2/3 flex flex-col gap-4 content-start">
           <div>
@@ -550,23 +761,49 @@ const statusClass = (status: string) => {
       </CardContent>
     </Card>
 
-    <Card class="border-gray-200 border-l-4 border-l-accent shadow-soft bg-white">
-      <CardHeader>
-        <CardTitle class="flex items-center gap-2"><FileText class="h-5 w-5 text-primary" />Documentos de la convocatoria</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-6 text-text-muted min-h-[250px]">
-             <FileText class="h-10 w-10 mb-2 text-gray-400" />
-             <span class="text-sm font-semibold">Convocatoria PDF</span>
+     <Card class="border-gray-200 border-l-4 border-l-accent shadow-soft bg-white">
+       <CardHeader>
+         <CardTitle class="flex items-center gap-2"><FileText class="h-5 w-5 text-primary" />Documentos de la convocatoria</CardTitle>
+       </CardHeader>
+        <CardContent>
+          <div v-if="archivosLoading" class="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-text-muted">
+            Cargando documentos...
           </div>
-          <div class="rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-6 text-text-muted min-h-[250px]">
-             <FileText class="h-10 w-10 mb-2 text-gray-400" />
-             <span class="text-sm font-semibold">Reglamento PDF</span>
+          <div v-else-if="archivosError" class="mb-4 rounded-xl border border-error/20 bg-error/10 p-4 text-sm font-medium text-error">
+            {{ archivosError }}
           </div>
-        </div>
-      </CardContent>
-    </Card>
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div class="rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-6 text-text-muted min-h-[250px]">
+               <FileText class="h-10 w-10 mb-2 text-gray-400" />
+               <span class="text-sm font-semibold">Convocatoria PDF</span>
+               <p class="mt-2 text-xs text-text-muted">{{ fileLabel(archivosBackend.convocatoria) }}</p>
+              <a
+                v-if="fileHref(archivosBackend.convocatoria)"
+                :href="fileHref(archivosBackend.convocatoria)"
+                target="_blank"
+                rel="noopener"
+                class="mt-3 inline-flex items-center gap-2 rounded-md border border-primary/20 bg-white px-3 py-1.5 text-sm font-semibold text-primary shadow-sm hover:bg-primary/5"
+              >
+                <Eye class="h-4 w-4" />Ver
+              </a>
+           </div>
+            <div class="rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-6 text-text-muted min-h-[250px]">
+               <FileText class="h-10 w-10 mb-2 text-gray-400" />
+               <span class="text-sm font-semibold">Reglamento PDF</span>
+               <p class="mt-2 text-xs text-text-muted">{{ fileLabel(archivosBackend.reglamento) }}</p>
+              <a
+                v-if="fileHref(archivosBackend.reglamento)"
+                :href="fileHref(archivosBackend.reglamento)"
+                target="_blank"
+                rel="noopener"
+                class="mt-3 inline-flex items-center gap-2 rounded-md border border-primary/20 bg-white px-3 py-1.5 text-sm font-semibold text-primary shadow-sm hover:bg-primary/5"
+              >
+                <Eye class="h-4 w-4" />Ver
+              </a>
+           </div>
+         </div>
+       </CardContent>
+     </Card>
     </div>
 
     <Card v-if="activeTab === 'categorias'" class="border-gray-200 shadow-soft bg-white">
@@ -721,14 +958,7 @@ const statusClass = (status: string) => {
             <label class="mb-1 block text-sm font-bold text-text-main">Gestión</label>
             <input v-model="localConvocatoria.gestion" type="number" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
           </div>
-          <div>
-            <label class="mb-1 block text-sm font-bold text-text-main">Estado</label>
-            <select v-model="localConvocatoria.estado" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-              <option value="Borrador">Borrador</option>
-              <option value="Activa">Activa</option>
-              <option value="Finalizada">Finalizada</option>
-            </select>
-          </div>
+
           <div class="md:col-span-2">
             <label class="mb-1 block text-sm font-bold text-text-main">Descripción</label>
             <textarea v-model="localConvocatoria.descripcion" rows="4" :disabled="!isEditingData" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
@@ -769,34 +999,85 @@ const statusClass = (status: string) => {
       <CardHeader>
         <div class="flex items-center justify-between">
           <CardTitle class="flex items-center gap-2"><FileText class="h-5 w-5 text-accent" />Documentos requeridos</CardTitle>
-          <Button v-if="!isEditingFiles" variant="outline" @click="isEditingFiles = true" class="flex items-center gap-2"><Edit class="h-4 w-4" />Editar Documentos</Button>
-          <Button v-else variant="outline" @click="isEditingFiles = false" class="flex items-center gap-2"><X class="h-4 w-4" />Cancelar</Button>
         </div>
       </CardHeader>
       <CardContent class="space-y-5">
+        <div v-if="archivosLoading" class="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-text-muted">
+          Cargando documentos...
+        </div>
+        <div v-else-if="archivosError" class="rounded-xl border border-error/20 bg-error/10 p-4 text-sm font-medium text-error">
+          {{ archivosError }}
+        </div>
+
         <div v-if="!fileReady" class="rounded-xl border border-info/20 bg-info/10 p-3 text-sm text-info font-medium">Documentos pendientes. Completa los 3 para publicar.</div>
         <div v-else class="rounded-xl border border-success/20 bg-success/10 p-3 text-sm text-success font-medium">Configuración completa.</div>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div class="space-y-2 rounded-xl border border-gray-200 p-3 bg-gray-50/50">
-            <label class="text-sm font-bold text-text-main">Convocatoria PDF *</label>
-            <input type="file" accept=".pdf" :disabled="!isEditingFiles" @change="setFile($event, 'convocatoriaPDF')" class="w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
-            <p class="text-xs text-text-muted">{{ archivos.convocatoriaPDF?.name || 'Sin archivo' }}</p>
+          <div class="flex flex-col space-y-3 rounded-xl border border-gray-200 bg-white p-4 relative overflow-hidden group">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-bold text-text-main">Convocatoria PDF</p>
+              <div v-if="archivosBackend.convocatoria" class="h-2 w-2 rounded-full bg-success"></div>
+              <div v-else class="h-2 w-2 rounded-full bg-warning"></div>
+            </div>
+            <p class="text-xs text-text-muted flex-1">{{ fileLabel(archivosBackend.convocatoria) }}</p>
+            <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <Button @click="documentModifying = 'convocatoriaPDF'" variant="outline" size="sm" class="flex-1 text-xs"><Edit class="w-3 h-3 mr-1"/> Modificar</Button>
+              <a
+                v-if="fileHref(archivosBackend.convocatoria)"
+                :href="fileHref(archivosBackend.convocatoria)"
+                target="_blank"
+                rel="noopener"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                title="Ver"
+              >
+                <Eye class="h-4 w-4" />
+              </a>
+            </div>
           </div>
-          <div class="space-y-2 rounded-xl border border-gray-200 p-3 bg-gray-50/50">
-            <label class="text-sm font-bold text-text-main">Reglamento PDF *</label>
-            <input type="file" accept=".pdf" :disabled="!isEditingFiles" @change="setFile($event, 'reglamentoPDF')" class="w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
-            <p class="text-xs text-text-muted">{{ archivos.reglamentoPDF?.name || 'Sin archivo' }}</p>
+          
+          <div class="flex flex-col space-y-3 rounded-xl border border-gray-200 bg-white p-4 relative overflow-hidden group">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-bold text-text-main">Reglamento PDF</p>
+              <div v-if="archivosBackend.reglamento" class="h-2 w-2 rounded-full bg-success"></div>
+              <div v-else class="h-2 w-2 rounded-full bg-warning"></div>
+            </div>
+            <p class="text-xs text-text-muted flex-1">{{ fileLabel(archivosBackend.reglamento) }}</p>
+            <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <Button @click="documentModifying = 'reglamentoPDF'" variant="outline" size="sm" class="flex-1 text-xs"><Edit class="w-3 h-3 mr-1"/> Modificar</Button>
+              <a
+                v-if="fileHref(archivosBackend.reglamento)"
+                :href="fileHref(archivosBackend.reglamento)"
+                target="_blank"
+                rel="noopener"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                title="Ver"
+              >
+                <Eye class="h-4 w-4" />
+              </a>
+            </div>
           </div>
-          <div class="space-y-2 rounded-xl border border-gray-200 p-3 bg-gray-50/50">
-            <label class="text-sm font-bold text-text-main">Afiche JPG/PNG *</label>
-            <input type="file" accept=".jpg,.jpeg,.png" :disabled="!isEditingFiles" @change="setFile($event, 'aficheJPG')" class="w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
-            <p class="text-xs text-text-muted">{{ archivos.aficheJPG?.name || 'Sin archivo' }}</p>
+          
+          <div class="flex flex-col space-y-3 rounded-xl border border-gray-200 bg-white p-4 relative overflow-hidden group">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-bold text-text-main">Afiche JPG/PNG</p>
+              <div v-if="archivosBackend.afiche" class="h-2 w-2 rounded-full bg-success"></div>
+              <div v-else class="h-2 w-2 rounded-full bg-warning"></div>
+            </div>
+            <p class="text-xs text-text-muted flex-1">{{ fileLabel(archivosBackend.afiche) }}</p>
+            <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <Button @click="documentModifying = 'aficheJPG'" variant="outline" size="sm" class="flex-1 text-xs"><Edit class="w-3 h-3 mr-1"/> Modificar</Button>
+              <a
+                v-if="fileHref(archivosBackend.afiche)"
+                :href="fileHref(archivosBackend.afiche)"
+                target="_blank"
+                rel="noopener"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                title="Ver"
+              >
+                <Eye class="h-4 w-4" />
+              </a>
+            </div>
           </div>
-        </div>
-
-        <div v-if="isEditingFiles" class="flex justify-end">
-          <Button @click="isEditingFiles = false" class="flex items-center gap-2"><Save class="h-4 w-4" />Guardar Documentos</Button>
         </div>
       </CardContent>
     </Card>
@@ -832,6 +1113,127 @@ const statusClass = (status: string) => {
           <div class="flex justify-end gap-2 mt-6">
             <Button variant="outline" @click="isCategoriaModalOpen = false">Cancelar</Button>
             <Button @click="createCategoria" class="flex items-center gap-2"><Plus class="h-4 w-4" />Crear Categoría</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Modal para modificar documentos -->
+    <div v-if="documentModifying" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
+      <Card class="w-full max-w-lg border-gray-200 bg-white">
+        <CardHeader>
+          <CardTitle>
+            Modificar {{ 
+              documentModifying === 'convocatoriaPDF' ? 'Convocatoria' : 
+              documentModifying === 'reglamentoPDF' ? 'Reglamento' : 'Afiche' 
+            }}
+          </CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div v-if="previewHref" class="rounded-xl border border-gray-200 bg-gray-50 p-3">
+            <p class="text-xs font-bold text-text-main mb-2">Vista previa actual</p>
+            <img
+              v-if="previewType === 'image'"
+              :src="previewHref"
+              class="w-full max-h-64 object-contain rounded-lg bg-white"
+              alt="Vista previa"
+            />
+            <iframe
+              v-else
+              :src="previewHref"
+              class="w-full h-64 rounded-lg bg-white"
+              title="Vista previa"
+            />
+          </div>
+
+          <div class="flex border-b border-gray-200">
+            <button 
+              @click="documentModalTab = 'nuevo'" 
+              :class="['px-4 py-2 text-sm font-semibold transition-colors border-b-2', documentModalTab === 'nuevo' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text-main']"
+            >
+              Subir nuevo
+            </button>
+            <button 
+              @click="documentModalTab = 'existente'" 
+              :class="['px-4 py-2 text-sm font-semibold transition-colors border-b-2', documentModalTab === 'existente' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-text-main']"
+            >
+              Seleccionar existente
+            </button>
+          </div>
+
+          <div v-if="documentModalTab === 'nuevo'" class="space-y-3 pt-2">
+            <label class="block text-sm font-bold text-text-main">
+              Archivo {{ documentModifying === 'aficheJPG' ? 'JPG/PNG' : 'PDF' }}
+            </label>
+            <input 
+              type="file" 
+              :accept="documentModifying === 'aficheJPG' ? '.jpg,.jpeg,.png' : '.pdf'" 
+              @change="setFile($event, documentModifying)" 
+              class="w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" 
+            />
+            <p class="text-xs text-text-muted">
+              {{ archivos[documentModifying]?.name || 'Ningún archivo seleccionado' }}
+            </p>
+          </div>
+
+           <div v-if="documentModalTab === 'existente'" class="space-y-3 pt-2">
+             <label class="block text-sm font-bold text-text-main">Archivos existentes</label>
+
+             <div v-if="existingArchivosLoading" class="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-text-muted">
+               Cargando archivos...
+             </div>
+             <div v-else-if="existingArchivosError" class="rounded-xl border border-error/20 bg-error/10 p-3 text-sm font-medium text-error">
+               {{ existingArchivosError }}
+             </div>
+             <div v-else-if="!existingArchivos.length" class="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-text-muted">
+               No hay archivos disponibles para este tipo.
+             </div>
+
+             <div v-else class="max-h-56 overflow-y-auto space-y-2 pr-1">
+               <div
+                 v-for="file in existingArchivos"
+                 :key="file.id"
+                 @click="selectedArchivoExistenteId = file.id"
+                 :class="['p-3 border rounded-lg cursor-pointer transition-colors flex items-center justify-between gap-3', selectedArchivoExistenteId === file.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50']"
+               >
+                 <div class="min-w-0">
+                   <p class="text-sm font-medium text-text-main line-clamp-1">{{ file.nombre }}</p>
+                   <p class="text-xs text-text-muted">{{ file.fecha }}</p>
+                 </div>
+                 <div class="flex items-center gap-2">
+                   <a
+                     v-if="file.enlace"
+                     :href="file.enlace"
+                     target="_blank"
+                     rel="noopener"
+                     class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                     title="Ver"
+                     @click.stop
+                   >
+                     <Eye class="h-4 w-4" />
+                   </a>
+                   <div v-if="selectedArchivoExistenteId === file.id" class="h-4 w-4 shrink-0 rounded-full bg-primary flex items-center justify-center">
+                     <div class="h-1.5 w-1.5 rounded-full bg-white"></div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+
+          <div v-if="archivosSaveError" class="rounded-xl border border-error/20 bg-error/10 p-3 text-sm font-medium text-error">
+            {{ archivosSaveError }}
+          </div>
+
+          <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-100">
+            <Button variant="outline" @click="closeDocumentModal">Cancelar</Button>
+            <Button 
+              @click="saveArchivosRequeridos" 
+              class="flex items-center gap-2"
+              :disabled="archivosSaving || (documentModalTab === 'nuevo' && !archivos[documentModifying]) || (documentModalTab === 'existente' && !selectedArchivoExistenteId)"
+            >
+              <Save class="h-4 w-4" />
+              {{ archivosSaving ? 'Guardando...' : 'Guardar' }}
+            </Button>
           </div>
         </CardContent>
       </Card>

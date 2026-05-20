@@ -1,11 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Menu, X, BarChart2 } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 
 const route = useRoute()
+const isHomePage = computed(() => route.path === '/')
 const isMobileMenuOpen = ref(false)
+const showNavbar = ref(false)
+
+const handleScroll = () => {
+  showNavbar.value = window.scrollY > 100
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+  handleScroll()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 
 const navigation = [
   { name: 'Inicio', href: '/' },
@@ -26,7 +41,13 @@ const closeMobileMenu = () => {
 </script>
 
 <template>
-  <header class="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
+  <header 
+    :class="[
+      isHomePage ? 'fixed left-0 right-0' : 'sticky',
+      'top-0 z-50 bg-white shadow-sm border-b border-gray-200 transition-transform duration-300 ease-in-out',
+      (isHomePage && !showNavbar) ? '-translate-y-full' : 'translate-y-0'
+    ]"
+  >
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-20">
         <!-- Logo Institucional -->
@@ -55,18 +76,7 @@ const closeMobileMenu = () => {
           >
             {{ item.name }}
           </router-link>
-          
-          <div class="w-px h-6 bg-gray-200 mx-2"></div>
-          
-          <Button
-            as="router-link"
-            to="/inscripcion"
-            variant="accent"
-            size="default"
-            class="shadow-sm font-bold"
-          >
-            Inscripción
-          </Button>
+
         </nav>
 
         <!-- Mobile menu button -->

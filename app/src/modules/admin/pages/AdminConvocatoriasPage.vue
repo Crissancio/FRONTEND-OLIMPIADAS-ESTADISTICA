@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-  Plus, Search, Filter, Eye, Settings, FileText 
+import {
+  Plus, Search, Filter, Settings, FileText
 } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
@@ -122,7 +122,7 @@ const estadoClass = (estado: string) => {
                 </td>
                 <td class="px-6 py-4 text-right">
                   <div class="flex items-center justify-end gap-2">
-                    <Button 
+                    <!-- Button
                        variant="ghost" 
                        size="icon"
                        class="text-text-muted hover:text-primary hover:bg-primary/10"
@@ -130,7 +130,7 @@ const estadoClass = (estado: string) => {
                        @click="router.push(`/admin/convocatoria/visualizar/${conv.id}`)"
                      >
                        <Eye class="w-4 h-4" />
-                     </Button>
+                     </Button -->
                      <Button 
                        variant="ghost" 
                        size="icon"

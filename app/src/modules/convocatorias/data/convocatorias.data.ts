@@ -47,29 +47,7 @@ export interface Convocatoria {
   materialGeneral?: Material[];
 }
 
-export const avisosMock: Aviso[] = [
-  {
-    id: "1",
-    titulo: "Ampliación de Inscripciones",
-    descripcion: "Se amplían las inscripciones hasta el 15 de abril para todas las categorías.",
-    tipo: "Urgente",
-    fecha: "10 Abril, 2024",
-  },
-  {
-    id: "2",
-    titulo: "Sesión Informativa",
-    descripcion: "Únete a nuestra sesión virtual por Zoom para resolver dudas.",
-    tipo: "Info",
-    fecha: "05 Abril, 2024",
-  },
-  {
-    id: "3",
-    titulo: "Publicación de Temarios Oficiales",
-    descripcion: "Ya puedes descargar los temarios para la primera fase de evaluación.",
-    tipo: "Importante",
-    fecha: "01 Abril, 2024",
-  },
-];
+export const avisosMock: Aviso[] = [];
 
 export const convocatoriasMock: Convocatoria[] = [
   {
