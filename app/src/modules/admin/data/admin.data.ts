@@ -1,4 +1,9 @@
-export type AdminConvocatoriaStatus = 'Activa' | 'Borrador' | 'Finalizada'
+export type AdminConvocatoriaStatus =
+  | 'Activa'
+  | 'Borrador'
+  | 'Finalizada'
+  | 'Proxima'
+  | 'Inscripcion en curso'
 
 export interface AdminConvocatoria {
   id: string
@@ -8,6 +13,7 @@ export interface AdminConvocatoria {
   inscritos: number
   categorias: number
   fases: number
+  montoInscripcion?: number | null
   descripcion: string
   inicioOlimpiada: string
   finOlimpiada: string

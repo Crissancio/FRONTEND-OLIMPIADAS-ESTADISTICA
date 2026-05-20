@@ -24,6 +24,7 @@ const form = ref({
   nombre: '',
   gestion: String(new Date().getFullYear()),
   descripcion: '',
+  montoInscripcion: '' as string | number,
   inicioOlimpiada: null as Date | null,
   finOlimpiada: null as Date | null,
   inicioInscripcion: null as Date | null,
@@ -38,6 +39,7 @@ watch(
       nombre: '',
       gestion: String(new Date().getFullYear()),
       descripcion: '',
+      montoInscripcion: '',
       inicioOlimpiada: null,
       finOlimpiada: null,
       inicioInscripcion: null,
@@ -45,6 +47,18 @@ watch(
     }
   },
 )
+
+const montoValue = computed(() => {
+  const raw = typeof form.value.montoInscripcion === 'number'
+    ? String(form.value.montoInscripcion)
+    : String(form.value.montoInscripcion || '').trim()
+  if (!raw) return null
+
+  const num = Number(raw)
+  if (!Number.isFinite(num)) return null
+  if (num < 0) return null
+  return num
+})
 
 const close = () => emit('update:open', false)
 
@@ -138,7 +152,7 @@ const handleSubmit = async () => {
       fin_olimpiadas: toDateInputValue(form.value.finOlimpiada),
       fecha_inicio_inscripcion: toDateTimeInputValue(form.value.inicioInscripcion),
       fecha_fin_inscripcion: toDateTimeInputValue(form.value.finInscripcion),
-      monto_inscripcion: null
+      monto_inscripcion: montoValue.value
     }
 
     const created = await createConvocatoria(payload)
@@ -182,6 +196,20 @@ const handleSubmit = async () => {
               <div>
                 <label class="mb-1.5 block text-sm font-semibold text-text-main"><Hash class="mr-1 inline h-3.5 w-3.5" />Gestion</label>
                 <input v-model="form.gestion" required type="number" min="2020" max="2100" class="h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors" />
+              </div>
+
+              <div>
+                <label class="mb-1.5 block text-sm font-semibold text-text-main">Monto de inscripción (Bs)</label>
+                <input
+                  v-model="form.montoInscripcion"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  class="h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+                  placeholder="Ej: 20"
+                />
+                <p class="mt-1 text-xs text-text-muted">Opcional. Deja vacío si no aplica.</p>
               </div>
 
               <div>

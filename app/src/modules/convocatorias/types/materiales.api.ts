@@ -40,3 +40,5 @@ export interface MaterialResponseDTO {
 
 export type MaterialListResponse = PaginatedResponse<MaterialResponseDTO>
 export type MaterialResponse = ResponseBase<MaterialResponseDTO>
+
+export type MaterialListBaseResponse = ResponseBase<MaterialResponseDTO[]>

@@ -46,5 +46,12 @@ export const ConvocatoriasService = {
       `/convocatorias/${convocatoria_id}`
     )
     return data
+  },
+
+  async publish(convocatoria_id: number): Promise<ResponseBase<ConvocatoriaResponseDTO>> {
+    const { data } = await apiClient.post<ResponseBase<ConvocatoriaResponseDTO>>(
+      `/convocatorias/${convocatoria_id}/publicar`
+    )
+    return data
   }
 }

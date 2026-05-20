@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Plus, Search, Filter, Settings, FileText
@@ -15,7 +15,12 @@ const router = useRouter()
 const isDialogOpen = ref(false)
 const searchTerm = ref('')
 const selectedStatus = ref('all')
-const { convocatorias, isLoading, error, total } = useConvocatorias()
+const { convocatorias, isLoading, error, total, refresh } = useConvocatorias()
+
+// Ensure list reflects changes (e.g. publish) when returning.
+onMounted(() => {
+  void refresh()
+})
 
 const filteredConvocatorias = computed(() => {
   return convocatorias.value.filter((conv) => {
@@ -30,6 +35,8 @@ const filteredConvocatorias = computed(() => {
 const estadoClass = (estado: string) => {
   if (estado === 'Activa') return 'bg-success/10 text-success border-success/20'
   if (estado === 'Borrador') return 'bg-warning/10 text-warning border-warning/20'
+  if (estado === 'Inscripcion en curso') return 'bg-primary/10 text-primary border-primary/20'
+  if (estado === 'Proxima') return 'bg-accent/10 text-accent border-accent/20'
   return 'bg-gray-100 text-text-muted border-gray-200'
 }
 </script>
@@ -66,17 +73,19 @@ const estadoClass = (estado: string) => {
               placeholder="Buscar convocatoria..."
             />
           </div>
-          <div class="w-full sm:w-auto">
-            <select
-              v-model="selectedStatus"
-              class="w-full sm:w-44 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
-            >
-              <option value="all">Todos los estados</option>
-              <option value="Activa">Activa</option>
-              <option value="Borrador">Borrador</option>
-              <option value="Finalizada">Finalizada</option>
-            </select>
-          </div>
+           <div class="w-full sm:w-auto">
+             <select
+               v-model="selectedStatus"
+               class="w-full sm:w-44 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+             >
+               <option value="all">Todos los estados</option>
+               <option value="Activa">Activa</option>
+               <option value="Inscripcion en curso">Inscripcion en curso</option>
+               <option value="Proxima">Proxima</option>
+               <option value="Borrador">Borrador</option>
+               <option value="Finalizada">Finalizada</option>
+             </select>
+           </div>
           <Button variant="outline" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50 py-2 rounded-md text-sm font-medium transition-colors">
             <Filter class="w-4 h-4" />
             Filtros
@@ -107,13 +116,13 @@ const estadoClass = (estado: string) => {
                     <span class="font-bold text-text-main">{{ conv.nombre }}</span>
                   </div>
                 </td>
-                 <td class="px-6 py-4 text-text-muted font-medium">{{ conv.gestion }}</td>
-                 <td class="px-6 py-4 text-text-muted font-medium">{{ conv.inscritos }}</td>
-                 <td class="px-6 py-4">
-                   <Badge 
-                    variant="outline"
-                    :class="`px-2.5 py-1 rounded border ${estadoClass(conv.estado)}`"
-                   >
+                  <td class="px-6 py-4 text-text-muted font-medium">{{ conv.gestion }}</td>
+                  <td class="px-6 py-4 text-text-muted font-medium">{{ conv.inscritos }}</td>
+                  <td class="px-6 py-4">
+                    <Badge 
+                     variant="outline"
+                     :class="`px-2.5 py-1 rounded border ${estadoClass(conv.estado)}`"
+                    >
                     <template v-if="conv.estado === 'Activa'">
                       <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse mr-1.5"></span>
                     </template>

@@ -68,7 +68,7 @@ const numericConvocatoriaId = computed(() => {
   const value = Number(convocatoriaId)
   return Number.isFinite(value) && value > 0 ? value : Number.NaN
 })
-const { convocatoria, update } = useConvocatoria(convocatoriaId)
+const { convocatoria, update, publish: publishConvocatoria } = useConvocatoria(convocatoriaId)
 
 const activeTab = ref<TabKey>('general')
 watch(
@@ -85,6 +85,7 @@ const localConvocatoria = ref({
   nombre: '',
   gestion: '',
   descripcion: '',
+  montoInscripcion: '' as string | number,
   inicioOlimpiada: '',
   finOlimpiada: '',
   inicioInscripcion: '',
@@ -100,6 +101,7 @@ const resetLocalConvocatoria = (value: AdminConvocatoria) => {
     nombre: value.nombre,
     gestion: String(value.gestion),
     descripcion: value.descripcion,
+    montoInscripcion: value.montoInscripcion ?? '',
     inicioOlimpiada: value.inicioOlimpiada,
     finOlimpiada: value.finOlimpiada,
     inicioInscripcion: value.inicioInscripcion,
@@ -160,10 +162,9 @@ const loadExistingArchivos = async () => {
   existingArchivosLoading.value = true
   existingArchivosError.value = ''
   try {
-    // listAdmin is secured; documents are managed from admin.
-    const res = await MaterialesService.listAdmin({ page: 1, limit: 200 })
-    existingArchivos.value = res.data.items
-      .filter((m) => (m.tipo_material || '').toUpperCase() === tipo)
+    // OpenAPI: GET /materiales/principales?importancia_tipo=...
+    const res = await MaterialesService.listPrincipales({ importancia_tipo: tipo })
+    existingArchivos.value = res.data
       .map((m) => ({
         id: m.id_material,
         nombre: m.nombre_material,
@@ -536,25 +537,46 @@ const saveArchivosRequeridos = async () => {
     const type = documentModifying.value
     let task: Promise<unknown> | null = null
 
+    const logRequestBody = (body: unknown) => {
+      if (body instanceof FormData) {
+        const entries = Array.from(body.entries()).map(([key, value]) => {
+          if (value instanceof File) {
+            return [key, { name: value.name, size: value.size, type: value.type }]
+          }
+          return [key, value]
+        })
+
+        console.log('[AdminConvocatoriaDetallePage] request body (multipart/form-data):', Object.fromEntries(entries))
+        return
+      }
+
+      console.log('[AdminConvocatoriaDetallePage] request body:', body)
+    }
+
     if (documentModalTab.value === 'existente' && selectedArchivoExistenteId.value) {
       
       const materialId = selectedArchivoExistenteId.value
+      // En asignar existente, el body es null (material_id va por query param)
+      logRequestBody(null)
       if (type === 'convocatoriaPDF') task = MaterialesService.assignConvocatoriaPrincipal(id, materialId)
       if (type === 'reglamentoPDF') task = MaterialesService.assignReglamento(id, materialId)
       if (type === 'aficheJPG') task = MaterialesService.assignAfiche(id, materialId)
     } else if (type === 'convocatoriaPDF' && archivos.value.convocatoriaPDF) {
       const payload = new FormData()
       payload.append('archivo', archivos.value.convocatoriaPDF)
+      logRequestBody(payload)
       // "Subir nuevo" debe usar POST según OpenAPI.
       task = MaterialesService.createConvocatoriaPrincipal(id, payload)
     } else if (type === 'reglamentoPDF' && archivos.value.reglamentoPDF) {
       const payload = new FormData()
       payload.append('archivo', archivos.value.reglamentoPDF)
+      logRequestBody(payload)
       // "Subir nuevo" debe usar POST según OpenAPI.
       task = MaterialesService.createReglamento(id, payload)
     } else if (type === 'aficheJPG' && archivos.value.aficheJPG) {
       const payload = new FormData()
       payload.append('archivo', archivos.value.aficheJPG)
+      logRequestBody(payload)
       // "Subir nuevo" debe usar POST según OpenAPI.
       task = MaterialesService.createAfiche(id, payload)
     }
@@ -601,10 +623,18 @@ const previewType = computed(() => {
 
 const saveData = () => {
   if (!convocatoria.value) return
+
+  const montoRaw = typeof localConvocatoria.value.montoInscripcion === 'number'
+    ? String(localConvocatoria.value.montoInscripcion)
+    : String(localConvocatoria.value.montoInscripcion || '').trim()
+  const montoParsed = montoRaw ? Number(montoRaw) : NaN
+  const montoInscripcion = Number.isFinite(montoParsed) && montoParsed >= 0 ? montoParsed : null
+
   update({
     nombre: localConvocatoria.value.nombre,
     gestion: Number(localConvocatoria.value.gestion),
     descripcion: localConvocatoria.value.descripcion,
+    montoInscripcion,
     inicioOlimpiada: localConvocatoria.value.inicioOlimpiada,
     finOlimpiada: localConvocatoria.value.finOlimpiada,
     inicioInscripcion: localConvocatoria.value.inicioInscripcion,
@@ -621,18 +651,27 @@ const cancelDataEdit = () => {
   isEditingData.value = false
 }
 
-const publish = () => {
+const publish = async () => {
+  if (!Number.isFinite(numericConvocatoriaId.value)) return
   if (!fileReady.value) {
     activeTab.value = 'configuracion'
     return
   }
-  update({ estado: 'Activa' })
-  localConvocatoria.value.estado = 'Activa'
+
+  try {
+    await publishConvocatoria()
+  } catch (err) {
+    const apiErr = toApiError(err)
+    // Reutilizamos el error de guardado de archivos como banner simple.
+    archivosSaveError.value = apiErr.message || 'No se pudo publicar la convocatoria.'
+  }
 }
 
 const statusClass = (status: string) => {
   if (status === 'Activa') return 'bg-success/10 text-success border-success/20'
   if (status === 'Borrador') return 'bg-warning/10 text-warning border-warning/20'
+  if (status === 'Inscripcion en curso') return 'bg-primary/10 text-primary border-primary/20'
+  if (status === 'Proxima') return 'bg-accent/10 text-accent border-accent/20'
   return 'bg-gray-100 text-text-muted border-gray-200'
 }
 </script>
@@ -659,7 +698,7 @@ const statusClass = (status: string) => {
         </div>
         <Button v-if="localConvocatoria.estado === 'Borrador'" variant="accent" class="flex items-center gap-2" @click="publish">
           <CheckCheck class="h-4 w-4" />
-          TODO LISTO?
+          PUBLICAR
         </Button>
       </div>
     </header>
@@ -957,6 +996,21 @@ const statusClass = (status: string) => {
           <div>
             <label class="mb-1 block text-sm font-bold text-text-main">Gestión</label>
             <input v-model="localConvocatoria.gestion" type="number" :disabled="!isEditingData" class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-bold text-text-main">Monto de inscripción (Bs)</label>
+            <input
+              v-model="localConvocatoria.montoInscripcion"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              :disabled="!isEditingData"
+              class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm transition-colors disabled:bg-gray-50 disabled:text-text-muted focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              placeholder="Ej: 20"
+            />
+            <p class="mt-1 text-xs text-text-muted">Opcional. Deja vacío si no aplica.</p>
           </div>
 
           <div class="md:col-span-2">

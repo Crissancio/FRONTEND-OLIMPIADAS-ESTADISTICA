@@ -11,11 +11,24 @@ import type {
 type AdminConvocatoriaId = string
 
 const toAdminStatus = (estado: string): AdminConvocatoriaStatus => {
+  // Backend enum (DB): BORRADOR, FINALIZADA, PROXIMA, ACTIVA, INSCRIPCION EN CURSO
+  // UI: Title Case.
+  const normalized = (estado || '')
+    .trim()
+    .toUpperCase()
+    // Backend might return underscores or extra spacing.
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+  if (normalized === 'BORRADOR') return 'Borrador'
+  if (normalized === 'ACTIVA') return 'Activa'
+  if (normalized === 'FINALIZADA') return 'Finalizada'
+  if (normalized === 'PROXIMA') return 'Proxima'
+  if (normalized === 'INSCRIPCION EN CURSO') return 'Inscripcion en curso'
+
+  // Allow already-mapped UI strings.
   if (estado === 'Activa' || estado === 'Borrador' || estado === 'Finalizada') return estado
-  // Fallback: backend may use other casing.
-  const upper = estado.toUpperCase()
-  if (upper === 'ACTIVA') return 'Activa'
-  if (upper === 'FINALIZADA') return 'Finalizada'
+  if (estado === 'Proxima' || estado === 'Inscripcion en curso') return estado
+
   return 'Borrador'
 }
 
@@ -28,6 +41,7 @@ const toAdminConvocatoria = (dto: ConvocatoriaResponseDTO): AdminConvocatoria =>
     inscritos: 0,
     categorias: 0,
     fases: 0,
+    montoInscripcion: dto.monto_inscripcion ?? null,
     descripcion: dto.descripcion ?? '',
     inicioOlimpiada: dto.inicio_olimpiadas ?? '',
     finOlimpiada: dto.fin_olimpiadas ?? '',
@@ -46,6 +60,7 @@ const toUpdateDTO = (updates: Partial<AdminConvocatoria>): ConvocatoriaUpdateDTO
   if ('finOlimpiada' in updates) dto.fin_olimpiadas = updates.finOlimpiada ?? null
   if ('inicioInscripcion' in updates) dto.fecha_inicio_inscripcion = updates.inicioInscripcion ?? null
   if ('finInscripcion' in updates) dto.fecha_fin_inscripcion = updates.finInscripcion ?? null
+  if ('montoInscripcion' in updates) dto.monto_inscripcion = updates.montoInscripcion ?? null
   if ('estado' in updates) dto.estado = updates.estado ?? null
 
   return dto
@@ -156,6 +171,16 @@ export const useConvocatoria = (id?: string) => {
     return convocatoria.value
   }
 
+  const publish = async () => {
+    if (!id) return null
+    const numericId = Number(id)
+    if (!Number.isFinite(numericId)) return null
+
+    const res = await ConvocatoriasService.publish(numericId)
+    convocatoria.value = toAdminConvocatoria(res.data)
+    return convocatoria.value
+  }
+
   void refresh()
 
   return {
@@ -164,5 +189,6 @@ export const useConvocatoria = (id?: string) => {
     error,
     refresh,
     update,
+    publish,
   }
 }

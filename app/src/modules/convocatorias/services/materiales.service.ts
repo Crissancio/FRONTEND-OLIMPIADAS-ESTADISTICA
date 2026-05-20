@@ -1,6 +1,7 @@
 import { apiClient } from '@/app/api/api-client'
 import type {
   MaterialCreateDTO,
+  MaterialListBaseResponse,
   MaterialListResponse,
   MaterialResponse,
   MaterialUpdateDTO
@@ -27,6 +28,13 @@ export const MaterialesService = {
 
   async listAdmin(params?: { page?: number; limit?: number }): Promise<MaterialListResponse> {
     const { data } = await apiClient.get<MaterialListResponse>('/materiales/admin', { params })
+    return data
+  },
+
+  async listPrincipales(params?: {
+    importancia_tipo?: string | null
+  }): Promise<MaterialListBaseResponse> {
+    const { data } = await apiClient.get<MaterialListBaseResponse>('/materiales/principales', { params })
     return data
   },
 
