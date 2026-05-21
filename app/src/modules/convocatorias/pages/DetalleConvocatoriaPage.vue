@@ -156,7 +156,7 @@ onMounted(() => {
               </Badge>
               <Badge variant="outline" class="px-3 py-1 text-sm font-bold uppercase tracking-wider rounded border bg-info/10 text-info border-blue-200 hover:bg-info/10 flex items-center gap-1.5">
                 <Calendar class="w-4 h-4" />
-                GestiÃ³n {{ conv.gestion }}
+                Gestion {{ conv.gestion }}
               </Badge>
             </div>
             <h1 class="text-4xl md:text-5xl font-heading font-extrabold mb-4 leading-tight text-white drop-shadow-md">
