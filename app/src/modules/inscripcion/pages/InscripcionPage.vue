@@ -12,6 +12,7 @@ import VerificacionPaso from '../components/VerificacionPaso.vue'
 import FormularioInscripcion from '../components/FormularioInscripcion.vue'
 import VistaExito from '../components/VistaExito.vue'
 import VistaError from '../components/VistaError.vue'
+import CabezalConvocatoria from '../components/CabezalConvocatoria.vue'
 
 const router = useRouter()
 const publicStore = usePublicStore()
@@ -187,7 +188,12 @@ const volverAlDetalle = () => {
           <p class="text-sm font-semibold text-primary-dark">Procesando información con el servidor...</p>
         </div>
 
-        <CardContent class="p-8 sm:p-10 relative min-h-[400px]">
+        <CabezalConvocatoria 
+          v-if="pasoActual === 'verificacion' || pasoActual === 'formulario'"
+          :titulo="convocatoriaActiva.nombre_convocatoria || 'Olimpiada Paceña de Estadística'" 
+        />
+
+        <CardContent :class="`relative min-h-[400px] ${(pasoActual === 'verificacion' || pasoActual === 'formulario') ? 'p-6 sm:p-10 pt-4 sm:pt-6' : 'p-8 sm:p-10'}`">
           <transition name="slide-fade" mode="out-in">
             
             <VerificacionPaso 
