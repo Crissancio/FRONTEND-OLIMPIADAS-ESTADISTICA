@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { InscripcionService } from '../services/inscripcion.service'
-import type { ColegioFiltroDTO, RegistrarInscripcionDTO } from '../types/inscripcion.api'
+import type { ColegioFiltroDTO, RegistrarInscripcionDTO,VerificarEstudianteRequestDTO } from '../types/inscripcion.api'
 
 export const useInscripcionStore = defineStore('inscripcion', () => {
   const colegios = ref<ColegioFiltroDTO[]>([])
@@ -25,11 +25,11 @@ export const useInscripcionStore = defineStore('inscripcion', () => {
   }
 
   // Verifica credenciales iniciales
-  async function verificarEstudiante(ci: string, fechaNacimiento: string) {
+  async function verificarEstudiante(payload: VerificarEstudianteRequestDTO) {
     isLoadingProceso.value = true
     error.value = null
     try {
-      const res = await InscripcionService.verificarEstudiante(ci, fechaNacimiento)
+      const res = await InscripcionService.verificarEstudiante(payload)
       return res.data
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Error de verificación'

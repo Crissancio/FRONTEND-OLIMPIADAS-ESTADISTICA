@@ -4,19 +4,22 @@ import { Mail, Phone, ArrowLeft, Send, ChevronDown, GraduationCap, AlertCircle, 
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import ColegioBuscador from './ColegioBuscador.vue'
 import { usePublicStore } from '@/modules/public/stores/public.store'
+import VueTurnstile from 'vue-turnstile'
 
 const props = defineProps<{
   estudianteInicial: any,
-  datosVerificados: { ci: string; fecha_nacimiento: string } | null
+  datosVerificados: { carnet_identidad: string; fecha_nacimiento: string } | null
 }>()
 
 const emit = defineEmits(['volver', 'submit'])
 const publicStore = usePublicStore()
 
+const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY
+
 const categoriasDisponibles = computed(() => publicStore.inicio?.categorias || [])
 
 const formData = ref({
-  ci: props.estudianteInicial?.carnet_identidad || props.datosVerificados?.ci || '',
+  carnet_identidad: props.estudianteInicial?.carnet_identidad || props.datosVerificados?.carnet_identidad || '',
   fecha_nacimiento: props.estudianteInicial?.fecha_nacimiento || props.datosVerificados?.fecha_nacimiento || '',
   
   nombres: props.estudianteInicial?.nombres || '',
@@ -34,6 +37,8 @@ const formData = ref({
 const aceptaTerminos = ref(false)
 const isCategoryDropdownOpen = ref(false)
 const categoryRef = ref<HTMLElement | null>(null)
+const username_hp = ref('')
+const cf_turnstile_response = ref('')
 
 // --- LÓGICA DE V-CALENDAR ---
 const fechaNacimientoVCalendar = ref<Date | null>(null)
@@ -51,7 +56,7 @@ watch(fechaNacimientoVCalendar, (newDate) => {
 })
 
 // Determinar si los datos clave fueron verificados en el paso 1
-const esDatoVerificado = computed(() => !!props.datosVerificados?.ci && !!props.datosVerificados?.fecha_nacimiento)
+const esDatoVerificado = computed(() => !!props.datosVerificados?.carnet_identidad && !!props.datosVerificados?.fecha_nacimiento)
 // ----------------------------
 
 const categoriaSeleccionada = computed(() => {
@@ -93,10 +98,17 @@ const onSubmit = () => {
     console.error("Objeto categoría actual:", categoriaSeleccionada.value);
     return;
   }
+  
+  if (!cf_turnstile_response.value) {
+    alert('Por favor, completa la verificación de seguridad.')
+    return
+  }
 
   emit('submit', { 
     ...formData.value, 
-    id_categoria: Number(idCat)
+    id_categoria: Number(idCat),
+    username_hp: username_hp.value,
+    cf_turnstile_response: cf_turnstile_response.value
   })
 }
 </script>
@@ -143,7 +155,7 @@ const onSubmit = () => {
           <div class="form-group">
             <label class="block text-sm font-semibold mb-1.5 text-text-main">Carnet de Identidad</label>
             <input 
-              v-model="formData.ci" 
+              v-model="formData.carnet_identidad" 
               type="text" 
               class="input-base disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed" 
               :disabled="esDatoVerificado"
@@ -229,8 +241,15 @@ const onSubmit = () => {
       </label>
     </section>
 
-    <div class="flex justify-end pt-6">
-      <Button type="submit" variant="accent" size="lg" :disabled="!aceptaTerminos || !formData.id_colegio || !formData.curso || !categoriaSeleccionada" class="px-8 py-3 rounded-lg font-bold text-lg shadow-soft flex items-center gap-2">
+    <div class="absolute opacity-0 -z-10 w-0 h-0 overflow-hidden" aria-hidden="true">
+      <label for="username_hp_form">Leave blank</label>
+      <input id="username_hp_form" v-model="username_hp" type="text" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6">
+      <vue-turnstile :site-key="siteKey" v-model="cf_turnstile_response" />
+      
+      <Button type="submit" variant="accent" size="lg" :disabled="!aceptaTerminos || !formData.id_colegio || !formData.curso || !categoriaSeleccionada || !cf_turnstile_response" class="px-8 py-3 rounded-lg font-bold text-lg shadow-soft flex items-center gap-2">
         Enviar inscripción <Send class="w-5 h-5" />
       </Button>
     </div>

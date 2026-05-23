@@ -15,6 +15,13 @@ export type VerificarEstudianteResponseDTO = {
   id_colegio: number | null
 }
 
+export type VerificarEstudianteRequestDTO = {
+  carnet_identidad: string
+  fecha_nacimiento: string
+  username_hp: string
+  cf_turnstile_response: string
+}
+
 export type ColegioFiltroDTO = {
   id_colegio: number
   nombre: string
@@ -40,6 +47,9 @@ export type RegistrarInscripcionDTO = {
   id_categoria: number
   id_colegio: number
   estudiante: EstudianteFormularioDTO
+  
+  username_hp: string
+  cf_turnstile_response: string
 }
 
 export type PublicVerificarResponse = ResponseBase<VerificarEstudianteResponseDTO>

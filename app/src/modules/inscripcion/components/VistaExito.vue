@@ -21,7 +21,7 @@
         <div class="grid grid-cols-2 gap-4 mt-6">
           <div>
             <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">C.I.</p>
-            <p class="font-semibold text-gray-700">{{ estudiante.ci }}</p>
+            <p class="font-semibold text-gray-700">{{ estudiante.carnet_identidad }}</p>
           </div>
           <div>
             <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Nivel / Curso</p>
@@ -58,7 +58,7 @@ defineProps<{
   estudiante: {
     nombres: string
     apellidos: string // Asegúrate de que esto coincida con lo que pasas (paterno + materno o solo apellidos)
-    ci: string
+    carnet_identidad: string
     nivel: string
     curso: number | string
   }

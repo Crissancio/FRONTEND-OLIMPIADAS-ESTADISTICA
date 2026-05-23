@@ -3,27 +3,36 @@ import { ref, computed } from 'vue'
 import { ArrowRight, UserCheck } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import { DatePicker } from 'v-calendar'
+import VueTurnstile from 'vue-turnstile'
 import 'v-calendar/style.css'
 
+const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY
+
 const emit = defineEmits<{
-  (e: 'verificar', payload: { ci: string; fechaNacimiento: Date }): void
+  (e: 'verificar', payload: { carnet_identidad: string; fecha_nacimiento: Date; username_hp: string; cf_turnstile_response: string }): void
 }>()
 
 const ci = ref('')
 
 const fechaNacimiento = ref<Date | null>(null)
+const username_hp = ref('')
+const cf_turnstile_response = ref('')
 
-// Bloqueamos exactamente 13 años atrás
+// Bloqueamos exactamente 15 años atrás
 const limiteMaximo = computed(() => {
   const hoy = new Date()
-  hoy.setFullYear(hoy.getFullYear() - 13)
+  hoy.setFullYear(hoy.getFullYear() - 15)
   return hoy
 })
 
 const onSubmit = () => {
   if (!ci.value || !fechaNacimiento.value) return
-  // Eliminamos cualquier espacio accidental en el CI
-  emit('verificar', { ci: ci.value.trim(), fechaNacimiento: fechaNacimiento.value })
+  emit('verificar', { 
+    carnet_identidad: ci.value.trim(), 
+    fecha_nacimiento: fechaNacimiento.value,
+    username_hp: username_hp.value,
+    cf_turnstile_response: cf_turnstile_response.value
+  })
 }
 </script>
 
@@ -66,8 +75,16 @@ const onSubmit = () => {
           </template>
         </DatePicker>
       </div>
+      <div class="absolute opacity-0 -z-10 w-0 h-0 overflow-hidden" aria-hidden="true">
+        <label for="username_hp_verify">Leave blank</label>
+        <input id="username_hp_verify" v-model="username_hp" type="text" tabindex="-1" autocomplete="off" />
+      </div>
 
-      <Button type="submit" variant="default" size="lg" class="w-full font-bold flex justify-center items-center gap-2 mt-4">
+      <div class="flex justify-center pt-2">
+        <vue-turnstile :site-key="siteKey" v-model="cf_turnstile_response" />
+      </div>
+
+      <Button type="submit" variant="default" size="lg" :disabled="!cf_turnstile_response" class="w-full font-bold flex justify-center items-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
         Continuar <ArrowRight class="w-5 h-5" />
       </Button>
     </form>

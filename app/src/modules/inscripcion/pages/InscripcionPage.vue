@@ -22,7 +22,7 @@ const isLoadingProceso = computed(() => inscripcionStore.isLoadingProceso)
 
 const pasoActual = ref<'verificacion' | 'formulario' | 'exito' | 'error'>('verificacion')
 const errorMessage = ref<string | null>(null)
-const datosVerificados = ref<{ ci: string; fecha_nacimiento: string } | null>(null)
+const datosVerificados = ref<{ carnet_identidad: string; fecha_nacimiento: string } | null>(null)
 const estudianteData = ref<any>(null)
 const formularioTemporal = ref<any>(null)
 
@@ -30,7 +30,7 @@ const datosEstudianteParaCarnet = computed(() => {
   return {
     nombres: formularioTemporal.value?.nombres || estudianteData.value?.nombres || '',
     apellidos: formularioTemporal.value?.paterno || estudianteData.value?.paterno || '',
-    ci: formularioTemporal.value?.carnet_identidad || datosVerificados.value?.ci || '',
+    carnet_identidad: formularioTemporal.value?.carnet_identidad || datosVerificados.value?.carnet_identidad || '',
     nivel: formularioTemporal.value?.nivel || estudianteData.value?.nivel || '',
     curso: formularioTemporal.value?.curso || estudianteData.value?.curso || ''
   }
@@ -55,18 +55,25 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
-const handleVerificacion = async (payload: { ci: string; fechaNacimiento: Date }) => {
+const handleVerificacion = async (payload: { carnet_identidad: string; fecha_nacimiento: Date; username_hp: string; cf_turnstile_response: string }) => {
   errorMessage.value = null
 
-  const d = payload.fechaNacimiento
+  const d = payload.fecha_nacimiento
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   const fechaString = `${year}-${month}-${day}`
 
   try {
-    const response = await inscripcionStore.verificarEstudiante(payload.ci, fechaString)
-    datosVerificados.value = { ci: payload.ci, fecha_nacimiento: fechaString }
+    // Aquí enviamos el objeto completo con los tokens de seguridad
+    const response = await inscripcionStore.verificarEstudiante({
+      carnet_identidad: payload.carnet_identidad,
+      fecha_nacimiento: fechaString,
+      username_hp: payload.username_hp,
+      cf_turnstile_response: payload.cf_turnstile_response
+    })
+    
+    datosVerificados.value = { carnet_identidad: payload.carnet_identidad, fecha_nacimiento: fechaString }
 
     let estudiante = null
 
@@ -87,7 +94,7 @@ const handleVerificacion = async (payload: { ci: string; fechaNacimiento: Date }
 
   } catch (err: any) {
     if (err.response?.status === 404 || err.status === 404) {
-      datosVerificados.value = { ci: payload.ci, fecha_nacimiento: fechaString }
+      datosVerificados.value = { carnet_identidad: payload.carnet_identidad, fecha_nacimiento: fechaString }
       estudianteData.value = null 
       pasoActual.value = 'formulario'
     } else {
@@ -117,14 +124,17 @@ const handleInscripcion = async (formData: any) => {
       nombres: String(formData.nombres).trim(),
       paterno: String(formData.apellidos).trim(), 
       materno: formData.materno ? String(formData.materno).trim() : null,
-      carnet_identidad: String(formData.ci).trim(),
+      carnet_identidad: String(formData.carnet_identidad).trim(),
       fecha_nacimiento: String(formData.fecha_nacimiento), 
       curso: Number(formData.curso),
       nivel: String(formData.nivel).toUpperCase(),
       rude: formData.rude ? String(formData.rude).trim() : null,
       telefono: formData.telefono ? Number(String(formData.telefono).replace(/\D/g, '')) : null,
       correo: formData.correo ? String(formData.correo).trim() : null
-    }
+    },
+    // Añadimos los tokens de seguridad en la raíz del payload
+    username_hp: formData.username_hp,
+    cf_turnstile_response: formData.cf_turnstile_response
   }
 
   formularioTemporal.value = payload.estudiante
