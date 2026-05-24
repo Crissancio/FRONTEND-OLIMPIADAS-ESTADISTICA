@@ -2,7 +2,7 @@ import type { ResponseBase } from '@/modules/convocatorias/types/convocatorias.a
 
 export type InicioResponseDTO = {
   convocatoria: ConvocatoriaResponseDTO | null
-  material_principal: MaterialPrincipalDTO
+  material_principal: MaterialPrincipalDTO[]
   categorias: CategoriaResumenDTO[]
   avisos: AvisoInicioDTO[]
 }
@@ -35,7 +35,7 @@ export type MaterialResponseDTO = {
 
 export type MaterialPrincipalDTO = {
   enlace_acceso: string | null
-  mensaje: string | null
+  importancia_tipo: string | null
 }
 
 export type CategoriaResumenDTO = {
