@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { convocatoriasMock, avisosMock } from '@/modules/convocatorias/data/convocatorias.data'
 import { usePublicStore } from '@/modules/public/stores/public.store'
-import type { AvisoInicioDTO, CategoriaResumenDTO, ConvocatoriaResponseDTO } from '@/modules/public/types/public.api'
+import type { AvisoInicioDTO, CategoriaResumenDTO, ConvocatoriaResponseDTO, MaterialPrincipalDTO } from '@/modules/public/types/public.api'
 import { toApiError } from '@/app/api/api-error'
 import type { HomeConvocatoria, HomeAviso } from '../types/home.types'
 
@@ -13,9 +12,9 @@ import HomeInstitutional from '../components/HomeInstitutional.vue'
 
 const inicioLoading = ref(false)
 const inicioError = ref<string | null>(null)
-const aficheUrl = ref<string | null>(null)
-const convocatoriasData = ref<HomeConvocatoria[]>(convocatoriasMock)
-const avisosData = ref<HomeAviso[]>(avisosMock)
+// Ya no necesitamos aficheUrl solo, ahora es parte de la lista de materiales
+const convocatoriasData = ref<HomeConvocatoria[]>([])
+const avisosData = ref<HomeAviso[]>([])
 const hasBackendConvocatoria = ref(false)
 const inicioLoadedOk = ref(false)
 const publicStore = usePublicStore()
@@ -45,12 +44,19 @@ const formatFechas = (dto: ConvocatoriaResponseDTO): string => {
 
 const mapCategorias = (categorias: CategoriaResumenDTO[]): HomeConvocatoria['categorias'] => {
   return (categorias ?? []).map((c, index) => ({
-    id: String(c.id_categoria ?? `${c.curso}-${index}`),
-    nombre: c.nombre_categoria ?? c.nombre_convocatoria ?? `${c.curso} ${c.nivel}`,
+    id_categoria:c.id_categoria ?? `${c.curso}-${index}`,
+    nombre_categoria: c.nombre_categoria,
+    curso: c.curso,
+    nivel: c.nivel
   }))
 }
 
-const mapConvocatoria = (dto: ConvocatoriaResponseDTO, categorias: CategoriaResumenDTO[] = []): HomeConvocatoria => {
+// ACTUALIZADO: Ahora recibe materiales y mapea los nuevos campos de fechas
+const mapConvocatoria = (
+  dto: ConvocatoriaResponseDTO, 
+  categorias: CategoriaResumenDTO[] = [],
+  materiales: MaterialPrincipalDTO[] = []
+): HomeConvocatoria => {
   return {
     id: String(dto.id_convocatoria),
     nombre: dto.nombre_convocatoria,
@@ -58,7 +64,14 @@ const mapConvocatoria = (dto: ConvocatoriaResponseDTO, categorias: CategoriaResu
     estado: dto.estado,
     descripcionBreve: dto.descripcion ?? '',
     fechas: formatFechas(dto),
-    categorias: mapCategorias(categorias)
+    categorias: mapCategorias(categorias),
+    // Nuevos campos para v-calendar
+    inicio_olimpiadas: dto.inicio_olimpiadas,
+    fin_olimpiadas: dto.fin_olimpiadas,
+    fecha_inicio_inscripcion: dto.fecha_inicio_inscripcion,
+    fecha_fin_inscripcion: dto.fecha_fin_inscripcion,
+    // Lista de materiales (Afiche y Convocatoria PDF)
+    material_principal: materiales
   }
 }
 
@@ -90,13 +103,17 @@ const loadInicio = async () => {
   try {
     const dto = await publicStore.loadInicio()
 
-    const conv = dto.convocatoria ? [mapConvocatoria(dto.convocatoria, dto.categorias)] : []
+    // ACTUALIZADO: Pasamos la lista de materiales al mapeador
+    const conv = dto.convocatoria 
+      ? [mapConvocatoria(dto.convocatoria, dto.categorias, dto.material_principal)] 
+      : []
+
     hasBackendConvocatoria.value = conv.length > 0
     inicioLoadedOk.value = true
     convocatoriasData.value = conv
     avisosData.value = dto.avisos?.length ? dto.avisos.map(mapAviso) : []
-    aficheUrl.value = dto.material_principal?.enlace_acceso ?? null
 
+    // Asegurar que la vista esté arriba tras cargar
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'instant' })
     }, 50)
@@ -105,8 +122,8 @@ const loadInicio = async () => {
     inicioError.value = toApiError(err).message
     inicioLoadedOk.value = false
     hasBackendConvocatoria.value = false
-    convocatoriasData.value = convocatoriasMock
-    avisosData.value = avisosMock
+    convocatoriasData.value = []
+    avisosData.value = []
   } finally {
     inicioLoading.value = false
   }
@@ -132,7 +149,7 @@ onMounted(() => {
       />
     </section>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid grid-cols-1 gap-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-20 grid grid-cols-1 gap-10">
       <HomeConvocatoriaDetail 
         v-if="hasBackendConvocatoria && activeConv"
         :activeConv="activeConv"

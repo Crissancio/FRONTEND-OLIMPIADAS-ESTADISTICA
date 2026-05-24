@@ -39,9 +39,8 @@ export type MaterialPrincipalDTO = {
 }
 
 export type CategoriaResumenDTO = {
-  id_categoria?: number
-  nombre_categoria?: string
-  nombre_convocatoria?: string
+  id_categoria: number
+  nombre_categoria: string
   nivel: string
   curso: number
 }
