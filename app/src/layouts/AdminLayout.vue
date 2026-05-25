@@ -54,16 +54,9 @@ onMounted(() => {
 <template>
   <div v-if="isAuthenticated" class="flex h-screen bg-background font-sans overflow-hidden">
    
-    <!-- Mobile Sidebar Overlay -->
-    <div 
-      v-if="isSidebarOpen" 
-      class="fixed inset-0 bg-black/50 z-40 lg:hidden"
-      @click="isSidebarOpen = false"
-    ></div>
-    
     <!-- Sidebar -->
     <aside 
-      :class="`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-primary-dark text-white flex flex-col transition-transform duration-300 ease-in-out border-r border-primary/20 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`"
+      class="hidden w-64 flex-col border-r border-primary/20 bg-primary-dark text-white lg:static lg:flex"
     >
       <div class="h-16 flex items-center px-6 border-b border-white/10 shrink-0">
         <div class="mr-3 flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden">
@@ -110,16 +103,43 @@ onMounted(() => {
     <!-- Main Content -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <!-- Topbar -->
-      <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 z-10 shadow-sm">
+      <header class="relative z-30 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 shadow-sm">
         <div class="flex items-center gap-4">
           <Button 
             variant="ghost" 
             size="sm"
             class="text-text-muted hover:text-text-main -ml-2 lg:hidden"
-            @click="isSidebarOpen = true"
+            @click="isSidebarOpen = !isSidebarOpen"
           >
-            <Menu class="w-6 h-6" />
+            <component :is="isSidebarOpen ? X : Menu" class="h-6 w-6" />
           </Button>
+          <div
+            v-if="isSidebarOpen"
+            class="absolute left-4 right-4 top-[calc(100%+0.5rem)] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-soft lg:hidden"
+          >
+            <nav class="max-h-[70vh] overflow-y-auto p-2">
+              <router-link
+                v-for="item in navigation"
+                :key="item.name"
+                :to="item.href"
+                class="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition-colors"
+                :class="route.path === item.href || (item.href !== '/admin' && route.path.startsWith(item.href))
+                  ? 'bg-primary text-white'
+                  : 'text-text-main hover:bg-gray-50 hover:text-primary'"
+                @click="isSidebarOpen = false"
+              >
+                <component :is="item.icon" class="h-5 w-5" :class="route.path === item.href || (item.href !== '/admin' && route.path.startsWith(item.href)) ? 'text-secondary' : 'text-text-muted'" />
+                {{ item.name }}
+              </router-link>
+              <button
+                class="mt-2 flex w-full items-center gap-3 rounded-lg border-t border-gray-100 px-3 py-3 text-left text-sm font-semibold text-danger transition-colors hover:bg-danger/10"
+                @click="handleLogout"
+              >
+                <LogOut class="h-5 w-5" />
+                Cerrar Sesión
+              </button>
+            </nav>
+          </div>
         
           <!--div class="hidden sm:flex relative w-64 xl:w-96">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />

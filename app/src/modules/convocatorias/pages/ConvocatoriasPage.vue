@@ -1,31 +1,79 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { Search, Filter, Calendar, Users, ArrowRight } from 'lucide-vue-next'
-import { convocatoriasMock } from '@/modules/convocatorias/data/convocatorias.data'
+import { usePublicStore } from '@/modules/public/stores/public.store'
+import { toApiError } from '@/app/api/api-error'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import Select from '@/shared/components/ui/molecules/Select.vue'
 
-type FilterType = 'TODAS' | 'ACTIVA' | 'FINALIZADA'
+type FilterType = 'TODAS' | 'PROXIMA' | 'ACTIVA' | 'INSCRIPCION EN CURSO' | 'FINALIZADA'
+type PublicConvocatoriaCard = {
+  id: string
+  nombre: string
+  gestion: number
+  estado: string
+  descripcionCompleta: string
+  fechas: string
+  categorias: number
+}
+
+const publicStore = usePublicStore()
 const filter = ref<FilterType>('TODAS')
 const yearFilter = ref<string>('Todos')
+const isLoading = ref(false)
+const error = ref<string | null>(null)
+
+const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : ''
+const formatRange = (start?: string | null, end?: string | null) => [formatDate(start), formatDate(end)].filter(Boolean).join(' - ')
+
+const convocatorias = computed<PublicConvocatoriaCard[]>(() => {
+  const conv = publicStore.inicio?.convocatoria
+  if (!conv) return []
+
+  return [{
+    id: String(conv.id_convocatoria),
+    nombre: conv.nombre_convocatoria,
+    gestion: conv.gestion,
+    estado: conv.estado,
+    descripcionCompleta: conv.descripcion ?? 'Sin descripcion registrada.',
+    fechas: formatRange(conv.inicio_olimpiadas, conv.fin_olimpiadas) || formatRange(conv.fecha_inicio_inscripcion, conv.fecha_fin_inscripcion),
+    categorias: publicStore.inicio?.categorias?.length ?? 0,
+  }]
+})
 
 const years = computed(() => {
-  const uniqueYears = Array.from(new Set(convocatoriasMock.map(c => c.gestion.toString())))
+  const uniqueYears = Array.from(new Set(convocatorias.value.map(c => c.gestion.toString())))
   return ['Todos', ...uniqueYears]
 })
 
 const filteredData = computed(() => {
-  return convocatoriasMock
+  return convocatorias.value
     .filter(c => filter.value === 'TODAS' || c.estado === filter.value)
     .filter(c => yearFilter.value === 'Todos' || c.gestion.toString() === yearFilter.value)
     .sort((a, b) => {
-      if (a.estado === 'ACTIVA' && b.estado !== 'ACTIVA') return -1
-      if (a.estado !== 'ACTIVA' && b.estado === 'ACTIVA') return 1
+      if (a.estado === 'INSCRIPCION EN CURSO' && b.estado !== 'INSCRIPCION EN CURSO') return -1
+      if (a.estado !== 'INSCRIPCION EN CURSO' && b.estado === 'INSCRIPCION EN CURSO') return 1
       return b.gestion - a.gestion
     })
+})
+
+const loadConvocatorias = async () => {
+  isLoading.value = true
+  error.value = null
+  try {
+    await publicStore.loadInicio()
+  } catch (err) {
+    error.value = toApiError(err).message
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  void loadConvocatorias()
 })
 </script>
 
@@ -46,7 +94,9 @@ const filteredData = computed(() => {
             :model-value="filter"
             :options="[
               { value: 'TODAS', label: 'Todos los estados' },
+              { value: 'PROXIMA', label: 'Próximas' },
               { value: 'ACTIVA', label: 'Activas' },
+              { value: 'INSCRIPCION EN CURSO', label: 'Inscripción en curso' },
               { value: 'FINALIZADA', label: 'Finalizadas' }
             ]"
             placeholder="Estado"
@@ -66,20 +116,23 @@ const filteredData = computed(() => {
     </div>
 
     <div class="grid gap-6">
-      <template v-if="filteredData.length > 0">
+      <div v-if="isLoading" class="py-16 text-center text-text-muted font-medium">Cargando convocatorias...</div>
+      <div v-else-if="error" class="py-16 text-center text-danger font-medium">{{ error }}</div>
+
+      <template v-else-if="filteredData.length > 0">
         <Card
           v-for="conv in filteredData"
           :key="conv.id"
-          :class="`rounded-xl shadow-soft transition-all hover:shadow-md overflow-hidden relative group bg-white ${conv.estado === 'ACTIVA' ? 'border-primary ring-1 ring-primary/20' : 'border-gray-200'}`"
+          :class="`rounded-xl shadow-soft transition-all hover:shadow-md overflow-hidden relative group bg-white ${conv.estado === 'ACTIVA' || conv.estado === 'INSCRIPCION EN CURSO' ? 'border-primary ring-1 ring-primary/20' : 'border-gray-200'}`"
         >
           <CardContent class="p-0">
             <div class="md:flex h-full items-stretch">
-              <div :class="`p-6 md:w-1/4 flex flex-col justify-center items-center text-center border-b md:border-b-0 md:border-r border-gray-100 ${conv.estado === 'ACTIVA' ? 'bg-info/10/30' : 'bg-background'}`">
+              <div :class="`p-6 md:w-1/4 flex flex-col justify-center items-center text-center border-b md:border-b-0 md:border-r border-gray-100 ${conv.estado === 'ACTIVA' || conv.estado === 'INSCRIPCION EN CURSO' ? 'bg-info/10/30' : 'bg-background'}`">
                 <span class="text-5xl font-heading font-black text-text-main/5 mb-3">{{ conv.gestion }}</span>
                   <Badge 
-                    :class="`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md border shadow-none ${conv.estado === 'ACTIVA' ? 'bg-success/10 text-success border-success/20' : 'bg-gray-100 text-text-muted border-gray-200'}`"
+                    :class="`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md border shadow-none ${conv.estado === 'ACTIVA' || conv.estado === 'INSCRIPCION EN CURSO' ? 'bg-success/10 text-success border-success/20' : 'bg-gray-100 text-text-muted border-gray-200'}`"
                   >
-                    <span v-if="conv.estado === 'ACTIVA'" class="w-1.5 h-1.5 rounded-full bg-success animate-pulse inline-block mr-1.5 align-middle"></span>
+                    <span v-if="conv.estado === 'ACTIVA' || conv.estado === 'INSCRIPCION EN CURSO'" class="w-1.5 h-1.5 rounded-full bg-success animate-pulse inline-block mr-1.5 align-middle"></span>
                     {{ conv.estado }}
                   </Badge>
                 <h3 class="font-heading font-bold text-text-main text-lg mt-3">{{ conv.nombre }}</h3>
@@ -96,7 +149,7 @@ const filteredData = computed(() => {
                     </div>
                     <div class="flex items-center gap-2 bg-background px-3 py-1.5 rounded-md border border-gray-100">
                       <Users class="w-4 h-4 text-secondary" />
-                      <span class="font-semibold">{{ conv.categorias.length }} Categorías</span>
+                      <span class="font-semibold">{{ conv.categorias }} Categorías</span>
                     </div>
                   </div>
                 </div>
@@ -104,11 +157,11 @@ const filteredData = computed(() => {
                 <div class="flex justify-end pt-4 border-t border-gray-100">
                   <Button 
                     as="router-link"
-                    :to="`/convocatoria/${conv.id}`"
-                    :variant="conv.estado === 'ACTIVA' ? 'default' : 'outline'"
+                    :to="{ name: 'convocatoria-detalle', params: { id: conv.id } }"
+                    :variant="conv.estado === 'ACTIVA' || conv.estado === 'INSCRIPCION EN CURSO' ? 'default' : 'outline'"
                     class="font-bold text-sm shadow-sm py-2.5 px-5 flex items-center gap-2 transition-all"
                   >
-                    <template v-if="conv.estado === 'ACTIVA'">Ver y Participar</template>
+                    <template v-if="conv.estado === 'ACTIVA' || conv.estado === 'INSCRIPCION EN CURSO'">Ver y Participar</template>
                     <template v-else>Ver Histórico</template>
                     <ArrowRight class="w-4 h-4" />
                   </Button>

@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { 
   Search, Trophy, Medal, Download, Award, Star 
 } from 'lucide-vue-next'
-import { resultadosMock, convocatoriasMock } from '@/modules/convocatorias/data/convocatorias.data'
+import { resultadosMock } from '@/modules/convocatorias/data/convocatorias.data'
+import { usePublicStore } from '@/modules/public/stores/public.store'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 
+const publicStore = usePublicStore()
 const searchTerm = ref('')
-const convFilter = ref('1') // Default to recent
+const convFilter = ref('')
 const categoriaFilter = ref('secundaria')
 
 const filteredResultados = computed(() => {
@@ -22,6 +24,17 @@ const filteredResultados = computed(() => {
 
 const top3 = computed(() => filteredResultados.value.filter(r => r.pos <= 3).sort((a, b) => a.pos - b.pos))
 const others = computed(() => filteredResultados.value.filter(r => r.pos > 3))
+
+const convocatoriaOptions = computed(() => {
+  const conv = publicStore.inicio?.convocatoria
+  if (!conv) return []
+  return [{ id: String(conv.id_convocatoria), label: `${conv.nombre_convocatoria} (${conv.gestion})` }]
+})
+
+onMounted(async () => {
+  if (!publicStore.inicio) await publicStore.loadInicio()
+  convFilter.value = convocatoriaOptions.value[0]?.id ?? ''
+})
 </script>
 
 <template>
@@ -54,8 +67,8 @@ const others = computed(() => filteredResultados.value.filter(r => r.pos > 3))
               v-model="convFilter"
               class="w-full bg-gray-50 border-gray-200 text-text-main rounded-xl px-4 py-3 focus-visible:ring-primary font-medium h-[50px]"
             >
-              <option v-for="conv in convocatoriasMock.filter(c => c.estado === 'FINALIZADA' || true)" :key="conv.id" :value="conv.id">
-                {{ conv.nombre }} ({{ conv.gestion }})
+              <option v-for="conv in convocatoriaOptions" :key="conv.id" :value="conv.id">
+                {{ conv.label }}
               </option>
             </select>
           </div>

@@ -5,7 +5,6 @@ import {
   FileText, Download, Calendar, Monitor, MapPin, ArrowRight, Trophy, Users, 
   ChevronDown, Video, Link as LinkIcon, File, InfoIcon, AlertCircle, CheckCircle, BookOpen
 } from 'lucide-vue-next'
-import { convocatoriasMock } from '@/modules/convocatorias/data/convocatorias.data'
 import { PublicService } from '@/modules/public/services/public.service'
 import { usePublicStore } from '@/modules/public/stores/public.store'
 import type { CategoriaResumenDTO, ConvocatoriaDetalleDTO, FaseResponseDTO, MaterialResponseDTO } from '@/modules/public/types/public.api'
@@ -24,6 +23,14 @@ const isLoading = ref(false)
 const loadError = ref<string | null>(null)
 const fasesByCategoria = ref<Record<string, FaseResponseDTO[]>>({})
 const materialesByFase = ref<Record<string, MaterialResponseDTO[]>>({})
+
+type PublicDetalleFase = ReturnType<typeof mapFase>
+type PublicDetalleCategoria = {
+  id: string
+  nombre: string
+  fases: PublicDetalleFase[]
+  recursos: { nombre: string; url: string }[]
+}
 
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : ''
 const formatRange = (start?: string | null, end?: string | null) => [formatDate(start), formatDate(end)].filter(Boolean).join(' - ')
@@ -51,8 +58,6 @@ const mapFase = (fase: FaseResponseDTO) => ({
 
 const conv = computed(() => {
   if (!detalle.value?.convocatoria) {
-    const fallback = convocatoriasMock.find(c => c.id === route.params.id)
-    if (loadError.value && fallback) return fallback
     return null
   }
 
@@ -71,7 +76,7 @@ const conv = computed(() => {
         id,
         nombre: categoriaNombre(cat),
         fases: (cat.id_categoria ? fasesByCategoria.value[String(cat.id_categoria)] ?? [] : []).map(mapFase),
-        recursos: [],
+        recursos: [] as PublicDetalleCategoria['recursos'],
       }
     }),
     materialGeneral: detalle.value.materiales.map(mapMaterial),
@@ -206,17 +211,6 @@ onMounted(() => {
           <!-- Main Content -->
           <div class="lg:col-span-2 space-y-8">
             <!-- General Info -->
-            <Card class="rounded-2xl shadow-sm border-gray-100">
-              <CardContent class="p-8 sm:p-10">
-                <h2 class="text-2xl font-heading font-bold text-text-main mb-6 flex items-center gap-3">
-                  <InfoIcon class="w-6 h-6 text-primary" />
-                  Descripción General
-                </h2>
-                <div class="text-text-muted">
-                  <p>{{ conv.descripcionCompleta }}</p>
-                </div>
-              </CardContent>
-            </Card>
 
             <!-- Categorías y Fases -->
             <Card class="rounded-2xl shadow-sm border-gray-100 overflow-hidden">
