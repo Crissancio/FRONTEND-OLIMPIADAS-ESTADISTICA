@@ -47,6 +47,31 @@ export interface Convocatoria {
   materialGeneral?: Material[];
 }
 
+export const convocatoriasMock: Convocatoria[] = [
+  {
+    id: "1",
+    nombre: "Olimpiada Paceña de Estadística",
+    gestion: 2024,
+    estado: "ACTIVA",
+    descripcionBreve: "Convocatoria oficial de la olimpiada de estadística.",
+    descripcionCompleta: "Participa en la Olimpiada Paceña de Estadística y fortalece tus habilidades de análisis de datos.",
+    fechas: "2024",
+    categorias: [],
+    materialGeneral: [],
+  },
+  {
+    id: "2",
+    nombre: "Olimpiada Paceña de Estadística 2023",
+    gestion: 2023,
+    estado: "FINALIZADA",
+    descripcionBreve: "Histórico de la gestión 2023.",
+    descripcionCompleta: "Consulta la información histórica de la convocatoria finalizada.",
+    fechas: "2023",
+    categorias: [],
+    materialGeneral: [],
+  },
+];
+
 export const resultadosMock = [
   { id: "1", nombre: "Ana López Torrez", ci: "1234567 LP", categoria: "Nivel Secundaria", nota: "98/100", pos: 1 },
   { id: "2", nombre: "Carlos Mamani Quispe", ci: "7654321 LP", categoria: "Nivel Secundaria", nota: "95/100", pos: 2 },

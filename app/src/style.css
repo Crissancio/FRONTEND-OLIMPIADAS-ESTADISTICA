@@ -1,5 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
 
 @layer base {
   ::-webkit-scrollbar {
@@ -25,6 +26,24 @@
   --color-warning: #F5A623;
   --color-text-main: #1E293B;
   --color-text-muted: #64748B;
+
+  --color-estado-borrador: #475569;
+  --color-estado-borrador-soft: #E2E8F0;
+  --color-estado-finalizada: #334155;
+  --color-estado-finalizada-soft: #CBD5E1;
+  --color-estado-proxima: #008AA8;
+  --color-estado-proxima-soft: #E0F7FA;
+  --color-estado-activa: #3A8742;
+  --color-estado-activa-soft: #E8F5E9;
+  --color-estado-inscripcion: #D48806;
+  --color-estado-inscripcion-soft: #FFF8E1;
+
+  --color-aviso-comunicado:  #238520 ;
+  --color-aviso-comunicado-soft: #E9F3E9;
+  --color-aviso-importante: #D48806;
+  --color-aviso-importante-soft: #FFF3E0;
+  --color-aviso-otro: #64748B;
+  --color-aviso-otro-soft: #F1F5F9;
 
   --font-sans: 'Inter', sans-serif;
   --font-heading: 'Poppins', sans-serif;

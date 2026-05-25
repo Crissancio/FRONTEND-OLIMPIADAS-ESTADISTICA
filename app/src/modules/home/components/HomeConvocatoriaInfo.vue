@@ -9,6 +9,11 @@ const props = defineProps<{
   activeConv: HomeConvocatoria
 }>()
 
+const detalleConvocatoriaTo = computed(() => ({
+  name: 'convocatoria-detalle',
+  params: { id: props.activeConv.id }
+}))
+
 // --- LÓGICA DEL CALENDARIO ---
 const isDesktop = ref(window.innerWidth >= 1024)
 
@@ -157,7 +162,7 @@ const maxCalendarDate = computed(() => props.activeConv.fin_olimpiadas ? new Dat
     <div class="pt-6 border-t border-gray-100 flex justify-end mt-auto">
       <Button
         as="router-link"
-        :to="`/convocatoria/${props.activeConv.id}`"
+        :to="detalleConvocatoriaTo"
         variant="link"
         class="text-primary text-lg font-semibold hover:text-secondary group flex items-center"
       >

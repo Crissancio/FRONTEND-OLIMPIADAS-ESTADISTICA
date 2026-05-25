@@ -10,194 +10,187 @@ const props = defineProps<{
   showPreinscripcion: boolean
 }>()
 
-const slides = computed(() => {
-  const hasConv = props.hasBackendConvocatoria && !!props.activeConv
-  return [
-    {
-      id: 1,
-      image: '/inicio-1.jpg',
-      isInfo: true,
-      title: hasConv ? props.activeConv!.nombre : 'Olimpiada Paceña de Estadística OPE',
-      subtitle: hasConv ? `Gestión ${props.activeConv!.gestion} - ${props.activeConv!.estado}` : 'OPE',
-      desc: hasConv ? props.activeConv!.descripcionBreve : 'Fomentando el pensamiento lógico, matemático y analítico. Un espacio de excelencia académica para la juventud boliviana, organizado por la UMSA.',
-    },
-    {
-      id: 2,
-      image: '/inicio-2.jpg',
-      isInfo: false,
-      title: 'Análisis',
-      desc: 'Desarrolla habilidades críticas para interpretar y modelar datos del mundo real, fomentando decisiones basadas en evidencia.',
-    },
-    {
-      id: 3,
-      image: '/inicio-3.jpg',
-      isInfo: false,
-      title: 'Conocimiento',
-      desc: 'Fortalece tus bases matemáticas y estadísticas, accediendo a herramientas fundamentales para el avance científico y tecnológico.',
-    },
-    {
-      id: 4,
-      image: '/inicio-4.jpg',
-      isInfo: false,
-      title: 'Competencia',
-      desc: 'Mide tus capacidades en un entorno de sano desafío, compartiendo y compitiendo con estudiantes de alto rendimiento de toda la región.',
-    },
-    {
-      id: 5,
-      image: '/inicio-5.jpg',
-      isInfo: false,
-      title: 'Excelencia',
-      desc: 'Alcanza tu máximo potencial académico. La Olimpiada promueve el rigor, la disciplina y la excelencia en el estudio de la estadística.',
-    }
-  ]
-})
+const slides = computed(() => [
+  { id: 1, image: '/inicio-1.jpg', isInfo: true },
+  { id: 2, image: '/inicio-2.jpg', isInfo: false, title: 'Análisis', desc: 'Desarrolla habilidades críticas para interpretar y modelar datos del mundo real, fomentando decisiones basadas en evidencia.' },
+  { id: 3, image: '/inicio-3.jpg', isInfo: false, title: 'Conocimiento', desc: 'Fortalece tus bases matemáticas y estadísticas, accediendo a herramientas fundamentales para el avance científico.' },
+  { id: 4, image: '/inicio-4.jpg', isInfo: false, title: 'Competencia', desc: 'Mide tus capacidades en un entorno de sano desafío compartiendo con estudiantes de alto rendimiento.' },
+  { id: 5, image: '/inicio-5.jpg', isInfo: false, title: 'Excelencia', desc: 'Alcanza tu máximo potencial académico promoviendo el rigor, la disciplina y la excelencia.' }
+])
 
 const currentSlide = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
-
 const typedText = ref('')
+let timer: ReturnType<typeof setInterval> | null = null
 let typeInterval: ReturnType<typeof setInterval> | null = null
-let delayTimeout: ReturnType<typeof setTimeout> | null = null
 
-const currentDescription = computed(() => {
-  if (slides.value[currentSlide.value].isInfo) {
-    if (props.hasBackendConvocatoria && props.activeConv) return props.activeConv.descripcionBreve
-    return 'Fomentando el pensamiento lógico, matemático y analítico. Un espacio de excelencia académica para la juventud boliviana, organizado por la UMSA.'
-  }
-  return slides.value[currentSlide.value].desc
+const mainTitle = computed(() => {
+  return (props.hasBackendConvocatoria && props.activeConv)
+    ? props.activeConv.nombre
+    : 'Olimpiada Paceña de Estadística'
 })
 
-const startTypewriter = () => {
-  if (typeInterval) clearInterval(typeInterval)
-  if (delayTimeout) clearTimeout(delayTimeout)
-  typedText.value = ''
-  
-  delayTimeout = setTimeout(() => {
-    let i = 0
-    const text = currentDescription.value
-    typeInterval = setInterval(() => {
-      if (i < text.length) {
-        typedText.value += text.charAt(i)
-        i++
-      } else {
-        if (typeInterval) clearInterval(typeInterval)
-      }
-    }, 20)
-  }, 800)
-}
+const currentGestion = computed(() => {
+  return (props.hasBackendConvocatoria && props.activeConv)
+    ? props.activeConv.gestion
+    : ''
+})
 
-watch(currentSlide, startTypewriter)
+const detalleConvocatoriaTo = computed(() => ({
+  name: 'convocatoria-detalle',
+  params: { id: props.activeConv?.id }
+}))
+
+const currentDescription = computed(() => {
+  if (currentSlide.value === 0) {
+    return props.activeConv?.descripcionBreve || 'Fomentando el pensamiento lógico y analítico organizado por la UMSA.'
+  }
+  return slides.value[currentSlide.value]?.desc || ''
+})
 
 const nextSlide = () => {
   currentSlide.value = (currentSlide.value + 1) % slides.value.length
 }
 
+const getStatusBg = (estado?: string) => {
+  const e = (estado || '').toUpperCase()
+  if (e.includes('INSCRIPCION')) return 'bg-estado-inscripcion'
+  if (e.includes('ACTIVA')) return 'bg-estado-activa'
+  if (e.includes('PROXIMA')) return 'bg-estado-proxima'
+  if (e.includes('FINALIZADA')) return 'bg-estado-finalizada'
+  return 'bg-estado-borrador'
+}
+
+const startTypewriter = () => {
+  if (typeInterval) clearInterval(typeInterval)
+  typedText.value = ''
+  const text = currentDescription.value
+  let i = 0
+  typeInterval = setInterval(() => {
+    if (i < text.length) {
+      typedText.value += text.charAt(i)
+      i++
+    } else {
+      clearInterval(typeInterval!)
+    }
+  }, 25)
+}
+
+watch(currentSlide, startTypewriter)
+
 onMounted(() => {
   startTypewriter()
-  timer = setInterval(nextSlide, 15000)
+  timer = setInterval(nextSlide, 12000)
 })
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
   if (typeInterval) clearInterval(typeInterval)
-  if (delayTimeout) clearTimeout(delayTimeout)
 })
 </script>
 
 <template>
-  <div class="absolute inset-0 z-0">
-    <transition-group name="fade" tag="div" class="w-full h-full relative bg-primary">
+  <div class="absolute inset-0 z-0 overflow-hidden bg-primary">
+    <transition-group name="fade" tag="div" class="w-full h-full relative">
       <div v-for="(slide, idx) in slides" :key="slide.id" v-show="currentSlide === idx" class="absolute inset-0 w-full h-full">
-        <img :src="slide.image" class="w-full h-full object-cover object-center" alt="Olimpiada Paceña de Estadística" />
+        <img :src="slide.image" class="w-full h-full object-cover object-center scale-105" alt="OPE" />
       </div>
     </transition-group>
-    <div class="absolute inset-0 bg-primary/80 lg:bg-transparent lg:bg-gradient-to-r lg:from-transparent lg:from-30% lg:via-primary/90 lg:via-65% lg:to-primary lg:to-85%"></div>
+
+    <div class="lg:hidden absolute inset-0 bg-gradient-to-t from-primary/95 via-primary/50 to-transparent"></div>
+    <div class="hidden lg:block absolute top-0 right-0 bottom-0 w-[55%] bg-gradient-to-l from-primary via-primary/70 to-transparent"></div>
   </div>
 
-  <div class="relative z-10 flex-1 flex flex-col justify-center px-6 lg:px-16 pt-24 pb-16 lg:pb-0 lg:py-0 w-full lg:w-4/5">
-    <div class="min-h-[280px] lg:min-h-[340px] flex flex-col justify-end pb-6">
-      <transition name="fade" mode="out-in">
-        <div :key="currentSlide">
-          
-          <template v-if="slides[currentSlide].isInfo">
-            <div v-if="props.hasBackendConvocatoria && props.activeConv">
-              <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white text-sm font-semibold mb-6 border border-white/20 shadow-sm">
-                <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse" v-if="props.activeConv.estado === 'ACTIVA'" />
-                Gestión: {{ props.activeConv.gestion }} - {{ props.activeConv.estado }}
-              </div>
-              <h1 class="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-4 lg:mb-6 leading-tight drop-shadow-xl">
-                {{ props.activeConv.nombre }}
-              </h1>
-              <p class="text-base sm:text-lg md:text-xl text-white font-sans drop-shadow-md leading-relaxed min-h-[80px]">
-                {{ typedText }}<span class="animate-pulse opacity-70">|</span>
-              </p>
-            </div>
-            <div v-else>
-              <h1 class="text-4xl md:text-5xl lg:text-6xl font-heading font-bold mb-4 lg:mb-6 leading-tight drop-shadow-xl">
-                Olimpiada Paceña de <br class="hidden md:block"/>Estadística OPE
-              </h1>
-              <p class="text-base sm:text-lg md:text-xl text-white font-sans drop-shadow-md leading-relaxed min-h-[80px]">
-                {{ typedText }}<span class="animate-pulse opacity-70">|</span>
-              </p>
-            </div>
-          </template>
-          
-          <template v-else>
-            <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-bold mb-4 lg:mb-6 leading-tight drop-shadow-xl">
-              {{ slides[currentSlide].title }}
-            </h1>
-            <p class="text-base sm:text-lg md:text-xl text-white font-sans drop-shadow-md leading-relaxed min-h-[80px]">
-              {{ typedText }}<span class="animate-pulse opacity-70">|</span>
-            </p>
-          </template>
-          
+  <div class="relative z-20 flex-1 flex flex-col h-full w-full">
+    <!-- Estado (solo slide 0) -->
+    <div class="absolute top-[20%] lg:top-[25%] left-6 lg:left-16 h-8 flex items-center overflow-hidden z-30 pointer-events-none">
+      <Transition name="expand-h">
+        <div
+          v-if="currentSlide === 0 && props.hasBackendConvocatoria && props.activeConv"
+          :class="getStatusBg(props.activeConv.estado)"
+          class="text-white py-1.5 px-4 text-xs sm:text-sm font-bold tracking-widest uppercase shadow-lg rounded-r-full whitespace-nowrap"
+        >
+          {{ props.activeConv.estado }}
         </div>
-      </transition>
+      </Transition>
     </div>
 
-    <div class="flex flex-col sm:flex-row gap-4 relative z-20">
-      <Button 
+    <!-- Bloque informativo en esquina superior izquierda (cuando slide != 0) -->
+    <Transition name="slide-up-fade" mode="out-in">
+      <div v-if="currentSlide !== 0" class="absolute top-6 lg:top-8 left-6 lg:left-8 flex gap-3 lg:gap-4 z-30 pointer-events-none w-[90%] md:w-auto">
+        <div class="w-1.5 lg:w-2 rounded-full shadow-lg" :class="getStatusBg(props.activeConv?.estado)"></div>
+        <div class="flex flex-col items-start justify-center">
+          <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight drop-shadow-lg text-white">
+            {{ mainTitle }}
+          </h1>
+          <div v-if="currentGestion" class="text-sm sm:text-base lg:text-xl text-secondary font-semibold opacity-90 font-medium">
+            Gestión {{ currentGestion }}
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Título y gestión en “primer plano” (solo slide 0) -->
+    <Transition name="slide-up-fade" mode="out-in">
+      <div v-if="currentSlide === 0" class="absolute top-[calc(20%+2.5rem)] lg:top-[calc(25%+2.5rem)] left-6 lg:left-16 flex flex-col items-start gap-1 lg:gap-3 z-30 pointer-events-none">
+        <h1 class="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight drop-shadow-2xl text-white">
+          {{ mainTitle }}
+        </h1>
+        <div v-if="currentGestion" class="text-2xl lg:text-4xl text-secondary font-semibold opacity-90 font-medium">
+          Gestión {{ currentGestion }}
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Título grande de los slides (cuando slide != 0) -->
+    <Transition name="slide-up-fade" mode="out-in">
+      <h2
+        v-if="currentSlide !== 0"
+        :key="'slide-title-' + currentSlide"
+        class="absolute top-[25%] lg:top-[30%] left-6 lg:left-16 text-white font-bold leading-tight drop-shadow-2xl z-30 pointer-events-none text-4xl sm:text-5xl lg:text-7xl"
+      >
+        {{ slides[currentSlide]?.title }}
+      </h2>
+    </Transition>
+
+    <!-- Descripción con efecto typewriter -->
+    <div class="absolute bottom-40 lg:bottom-48 left-6 lg:left-16 w-[90%] lg:w-2/3 pr-6 z-30 pointer-events-none">
+      <p class="text-lg md:text-xl text-white/90 leading-relaxed max-w-2xl drop-shadow-md min-h-[60px]">
+        {{ typedText }}<span class="animate-pulse">|</span>
+      </p>
+    </div>
+
+    <!-- Botones -->
+    <div class="absolute bottom-8 lg:bottom-12 left-6 lg:left-16 flex flex-col sm:flex-row gap-4 z-40">
+      <Button
         v-if="props.showPreinscripcion"
-        as="router-link" 
-        to="/inscripcion" 
+        as="router-link"
+        to="/inscripcion"
         variant="accent"
         size="lg"
-        class="w-full sm:w-auto px-8 py-4 text-base sm:text-lg font-bold shadow-xl transition-all hover:scale-105 rounded-xl h-auto flex justify-center"
+        class="w-full sm:w-auto px-8 py-3 text-base lg:text-lg font-bold shadow-2xl transition-all hover:scale-105 rounded-xl h-auto flex justify-center"
       >
-        Ir a pre-inscripción
-        <ArrowRight class="w-5 h-5 ml-2" />
+        Ir a pre-inscripción <ArrowRight class="w-5 h-5 ml-2" />
       </Button>
-      <Button 
+      <Button
         v-if="props.hasBackendConvocatoria && props.activeConv"
-        as="router-link" 
-        :to="`/convocatoria/${props.activeConv.id}`" 
+        as="router-link"
+        :to="detalleConvocatoriaTo"
         variant="ghost"
         size="lg"
-        class="w-full sm:w-auto bg-transparent border-white text-white hover:bg-white hover:text-black px-8 py-4 text-base sm:text-lg font-semibold backdrop-blur-sm transition-all rounded-xl h-auto flex justify-center"
+        class="w-full sm:w-auto bg-white/10 border-white/20 text-white hover:bg-white hover:text-black px-8 py-3 text-base lg:text-lg font-semibold backdrop-blur-md transition-all rounded-xl h-auto flex justify-center shadow-xl"
       >
         Ver detalles
       </Button>
-      <Button 
-        v-if="!props.hasBackendConvocatoria"
-        as="router-link" 
-        to="/acerca" 
-        variant="ghost"
-        size="lg"
-        class="w-full sm:w-auto bg-transparent border-white text-white hover:bg-white hover:text-black px-8 py-4 text-base sm:text-lg font-semibold backdrop-blur-sm transition-all rounded-xl h-auto flex justify-center"
-      >
-        Acerca De
-        <ArrowRight class="w-5 h-5 ml-2" />
-      </Button>
     </div>
-    
-    <div class="absolute bottom-4 lg:bottom-8 left-0 right-0 lg:left-16 lg:right-auto flex justify-center lg:justify-start gap-3 z-10">
-      <button 
-        v-for="(slide, idx) in slides" 
-        :key="slide.id" 
-        @click="currentSlide = idx" 
-        class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all duration-300 shadow-sm"
-        :class="currentSlide === idx ? 'bg-yellow-400 w-6 sm:w-8' : 'bg-white/50 hover:bg-white/80'"
-        aria-label="Ir a diapositiva"
+
+    <!-- Indicadores de slide -->
+    <div class="absolute bottom-8 lg:bottom-12 right-6 lg:right-16 flex gap-3 z-40">
+      <button
+        v-for="(slide, idx) in slides"
+        :key="slide.id"
+        @click="currentSlide = idx"
+        class="w-2.5 h-2.5 rounded-full transition-all duration-500"
+        :class="currentSlide === idx ? 'bg-secondary w-10' : 'bg-white/30 hover:bg-white/60'"
       ></button>
     </div>
   </div>
@@ -206,11 +199,40 @@ onUnmounted(() => {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.8s ease;
+  transition: opacity 1.2s ease-in-out;
 }
-
 .fade-enter-from,
 .fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-fade-enter-active,
+.slide-up-fade-leave-active {
+  transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.slide-up-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-40px);
+}
+.slide-up-fade-enter-from {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+.expand-h-enter-active {
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  transform-origin: left center;
+}
+.expand-h-leave-active {
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  transform-origin: left center;
+}
+.expand-h-enter-from {
+  transform: scaleX(0);
+  opacity: 0;
+}
+.expand-h-leave-to {
+  transform: scaleX(0);
   opacity: 0;
 }
 </style>

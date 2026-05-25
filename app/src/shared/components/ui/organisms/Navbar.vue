@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Menu, X, BarChart2 } from 'lucide-vue-next'
+import { Menu, X } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 
 const route = useRoute()
+const logoOpeSrc = `${import.meta.env.BASE_URL}logo-ope.svg`
 const isHomePage = computed(() => route.path === '/')
 const isMobileMenuOpen = ref(false)
 const showNavbar = ref(false)
@@ -52,12 +53,12 @@ const closeMobileMenu = () => {
       <div class="flex justify-between items-center h-20">
         <!-- Logo Institucional -->
         <router-link to="/" class="flex items-center gap-3 group" @click="closeMobileMenu">
-          <div class="w-10 h-10 bg-primary rounded flex items-center justify-center text-white group-hover:bg-primary-dark transition-colors shadow-sm">
-            <BarChart2 class="w-6 h-6" />
+          <div class="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
+            <img :src="logoOpeSrc" alt="Logo OPE" class="h-14 w-24 object-contain" />
           </div>
           <div class="flex flex-col">
             <span class="font-heading font-bold text-primary-dark leading-tight text-lg tracking-tight">
-              OPE UMSA
+              OLIMPIADA PACEÑA DE ESTADÍSTICA
             </span>
             <span class="text-[11px] text-text-muted font-medium uppercase tracking-wider">
               Carrera de Estadística

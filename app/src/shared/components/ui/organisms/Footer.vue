@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart2 } from 'lucide-vue-next'
+const logoOpeSrc = `${import.meta.env.BASE_URL}logo-ope.svg`
 </script>
 
 <template>
@@ -9,8 +9,8 @@ import { BarChart2 } from 'lucide-vue-next'
         <!-- Institucional -->
         <div class="space-y-5">
           <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-white/10 rounded flex items-center justify-center border border-white/20">
-              <BarChart2 class="w-6 h-6 text-secondary" />
+            <div class="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white ring-1 ring-white/20">
+              <img :src="logoOpeSrc" alt="Logo OPE" class="h-14 w-24 object-contain" />
             </div>
             <div class="flex flex-col">
               <span class="font-heading font-bold text-lg tracking-tight leading-none text-white">OPE UMSA</span>

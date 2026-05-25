@@ -21,9 +21,9 @@ const publicStore = usePublicStore()
 
 const mapAvisoTipo = (tipo: string): HomeAviso['tipo'] => {
   const t = (tipo || '').toLowerCase()
-  if (t.includes('urg')) return 'Urgente'
-  if (t.includes('imp')) return 'Importante'
-  return 'Info'
+  if (t.includes('com')) return 'COMUNICADO'
+  if (t.includes('imp')) return 'IMPORTANTE'
+  return 'OTRO'
 }
 
 const formatFechas = (dto: ConvocatoriaResponseDTO): string => {

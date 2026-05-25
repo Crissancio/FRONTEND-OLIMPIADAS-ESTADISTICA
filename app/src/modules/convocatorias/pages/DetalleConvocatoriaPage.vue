@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { 
   FileText, Download, Calendar, Monitor, MapPin, ArrowRight, Trophy, Users, 
-  ChevronDown, Video, Link as LinkIcon, File, InfoIcon, AlertCircle, CheckCircle
+  ChevronDown, Video, Link as LinkIcon, File, InfoIcon, AlertCircle, CheckCircle, BookOpen
 } from 'lucide-vue-next'
 import { convocatoriasMock } from '@/modules/convocatorias/data/convocatorias.data'
 import { PublicService } from '@/modules/public/services/public.service'
@@ -28,7 +28,7 @@ const materialesByFase = ref<Record<string, MaterialResponseDTO[]>>({})
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : ''
 const formatRange = (start?: string | null, end?: string | null) => [formatDate(start), formatDate(end)].filter(Boolean).join(' - ')
 const categoriaId = (cat: CategoriaResumenDTO, index: number) => String(cat.id_categoria ?? `${cat.curso}-${index}`)
-const categoriaNombre = (cat: CategoriaResumenDTO) => cat.nombre_categoria ?? cat.nombre_convocatoria ?? `${cat.curso} ${cat.nivel}`
+const categoriaNombre = (cat: CategoriaResumenDTO) => cat.nombre_categoria ?? `${cat.curso} ${cat.nivel}`
 
 const mapMaterial = (mat: MaterialResponseDTO) => ({
   id: String(mat.id_material),

@@ -24,6 +24,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { isAuthenticated } = storeToRefs(authStore)
 const isSidebarOpen = ref(false)
+const logoOpeSrc = `${import.meta.env.BASE_URL}logo-ope.svg`
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Convocatorias', href: '/admin/convocatorias', icon: FileText },
@@ -65,8 +66,8 @@ onMounted(() => {
       :class="`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-primary-dark text-white flex flex-col transition-transform duration-300 ease-in-out border-r border-primary/20 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`"
     >
       <div class="h-16 flex items-center px-6 border-b border-white/10 shrink-0">
-        <div class="w-8 h-8 rounded bg-secondary flex items-center justify-center mr-3 shadow-sm">
-          <BarChart4 class="w-5 h-5 text-white" />
+        <div class="mr-3 flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden">
+          <img :src="logoOpeSrc" alt="Logo OPE" class="h-11 w-16 object-contain" />
         </div>
         <span class="font-heading font-bold text-lg tracking-tight">Admin OPE</span>
         <Button 

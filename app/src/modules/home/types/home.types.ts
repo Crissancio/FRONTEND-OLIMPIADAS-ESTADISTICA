@@ -19,7 +19,7 @@ export type HomeAviso = {
   id: string
   titulo: string
   descripcion: string
-  tipo: 'Importante' | 'Urgente' | 'Info'
+  tipo: 'IMPORTANTE' | 'COMUNICADO' | 'OTRO'
   fecha: string
 }
 export type MaterialPrincipalDTO = {
