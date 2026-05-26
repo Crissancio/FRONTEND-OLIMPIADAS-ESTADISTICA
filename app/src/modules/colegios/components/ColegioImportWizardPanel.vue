@@ -13,12 +13,13 @@ const colegiosStore = useColegiosStore()
 const currentStep = ref(1)
 const selectedFile = ref<File | null>(null)
 const isProcessing = ref(false)
-const globalError = ref<string | null>(null)
 
-// Nuevo estado para el departamento requerido por la API
+// Variables para manejo de errores
+const globalError = ref<string | null>(null)
+const csvFormatError = ref(false) // Nueva variable para errores críticos 500/Estructurales
+
 const selectedDepartamento = ref('LA PAZ') 
 
-// Estados basados en tus nuevos DTOs
 const validationData = ref<CSVUploadResponseDTO | null>(null)
 const dbResultData = ref<CSVImportDBResponseDTO | null>(null)
 
@@ -38,32 +39,38 @@ const handleFileSelect = (e: Event) => {
   }
 }
 
-// PASO 1: Subir y Validar (Ahora incluye el departamento)
 const validateFile = async () => {
   if (!selectedFile.value || !selectedDepartamento.value) return
   isProcessing.value = true
   globalError.value = null
+  csvFormatError.value = false // Reiniciamos el estado del error
 
   try {
-    // El store devuelve directamente response.data (CSVUploadResponseDTO)
     const result = await colegiosStore.uploadCsv(selectedDepartamento.value, selectedFile.value)
     validationData.value = result 
     currentStep.value = 2
   } catch (err: any) {
-    globalError.value = err.message || 'Error en el formato o lectura del archivo.'
+    // Detectamos si es un error 500, de red, o un error fatal de procesamiento
+    const isServerError = err.response?.status === 500 || 
+                          err.message?.toLowerCase().includes('network') || 
+                          err.message?.includes('500');
+
+    if (isServerError) {
+      csvFormatError.value = true;
+    } else {
+      globalError.value = err.message || 'Error en el formato o lectura del archivo.';
+    }
   } finally {
     isProcessing.value = false
   }
 }
 
-// PASO 2: Confirmar e Importar a Base de Datos
 const executeDatabaseImport = async () => {
   if (!validationData.value || validationData.value.validos.length === 0) return
   isProcessing.value = true
   globalError.value = null
 
   try {
-    // El store devuelve directamente response.data (CSVImportDBResponseDTO)
     const result = await colegiosStore.importCSV(validationData.value.validos)
     dbResultData.value = result
     currentStep.value = 3
@@ -75,11 +82,9 @@ const executeDatabaseImport = async () => {
   }
 }
 
-// DESCARGA DE ERRORES (Actualizado al nuevo store)
 const downloadErrorCSV = async () => {
   if (!validationData.value?.csv_errores_url) return
   try {
-    // Si la URL que viene del backend es un endpoint de descarga
     const blob = await colegiosStore.downloadCSVErrors(validationData.value.csv_errores_url)
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -92,12 +97,29 @@ const downloadErrorCSV = async () => {
   }
 }
 
+const downloadTemplate = () => {
+  const headers = COLUMN_HELPERS.join(',')
+  const sampleRow = 'NUESTRA SEÑORA DE LA PAZ,12345678,COLEGIO EJEMPLO,FISCAL,MAÑANA,ZONA CENTRAL,CALLE PRINCIPAL 123,PÉREZ JUAN,77712345,2223344'
+  const csvContent = `${headers}\n${sampleRow}`
+  
+  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.setAttribute('href', url)
+  link.setAttribute('download', 'plantilla_importacion_colegios.csv')
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 const closeWizard = () => {
   currentStep.value = 1
   selectedFile.value = null
   validationData.value = null
   dbResultData.value = null
   globalError.value = null
+  csvFormatError.value = false // Limpiamos al cerrar
   emit('close')
 }
 </script>
@@ -128,14 +150,54 @@ const closeWizard = () => {
                   </div>
 
                   <div class="relative flex-1 px-4 py-6 sm:px-6">
+                    
                     <div v-if="globalError" class="mb-4 flex items-start gap-2 p-3 bg-estado-rechazado-soft border border-estado-rechazado/20 text-estado-rechazado text-xs rounded-xl">
                       <AlertCircle class="h-4 w-4 shrink-0 mt-0.5" />
                       <span>{{ globalError }}</span>
                     </div>
 
+                    <div v-if="csvFormatError" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl space-y-4 text-sm text-red-800 shadow-sm">
+                      <div class="flex items-center gap-2 font-bold text-red-700 text-base border-b border-red-200 pb-2">
+                        <AlertCircle class="h-5 w-5" />
+                        <h3>ERROR EN LOS DATOS DEL CSV</h3>
+                      </div>
+                      
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p class="font-bold mb-2">Posibles escenarios que generan el error:</p>
+                          <ul class="list-disc pl-5 space-y-1.5 text-xs">
+                            <li>Una columna está <b>completamente vacía</b>.</li>
+                            <li>Hay celdas con <b>espacios en blanco</b> o valores nulos <i>(None, null, "")</i>.</li>
+                            <li>El CSV tiene <b>más o menos columnas</b> de las esperadas.</li>
+                          </ul>
+                        </div>
+
+                        <div>
+                          <p class="font-bold mb-2">Recomendaciones:</p>
+                          <ul class="list-disc pl-5 space-y-1.5 text-xs">
+                            <li>Asegúrate de no dejar <b>filas vacías al final</b> del archivo.</li>
+                            <li>Verifica que el separador de columnas sea correcto <i>(recomendamos usar delimitador por comas)</i>.</li>
+                            <li>Revisa que no falten datos en columnas obligatorias como <b>Código</b> o <b>Nombre</b>.</li>
+                            <li>Abre el archivo en un editor de texto simple <i>(ej. Bloc de notas)</i> para comprobar su estructura real, a veces Excel oculta formatos corruptos.</li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div class="font-bold text-xs uppercase bg-red-100 p-2.5 rounded text-center text-red-700 mt-2 tracking-wide">
+                        POR FAVOR REVISE EL ARCHIVO ANTES DE ENVIARLO A PROCESAR
+                      </div>
+                    </div>
+
                     <div v-if="currentStep === 1" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                       <div class="space-y-4">
-                        <h4 class="font-bold text-text-main text-sm">Referencias de Columnas Requeridas</h4>
+                        <div class="flex items-center justify-between">
+                          <h4 class="font-bold text-text-main text-sm">Referencias de Columnas Requeridas</h4>
+                          <Button variant="outline" size="sm" class="text-[11px] h-7 px-2 flex items-center gap-1.5 border-gray-300" @click="downloadTemplate">
+                            <Download class="h-3.5 w-3.5" />
+                            Descargar Plantilla CSV
+                          </Button>
+                        </div>
+
                         <div class="flex flex-wrap gap-1.5 pb-4 border-b border-gray-100">
                           <span v-for="col in COLUMN_HELPERS" :key="col" class="bg-gray-100 text-text-main font-medium text-[10px] px-2 py-1 rounded border border-gray-200">
                             {{ col }}
