@@ -156,7 +156,8 @@ const estadoClass = (estado: string) => {
                           <DirectorCardAdmin 
                             v-for="director in colegiosStore.colegioActual.directores" 
                             :key="director.id_director" 
-                            :director="director"
+                            :director="director" 
+                            :show-actions="false"
                           />
                         </div>
                         
