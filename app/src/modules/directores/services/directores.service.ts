@@ -1,6 +1,11 @@
 import { apiClient } from '@/app/api/api-client'
 import type { PaginatedResponse, ResponseBase } from '@/shared/types/api.types'
-import type { DirectorResponseDTO, DirectorMinifiedDTO, DirectorUpdateDTO, DirectorCreateDTO } from '../types/directores.api'
+import type { 
+  DirectorResponseDTO, 
+  DirectorMinifiedDTO, 
+  DirectorUpdateDTO, 
+  DirectorCreateDTO 
+} from '../types/directores.api'
 
 export const directoresService = {
   async listar(page: number = 1, limit: number = 10) {

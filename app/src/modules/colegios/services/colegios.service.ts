@@ -46,7 +46,7 @@ export const colegiosService = {
   async subirCSV(file: File) {
     const formData = new FormData()
     formData.append('file', file)
-    const response = await apiClient.post<ResponseBase<CSVUploadResponseDTO>>('/colegios/csv/upload', formData, {
+    const response = await apiClient.post<ResponseBase<CSVUploadResponseDTO>>('/colegios/subir-csv', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -55,12 +55,12 @@ export const colegiosService = {
   },
 
   async importarCSV(data: ColegioCSVImportDTO[]) {
-    const response = await apiClient.post<ResponseBase<CSVImportDBResponseDTO>>('/colegios/csv/import', data)
+    const response = await apiClient.post<ResponseBase<CSVImportDBResponseDTO>>('/colegios/csv', data)
     return response.data
   },
 
   async descargarErroresCSV(filename: string) {
-    const response = await apiClient.get(`/colegios/csv/errors/${filename}`, {
+    const response = await apiClient.get(`/colegios/csv-error/${filename}`, {
       responseType: 'blob'
     })
     return response.data

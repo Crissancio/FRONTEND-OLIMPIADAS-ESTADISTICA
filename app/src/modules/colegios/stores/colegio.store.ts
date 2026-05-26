@@ -132,6 +132,20 @@ export const useColegiosStore = defineStore('colegios', () => {
     }
   }
 
+  async function downloadCSVErrors(filename: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await colegiosService.descargarErroresCSV(filename)
+      return response
+    } catch (e) {
+      error.value = toApiError(e).message
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     colegios,
     colegioActual,
@@ -145,6 +159,7 @@ export const useColegiosStore = defineStore('colegios', () => {
     disableColegio,
     deleteColegio,
     uploadCSV,
-    importCSV
+    importCSV,
+    downloadCSVErrors
   }
 })

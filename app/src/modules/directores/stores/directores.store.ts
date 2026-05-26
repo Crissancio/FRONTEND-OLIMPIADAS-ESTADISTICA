@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { directoresService } from '../services/directores.service'
-import type { DirectorResponseDTO, DirectorMinifiedDTO, DirectorUpdateDTO, DirectorCreateDTO } from '../types/directores.api'
+import type { 
+  DirectorResponseDTO, 
+  DirectorMinifiedDTO, 
+  DirectorUpdateDTO, 
+  DirectorCreateDTO 
+} from '../types/directores.api'
 import type { PaginationMeta } from '@/shared/types/api.types'
 import { toApiError } from '@/app/api/api-error'
 
