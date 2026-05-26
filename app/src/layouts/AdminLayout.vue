@@ -11,6 +11,7 @@ import {
   Users, 
   Bell, 
   Mail,
+  Shield,
   UsersRound, 
   BarChart4, 
   LogOut,
@@ -18,12 +19,14 @@ import {
   X
 } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
+import AdminProfileDrawer from '@/modules/auth/components/AdminProfileDrawer.vue'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const { isAuthenticated, user } = storeToRefs(authStore)
 const isSidebarOpen = ref(false)
+const isProfileDrawerOpen = ref(false)
 const logoOpeSrc = `${import.meta.env.BASE_URL}logo-ope.svg`
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -34,6 +37,7 @@ const navigation = [
   { name: 'Avisos', href: '/admin/avisos', icon: Bell },
   { name: 'Contactos', href: '/admin/contactos', icon: Mail },
   { name: 'Colaboradores', href: '/admin/colaboradores', icon: UsersRound },
+  { name: 'Administradores', href: '/admin/administradores', icon: Shield },
   { name: 'Auditoría', href: '/admin/auditoria', icon: BarChart4 },
 ]
 
@@ -168,7 +172,7 @@ onMounted(async () => {
             <span class="absolute -top-1 -right-1 w-2.5 h-2.5 border-2 border-white bg-accent rounded-full"></span>
           </button>
         
-          <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
+          <button class="flex items-center gap-3 rounded-lg border border-transparent py-1.5 pl-4 pr-2 text-left transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" @click="isProfileDrawerOpen = true">
             <div class="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
               {{ adminInitials }}
             </div>
@@ -176,7 +180,7 @@ onMounted(async () => {
               <span class="text-sm font-bold text-text-main">{{ adminName }}</span>
               <span class="text-xs font-semibold text-text-muted">{{ adminEmail }}</span>
             </div>
-          </div>
+          </button>
         </div>
       </header>
     
@@ -188,5 +192,6 @@ onMounted(async () => {
         </router-view>
       </main>
     </div>
+    <AdminProfileDrawer v-model:open="isProfileDrawerOpen" :user="user" />
   </div>
 </template>
