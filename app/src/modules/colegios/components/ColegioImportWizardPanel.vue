@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
-import { X, UploadCloud, CheckCircle2, AlertCircle, Download, FileText, RefreshCw, Database } from 'lucide-vue-next'
+import { X, UploadCloud, CheckCircle2, AlertCircle, Download, FileText, Database } from 'lucide-vue-next'
 import { useColegiosStore } from '../stores/colegio.store'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import type { CSVUploadResponseDTO, CSVImportDBResponseDTO } from '../types/colegios.api'

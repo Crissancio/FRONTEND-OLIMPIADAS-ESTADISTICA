@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { 
   FileText, Download, Calendar, Monitor, MapPin, ArrowRight, Trophy, Users, 
-  ChevronDown, Video, Link as LinkIcon, File, InfoIcon, AlertCircle, CheckCircle, BookOpen
+  ChevronDown, Video, Link as LinkIcon, File, AlertCircle, CheckCircle, BookOpen
 } from 'lucide-vue-next'
 import { PublicService } from '@/modules/public/services/public.service'
 import { usePublicStore } from '@/modules/public/stores/public.store'
