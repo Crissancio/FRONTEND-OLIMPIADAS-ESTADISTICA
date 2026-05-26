@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-type ButtonVariant = 'default' | 'accent' | 'outline' | 'ghost' | 'link'
+type ButtonVariant = 'default' | 'accent' | 'outline' | 'ghost' | 'link' | 'primary'
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon'
 
 const props = withDefaults(defineProps<{

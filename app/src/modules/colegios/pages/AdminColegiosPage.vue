@@ -1,18 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Plus, UploadCloud } from 'lucide-vue-next'
-import { useColegiosStore } from '../../colegios/stores/colegio.store'
+import { useColegiosStore } from '../stores/colegio.store'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
-import ColegiosFiltros from '../../colegios/components/ColegiosFiltros.vue'
-import ColegiosTabla from '../../colegios/components/ColegiosTabla.vue'
-import ColegioDetallePanel from '../../colegios/components/ColegioDetallePanel.vue'
-import ColegioFormPanel from '../../colegios/components/ColegioFormPanel.vue'
-import type { ColegioResponseDTO, ColegioFilters } from '../../colegios/types/colegios.api'
-import ColegioDirectoresPanel from '../../colegios/components/ColegioDirectoresPanel.vue'
-import ColegioImportWizardPanel from '../../colegios/components/ColegioImportWizardPanel.vue'
-
+import ColegiosFiltros from '../components/ColegiosFiltros.vue'
+import ColegiosTabla from '../components/ColegiosTabla.vue'
+import ColegioDetallePanel from '../components/ColegioDetallePanel.vue'
+import type { ColegioResponseDTO, ColegioFilters } from '../types/colegios.api'
 
 const colegiosStore = useColegiosStore()
 
@@ -25,7 +21,6 @@ const scrollSentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 const isDetallePanelOpen = ref(false)
-const isFormPanelOpen = ref(false)
 const selectedColegioId = ref<number | null>(null)
 
 const cargarColegios = async (page: number, resetList = false) => {
@@ -48,12 +43,6 @@ const cargarColegios = async (page: number, resetList = false) => {
 
 const onFiltrosCambian = async (filtros: ColegioFilters) => {
   currentFilters.value = filtros
-  currentPage.value = 1
-  hasMoreData.value = true
-  await cargarColegios(1, true)
-}
-
-const recargarTrasGuardar = async () => {
   currentPage.value = 1
   hasMoreData.value = true
   await cargarColegios(1, true)
@@ -96,42 +85,8 @@ const cerrarDetalles = () => {
   }, 300)
 }
 
-const abrirFormulario = (id: number | null = null) => {
-  selectedColegioId.value = id
-  isFormPanelOpen.value = true
-}
-
-const cerrarFormulario = () => {
-  isFormPanelOpen.value = false
-  setTimeout(() => {
-    selectedColegioId.value = null
-  }, 300)
-}
-
-
-const isDirectoresPanelOpen = ref(false)
-
-const abrirAdminDirectores = (id: number) => {
-  selectedColegioId.value = id
-  isDirectoresPanelOpen.value = true
-}
-
-const cerrarAdminDirectores = () => {
-  isDirectoresPanelOpen.value = false
-  setTimeout(() => {
-    selectedColegioId.value = null
-  }, 300)
-}
-
-const isImportWizardOpen = ref(false)
-
-const abrirImportWizard = () => {
-  isImportWizardOpen.value = true
-}
-
-const cerrarImportWizard = () => {
-  isImportWizardOpen.value = false
-}
+const abrirAdminColegio = (id: number) => console.log('Admin colegio:', id)
+const abrirAdminDirectores = (id: number) => console.log('Admin directores:', id)
 </script>
 
 <template>
@@ -142,11 +97,11 @@ const cerrarImportWizard = () => {
         <p class="mt-1 text-sm text-text-muted">Gestiona, aprueba e importa instituciones educativas.</p>
       </div>
       <div class="flex gap-2">
-        <Button @click="abrirImportWizard" variant="outline" class="h-auto px-4 py-2.5 flex items-center gap-2">
+        <Button variant="outline" class="h-auto px-4 py-2.5 flex items-center gap-2">
           <UploadCloud class="h-4 w-4" />
           Importar CSV
         </Button>
-        <Button @click="abrirFormulario()" variant="accent" class="h-auto px-4 py-2.5 flex items-center gap-2">
+        <Button variant="accent" class="h-auto px-4 py-2.5 flex items-center gap-2">
           <Plus class="h-4 w-4" />
           Añadir Colegio
         </Button>
@@ -160,7 +115,7 @@ const cerrarImportWizard = () => {
         <ColegiosTabla 
           :colegios="listaAcumulada"
           @ver-detalles="abrirDetalles"
-          @admin-colegio="abrirFormulario"
+          @admin-colegio="abrirAdminColegio"
           @admin-directores="abrirAdminDirectores"
         />
 
@@ -183,26 +138,6 @@ const cerrarImportWizard = () => {
       :is-open="isDetallePanelOpen"
       :colegio-id="selectedColegioId"
       @close="cerrarDetalles"
-    />
-
-    <ColegioFormPanel
-      :is-open="isFormPanelOpen"
-      :colegio-id="selectedColegioId"
-      @close="cerrarFormulario"
-      @saved="recargarTrasGuardar"
-    />
-
-    <ColegioDirectoresPanel
-      :is-open="isDirectoresPanelOpen"
-      :colegio-id="selectedColegioId"
-      @close="cerrarAdminDirectores"
-      @updated="recargarTrasGuardar"
-    />
-
-    <ColegioImportWizardPanel
-      :is-open="isImportWizardOpen"
-      @close="cerrarImportWizard"
-      @imported="recargarTrasGuardar"
     />
   </div>
 </template>
