@@ -38,6 +38,10 @@ export const directoresService = {
     const response = await apiClient.patch<ResponseBase<DirectorResponseDTO>>(`/personas/directores/${id}/baja`)
     return response.data
   },
+  async altaLogica(id: number) {
+    const response = await apiClient.patch<ResponseBase<DirectorResponseDTO>>(`/personas/directores/${id}/alta`)
+    return response.data
+  },
 
   async eliminarTotal(id: number) {
     const response = await apiClient.delete<ResponseBase<Record<string, never>>>(`/personas/directores/${id}`)

@@ -6,6 +6,7 @@ export interface DirectorResponseDTO {
   id_colegio?: number | null
   telefono_1?: string | null
   telefono_2?: string | null
+  estado?: string | null
 }
 
 export interface DirectorMinifiedDTO {

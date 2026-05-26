@@ -104,6 +104,20 @@ export const useDirectoresStore = defineStore('directores', () => {
     }
   }
 
+  async function enlableDirector(id:number) {
+    isLoading.value = true
+    error.value = null
+    try{
+      const response = await directoresService.altaLogica(id)
+      return response.data
+    } catch (e) {
+      error.value = toApiError(e).message
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function deleteDirector(id: number) {
     isLoading.value = true
     error.value = null
@@ -130,6 +144,7 @@ export const useDirectoresStore = defineStore('directores', () => {
     createDirector,
     updateDirector,
     disableDirector,
+    enlableDirector,
     deleteDirector
   }
 })
