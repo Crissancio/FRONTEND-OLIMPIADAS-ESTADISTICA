@@ -38,6 +38,11 @@ export const colegiosService = {
     return response.data
   },
 
+  async altaLogica(id:number){
+    const response = await apiClient.patch<ResponseBase<ColegioResponseDTO>>(`/colegios/${id}/alta`)
+    return response.data
+  },
+
   async eliminarTotal(id: number) {
     const response = await apiClient.delete<ResponseBase<Record<string, never>>>(`/colegios/${id}`)
     return response.data

@@ -93,6 +93,20 @@ export const useColegiosStore = defineStore('colegios', () => {
     }
   }
 
+  async function enableColegio(id:number){
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await colegiosService.altaLogica(id)
+      return response.data
+    } catch (e) {
+      error.value = toApiError(e).message
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function deleteColegio(id: number) {
     isLoading.value = true
     error.value = null
@@ -161,6 +175,7 @@ export const useColegiosStore = defineStore('colegios', () => {
     createColegio,
     updateColegio,
     disableColegio,
+    enableColegio,
     deleteColegio,
     uploadCsv,
     importCSV,
