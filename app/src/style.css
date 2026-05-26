@@ -53,6 +53,21 @@
   --radius-2xl: 1.5rem;
 
   --shadow-soft: 0 4px 20px rgba(0,0,0,0.08);
+
+  --color-estado-revisado: #3A8742;
+  --color-estado-revisado-soft: #E8F5E9;
+  --color-estado-rechazado: #DC2626;
+  --color-estado-rechazado-soft: #FEE2E2;
+  --color-estado-pendiente: #F5A623;
+  --color-estado-pendiente-soft: #FFF8E1;
+  --color-estado-inactivo: #64748B;
+  --color-estado-inactivo-soft: #F1F5F9;
+
+  /* Estados de Persona */
+  --color-persona-activo: #00B0D8;
+  --color-persona-activo-soft: #E0F7FA;
+  --color-persona-inactivo: #94A3B8;
+  --color-persona-inactivo-soft: #F8FAFC;
 }
 
 @import "./styles/theme.css";
