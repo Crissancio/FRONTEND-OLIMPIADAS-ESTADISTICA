@@ -91,26 +91,21 @@ const handleSubmit = async () => {
 
 const toggleEstado = async () => {
   if (!props.colegioId) return
-  if (formData.value.estado !== 'INACTIVO') {
-    try {
-      await colegiosStore.disableColegio(props.colegioId)
-      formData.value.estado = 'INACTIVO'
-      emit('saved')
-    } catch (error) {
-      console.error(error)
-    }
-  }
-  
-  if(formData.value.estado !== 'REVISADO') {
-    try {
+
+  try {
+    if (formData.value.estado === 'INACTIVO') {
       await colegiosStore.enableColegio(props.colegioId)
       formData.value.estado = 'ACTIVO'
-      emit('saved')
-    } catch (error) {
-      console.error(error)
+    } 
+    else {
+      await colegiosStore.disableColegio(props.colegioId)
+      formData.value.estado = 'INACTIVO'
     }
+    emit('saved')
+    
+  } catch (error) {
+    console.error('Error al cambiar el estado del colegio:', error)
   }
-
 }
 
 const eliminarColegio = async () => {
