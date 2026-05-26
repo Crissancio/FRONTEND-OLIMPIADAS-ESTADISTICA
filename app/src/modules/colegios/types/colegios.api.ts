@@ -1,4 +1,4 @@
-import type { DirectorResponseDTO } from '@/modules/directores/types/directores.api'
+import type { DirectorResponseDTO, DirectorCSVImportDTO } from '@/modules/directores/types/directores.api'
 
 export interface ColegioResponseDTO {
   id_colegio: number
@@ -53,22 +53,27 @@ export interface ColegioCSVImportDTO {
   departamento: string
   municipio: string
   calle?: string | null
+  estado: string
+  directores: DirectorCSVImportDTO[]
 }
 
-export interface CSVErrorDTO {
+export interface CSVImportErrorDTO {
   fila: number
+  codigo?: string | null
+  nombre?: string | null
   error: string
-  datos: any
 }
 
 export interface CSVUploadResponseDTO {
+  total_validos: number
+  total_errores: number
   validos: ColegioCSVImportDTO[]
-  errores: CSVErrorDTO[]
-  total_procesados: number
+  errores: CSVImportErrorDTO[]
+  filas_error_csv: Record<string, any>[]
+  csv_errores_url?: string | null
 }
 
 export interface CSVImportDBResponseDTO {
   insertados: number
-  errores: number
-  archivo_errores?: string | null
+  errores: CSVImportErrorDTO[]
 }

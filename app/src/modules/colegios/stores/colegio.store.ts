@@ -7,7 +7,8 @@ import type {
   ColegioCreateDTO, 
   ColegioUpdateDTO, 
   ColegioFilters,
-  ColegioCSVImportDTO
+  ColegioCSVImportDTO,
+  CSVUploadResponseDTO
 } from '../types/colegios.api'
 import type { PaginationMeta } from '@/shared/types/api.types'
 import { toApiError } from '@/app/api/api-error'
@@ -16,6 +17,7 @@ export const useColegiosStore = defineStore('colegios', () => {
   const colegios = ref<ColegioResponseDTO[]>([])
   const colegioActual = ref<ColegioDetailResponseDTO | null>(null)
   const meta = ref<PaginationMeta | null>(null)
+  const uploadResult = ref<CSVUploadResponseDTO | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -104,11 +106,12 @@ export const useColegiosStore = defineStore('colegios', () => {
     }
   }
 
-  async function uploadCSV(file: File) {
+  async function uploadCsv(departamento: string, file: File) {
     isLoading.value = true
     error.value = null
     try {
-      const response = await colegiosService.subirCSV(file)
+      const response = await colegiosService.subirCsv(departamento, file)
+      uploadResult.value = response.data
       return response.data
     } catch (e) {
       error.value = toApiError(e).message
@@ -150,6 +153,7 @@ export const useColegiosStore = defineStore('colegios', () => {
     colegios,
     colegioActual,
     meta,
+    uploadResult,
     isLoading,
     error,
     fetchColegios,
@@ -158,7 +162,7 @@ export const useColegiosStore = defineStore('colegios', () => {
     updateColegio,
     disableColegio,
     deleteColegio,
-    uploadCSV,
+    uploadCsv,
     importCSV,
     downloadCSVErrors
   }

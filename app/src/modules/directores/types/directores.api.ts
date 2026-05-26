@@ -30,3 +30,11 @@ export interface DirectorUpdateDTO {
   paterno?: string
   materno?: string | null
 }
+
+export interface DirectorCSVImportDTO {
+  nombres: string
+  paterno: string
+  materno?: string | null
+  telefono_1?: string | null
+  telefono_2?: string | null
+}

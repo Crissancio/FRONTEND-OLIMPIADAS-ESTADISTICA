@@ -43,8 +43,9 @@ export const colegiosService = {
     return response.data
   },
 
-  async subirCSV(file: File) {
+  async subirCsv(departamento: string, file: File) {
     const formData = new FormData()
+    formData.append('departamento', departamento)
     formData.append('file', file)
     const response = await apiClient.post<ResponseBase<CSVUploadResponseDTO>>('/colegios/subir-csv', formData, {
       headers: {
