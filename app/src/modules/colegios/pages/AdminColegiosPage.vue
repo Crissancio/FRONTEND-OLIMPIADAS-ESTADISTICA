@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Plus, UploadCloud } from 'lucide-vue-next'
-import { useColegiosStore } from '../stores/colegio.store'
+import { useColegiosStore } from '../../colegios/stores/colegio.store'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
-import ColegiosFiltros from '../components/ColegiosFiltros.vue'
-import ColegiosTabla from '../components/ColegiosTabla.vue'
-import ColegioDetallePanel from '../components/ColegioDetallePanel.vue'
-import type { ColegioResponseDTO, ColegioFilters } from '../types/colegios.api'
+import ColegiosFiltros from '../../colegios/components/ColegiosFiltros.vue'
+import ColegiosTabla from '../../colegios/components/ColegiosTabla.vue'
+import ColegioDetallePanel from '../../colegios/components/ColegioDetallePanel.vue'
+import ColegioFormPanel from '../../colegios/components/ColegioFormPanel.vue'
+import ColegioDirectoresPanel from '../../colegios/components/ColegioDirectoresPanel.vue'
+import ColegioImportWizardPanel from '../../colegios/components/ColegioImportWizardPanel.vue'
+import type { ColegioResponseDTO, ColegioFilters } from '../../colegios/types/colegios.api'
 
 const colegiosStore = useColegiosStore()
 
@@ -21,12 +24,15 @@ const scrollSentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 const isDetallePanelOpen = ref(false)
+const isFormPanelOpen = ref(false)
+const isDirectoresPanelOpen = ref(false)
+const isImportWizardOpen = ref(false)
 const selectedColegioId = ref<number | null>(null)
 
 const cargarColegios = async (page: number, resetList = false) => {
   if (colegiosStore.isLoading) return
 
-  await colegiosStore.fetchColegios(page, 15, currentFilters.value)
+  await colegiosStore.fetchColegios(page, 10, currentFilters.value)
   
   if (resetList) {
     listaAcumulada.value = colegiosStore.colegios
@@ -43,6 +49,12 @@ const cargarColegios = async (page: number, resetList = false) => {
 
 const onFiltrosCambian = async (filtros: ColegioFilters) => {
   currentFilters.value = filtros
+  currentPage.value = 1
+  hasMoreData.value = true
+  await cargarColegios(1, true)
+}
+
+const recargarTrasGuardar = async () => {
   currentPage.value = 1
   hasMoreData.value = true
   await cargarColegios(1, true)
@@ -80,13 +92,28 @@ const abrirDetalles = (id: number) => {
 
 const cerrarDetalles = () => {
   isDetallePanelOpen.value = false
-  setTimeout(() => {
-    selectedColegioId.value = null
-  }, 300)
+  setTimeout(() => { selectedColegioId.value = null }, 300)
 }
 
-const abrirAdminColegio = (id: number) => console.log('Admin colegio:', id)
-const abrirAdminDirectores = (id: number) => console.log('Admin directores:', id)
+const abrirFormulario = (id: number | null = null) => {
+  selectedColegioId.value = id
+  isFormPanelOpen.value = true
+}
+
+const cerrarFormulario = () => {
+  isFormPanelOpen.value = false
+  setTimeout(() => { selectedColegioId.value = null }, 300)
+}
+
+const abrirAdminDirectores = (id: number) => {
+  selectedColegioId.value = id
+  isDirectoresPanelOpen.value = true
+}
+
+const cerrarAdminDirectores = () => {
+  isDirectoresPanelOpen.value = false
+  setTimeout(() => { selectedColegioId.value = null }, 300)
+}
 </script>
 
 <template>
@@ -97,11 +124,11 @@ const abrirAdminDirectores = (id: number) => console.log('Admin directores:', id
         <p class="mt-1 text-sm text-text-muted">Gestiona, aprueba e importa instituciones educativas.</p>
       </div>
       <div class="flex gap-2">
-        <Button variant="outline" class="h-auto px-4 py-2.5 flex items-center gap-2">
+        <Button @click="isImportWizardOpen = true" variant="outline" class="h-auto px-4 py-2.5 flex items-center gap-2">
           <UploadCloud class="h-4 w-4" />
           Importar CSV
         </Button>
-        <Button variant="accent" class="h-auto px-4 py-2.5 flex items-center gap-2">
+        <Button @click="abrirFormulario()" variant="accent" class="h-auto px-4 py-2.5 flex items-center gap-2">
           <Plus class="h-4 w-4" />
           Añadir Colegio
         </Button>
@@ -115,7 +142,7 @@ const abrirAdminDirectores = (id: number) => console.log('Admin directores:', id
         <ColegiosTabla 
           :colegios="listaAcumulada"
           @ver-detalles="abrirDetalles"
-          @admin-colegio="abrirAdminColegio"
+          @admin-colegio="abrirFormulario"
           @admin-directores="abrirAdminDirectores"
         />
 
@@ -127,17 +154,13 @@ const abrirAdminDirectores = (id: number) => console.log('Admin directores:', id
           <span v-else-if="!hasMoreData && listaAcumulada.length > 0" class="text-sm text-text-muted">
             Has llegado al final de la lista.
           </span>
-          <span v-else-if="listaAcumulada.length === 0 && !colegiosStore.isLoading" class="text-sm text-text-muted">
-            No se encontraron resultados.
-          </span>
         </div>
       </CardContent>
     </Card>
 
-    <ColegioDetallePanel 
-      :is-open="isDetallePanelOpen"
-      :colegio-id="selectedColegioId"
-      @close="cerrarDetalles"
-    />
+    <ColegioDetallePanel :is-open="isDetallePanelOpen" :colegio-id="selectedColegioId" @close="cerrarDetalles" />
+    <ColegioFormPanel :is-open="isFormPanelOpen" :colegio-id="selectedColegioId" @close="cerrarFormulario" @saved="recargarTrasGuardar" />
+    <ColegioDirectoresPanel :is-open="isDirectoresPanelOpen" :colegio-id="selectedColegioId" @close="cerrarAdminDirectores" @updated="recargarTrasGuardar" />
+    <ColegioImportWizardPanel :is-open="isImportWizardOpen" @close="isImportWizardOpen = false" @imported="recargarTrasGuardar" />
   </div>
 </template>
