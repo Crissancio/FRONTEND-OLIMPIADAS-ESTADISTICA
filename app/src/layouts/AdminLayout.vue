@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/app/stores/auth.store'
@@ -22,7 +22,7 @@ import Button from '@/shared/components/ui/atoms/Button.vue'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const { isAuthenticated } = storeToRefs(authStore)
+const { isAuthenticated, user } = storeToRefs(authStore)
 const isSidebarOpen = ref(false)
 const logoOpeSrc = `${import.meta.env.BASE_URL}logo-ope.svg`
 const navigation = [
@@ -37,15 +37,34 @@ const navigation = [
   { name: 'Auditoría', href: '/admin/auditoria', icon: BarChart4 },
 ]
 
+const adminInitials = computed(() => {
+  const name = user.value?.nombre?.trim()
+  if (!name) return 'AD'
+  const parts = name.split(/\s+/).slice(0, 2)
+  return parts.map((part) => part.charAt(0).toUpperCase()).join('')
+})
+
+const adminName = computed(() => user.value?.nombre || 'Administrador')
+const adminEmail = computed(() => user.value?.correo || 'Sin correo')
+
 const handleLogout = async () => {
   isSidebarOpen.value = false
   await authStore.logout()
   await router.push('/')
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!isAuthenticated.value) {
     router.replace('/admin/login')
+    return
+  }
+
+  if (!user.value) {
+    try {
+      await authStore.fetchMe()
+    } catch {
+      router.replace('/admin/login')
+    }
   }
 })
 
@@ -140,15 +159,7 @@ onMounted(() => {
               </button>
             </nav>
           </div>
-        
-          <!--div class="hidden sm:flex relative w-64 xl:w-96">
-            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input 
-              type="text" 
-              placeholder="Buscar (ej. CI, nombre)..." 
-              class="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-md text-sm text-text-main focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary bg-gray-50 transition-all"
-            />
-          </div-->
+
         </div>
       
         <div class="flex items-center gap-4 sm:gap-6">
@@ -159,11 +170,11 @@ onMounted(() => {
         
           <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
             <div class="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-              AS
+              {{ adminInitials }}
             </div>
             <div class="hidden sm:flex flex-col">
-              <span class="text-sm font-bold text-text-main">Admin System</span>
-              <span class="text-xs font-semibold text-text-muted">Super Administrador</span>
+              <span class="text-sm font-bold text-text-main">{{ adminName }}</span>
+              <span class="text-xs font-semibold text-text-muted">{{ adminEmail }}</span>
             </div>
           </div>
         </div>

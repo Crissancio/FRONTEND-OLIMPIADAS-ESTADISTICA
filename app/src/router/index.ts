@@ -14,7 +14,7 @@ router.beforeEach((to) => {
   const authStore = useAuthStore()
 
   // Token was cleared externally (e.g. 401 handler)
-  if (authStore.token && !localStorage.getItem('access_token')) {
+  if (authStore.token && !sessionStorage.getItem('access_token')) {
     authStore.clearSession()
   }
 
