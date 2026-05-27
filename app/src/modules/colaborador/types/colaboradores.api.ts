@@ -18,6 +18,7 @@ export interface GetColaboradoresParams {
   correo?: string | null
   tipo?: string | null
   rol?: string | null
+  estado?: string | null
 }
 
 export interface ColaboradorPayload {
