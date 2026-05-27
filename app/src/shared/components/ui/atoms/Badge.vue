@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive'
+type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive' | 'success'
 
 const props = withDefaults(defineProps<{
   variant?: BadgeVariant
@@ -11,7 +11,8 @@ const variantClasses = {
   default: 'bg-primary text-white hover:bg-primary-dark',
   secondary: 'bg-gray-100 text-text-main hover:bg-gray-200',
   outline: 'bg-transparent border border-gray-200 text-text-main hover:bg-gray-50',
-  destructive: 'bg-red-500 text-white hover:bg-red-600'
+  destructive: 'bg-red-500 text-white hover:bg-red-600',
+  success: 'bg-green-500 text-white hover:bg-green-600'
 }
 </script>
 
