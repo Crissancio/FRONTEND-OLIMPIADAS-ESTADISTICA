@@ -107,7 +107,7 @@ export const useAvisosStore = defineStore('avisos', () => {
     }
   }
 
-  async function toggleAvisoEstado(id: number, nuevoEstado: 'BORRADOR' | 'PUBLICADO') {
+  async function toggleAvisoEstado(id: number, nuevoEstado: 'BORRADOR' | 'PUBLICADO' | 'OCULTO') {
     loading.value = true
     error.value = null
     try {

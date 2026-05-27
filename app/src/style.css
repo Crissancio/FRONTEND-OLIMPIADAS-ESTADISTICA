@@ -68,6 +68,43 @@
   --color-persona-activo-soft: #E0F7FA;
   --color-persona-inactivo: #94A3B8;
   --color-persona-inactivo-soft: #F8FAFC;
+
+  /* 1. Estados de Aviso (Principalmente Admin) */
+  --color-aviso-estado-borrador: #64748b;
+  --color-aviso-estado-borrador-soft: #f1f5f9;
+  
+  --color-aviso-estado-publicado: #16a34a;
+  --color-aviso-estado-publicado-soft: #dcfce7;
+  
+  --color-aviso-estado-oculto: #dc2626;
+  --color-aviso-estado-oculto-soft: #fee2e2;
+
+  /* 2. Prioridades de Aviso */
+  --color-aviso-prioridad-alta: #e11d48;
+  --color-aviso-prioridad-alta-soft: #ffe4e6;
+  
+  --color-aviso-prioridad-media: #ea580c;
+  --color-aviso-prioridad-media-soft: #ffedd5;
+  
+  --color-aviso-prioridad-baja: #475569;
+  --color-aviso-prioridad-baja-soft: #e2e8f0;
+
+  /* 3. Tipos de Aviso (Agrupados semánticamente) */
+  /* Académico / Evaluaciones: CONVOCATORIA, INSCRIPCION, EXAMEN, RESULTADO */
+  --color-aviso-tipo-academico: #0284c7;
+  --color-aviso-tipo-academico-soft: #e0f2fe;
+
+  /* Soporte / Operaciones: LOGISTICA, MANTENIMIENTO, SOPORTE, RECLAMO */
+  --color-aviso-tipo-soporte: #7c3aed;
+  --color-aviso-tipo-soporte-soft: #f3e8ff;
+
+  /* Contenido / Eventos: CRONOGRAMA, MATERIAL, CEREMONIA, CAPACITACION */
+  --color-aviso-tipo-recurso: #0d9488;
+  --color-aviso-tipo-recurso-soft: #ccfbf1;
+
+  /* General */
+  --color-aviso-tipo-general: #4b5563;
+  --color-aviso-tipo-general-soft: #f3f4f6;
 }
 
 @import "./styles/theme.css";

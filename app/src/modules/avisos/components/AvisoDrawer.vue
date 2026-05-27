@@ -1,0 +1,193 @@
+<script setup lang="ts">
+import { ref, reactive, watch, computed } from 'vue'
+import { DatePicker } from 'v-calendar'
+import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue'
+import { X, Save, Edit2, Trash2, AlertTriangle, Globe, EyeOff } from 'lucide-vue-next'
+import 'v-calendar/style.css'
+
+const props = defineProps<{
+  isOpen: boolean
+  aviso: any | null
+  loading: boolean
+}>()
+
+const emit = defineEmits(['close', 'save', 'changeState', 'delete'])
+
+const isEditing = ref(false)
+const showDisclaimer = ref(false)
+const today = new Date()
+
+const tipos = ['CONVOCATORIA', 'INSCRIPCION', 'EXAMEN', 'RESULTADO', 'LOGISTICA', 'MANTENIMIENTO', 'SOPORTE', 'RECLAMO', 'CRONOGRAMA', 'MATERIAL', 'CEREMONIA', 'CAPACITACION', 'GENERAL']
+
+const form = reactive({
+  titulo: '',
+  descripcion: '',
+  tipo: '',
+  prioridad: 'MEDIA',
+  fecha_publicacion: null as string | null
+})
+
+watch(() => props.isOpen, (newVal) => {
+  if (newVal) {
+    showDisclaimer.value = false
+    if (props.aviso) {
+      isEditing.value = false
+      Object.assign(form, {
+        titulo: props.aviso.titulo,
+        descripcion: props.aviso.descripcion,
+        tipo: props.aviso.tipo,
+        prioridad: props.aviso.prioridad,
+        fecha_publicacion: props.aviso.fecha_publicacion
+      })
+    } else {
+      isEditing.value = true
+      Object.assign(form, { titulo: '', descripcion: '', tipo: '', prioridad: 'MEDIA', fecha_publicacion: null })
+    }
+  }
+})
+
+const isViewMode = computed(() => !!props.aviso && !isEditing.value)
+
+const handleSubmit = () => {
+  if (!form.titulo || !form.descripcion || !form.tipo) return
+  emit('save', { isNew: !props.aviso, data: { ...form, estado: props.aviso ? props.aviso.estado : 'BORRADOR' } })
+}
+
+const formatFecha = (fechaStr: string | null) => {
+  if (!fechaStr) return 'Inmediata'
+  const date = new Date(fechaStr)
+  if (isNaN(date.getTime())) return fechaStr
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  }).format(date)
+}
+</script>
+
+<template>
+  <TransitionRoot as="template" :show="isOpen">
+    <Dialog as="div" class="relative z-50" @close="emit('close')">
+      <TransitionChild as="template" enter="ease-in-out duration-300" enter-from="opacity-0" enter-to="opacity-100" leave="ease-in-out duration-300" leave-from="opacity-100" leave-to="opacity-0">
+        <div class="fixed inset-0 bg-black/50 transition-opacity" />
+      </TransitionChild>
+
+      <div class="fixed inset-0 overflow-hidden">
+        <div class="absolute inset-0 overflow-hidden">
+          <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <TransitionChild as="template" enter="transform transition ease-in-out duration-300" enter-from="translate-x-full" enter-to="translate-x-0" leave="transform transition ease-in-out duration-300" leave-from="translate-x-0" leave-to="translate-x-full">
+              <DialogPanel class="pointer-events-auto w-screen max-w-md flex flex-col bg-white shadow-2xl">
+                
+                <div class="flex items-center justify-between px-6 py-4" style="background-color: var(--color-primary)">
+                  <DialogTitle class="text-base font-bold text-white flex items-center gap-2">
+                    {{ aviso ? (isEditing ? 'Modificando Aviso' : 'Detalles del Aviso') : 'Nuevo Registro de Aviso' }}
+                  </DialogTitle>
+                  <button @click="emit('close')" class="text-white/80 hover:text-white rounded-md p-1 transition-colors hover:bg-white/10">
+                    <X class="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                  
+                  <div v-if="aviso && isViewMode" class="flex items-center gap-3 p-3 rounded-md border" :style="{ backgroundColor: 'var(--color-background)' }">
+                    <div class="flex-1">
+                      <p class="text-[10px] uppercase font-bold text-gray-500 mb-0.5">Estado Operativo</p>
+                      <p class="text-sm font-bold text-gray-900">{{ aviso.estado }}</p>
+                    </div>
+                    <div class="flex gap-2">
+                      <button v-if="aviso.estado === 'BORRADOR' || aviso.estado === 'OCULTO'" @click="emit('changeState', 'PUBLICADO')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-green-600 hover:bg-green-700 text-white text-xs font-bold transition">
+                        <Globe class="w-3.5 h-3.5" /> Publicar
+                      </button>
+                      <button v-if="aviso.estado === 'PUBLICADO'" @click="emit('changeState', 'OCULTO')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-600 hover:bg-gray-700 text-white text-xs font-bold transition">
+                        <EyeOff class="w-3.5 h-3.5" /> Ocultar
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="space-y-5 relative" :class="{ 'opacity-80 pointer-events-none': loading }">
+                    <div>
+                      <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Título del Aviso *</label>
+                      <input v-model="form.titulo" :disabled="isViewMode" type="text" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] disabled:bg-transparent disabled:border-transparent disabled:px-0 disabled:font-black disabled:text-lg" />
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Descripción General *</label>
+                      <textarea v-model="form.descripcion" :disabled="isViewMode" rows="4" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] disabled:bg-transparent disabled:border-transparent disabled:px-0 disabled:resize-none"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Tipo *</label>
+                        <select v-model="form.tipo" :disabled="isViewMode" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] disabled:bg-transparent disabled:border-transparent disabled:px-0 disabled:font-medium disabled:appearance-none">
+                          <option value="" disabled>Seleccione</option>
+                          <option v-for="t in tipos" :key="t" :value="t">{{ t }}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Prioridad *</label>
+                        <select v-model="form.prioridad" :disabled="isViewMode" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] disabled:bg-transparent disabled:border-transparent disabled:px-0 disabled:font-medium disabled:appearance-none">
+                          <option value="BAJA">BAJA</option>
+                          <option value="MEDIA">MEDIA</option>
+                          <option value="ALTA">ALTA</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Fecha de Publicación</label>
+                      <DatePicker v-if="!isViewMode" v-model.string="form.fecha_publicacion" mode="dateTime" is24hr :min-date="today" :masks="{ modelValue: 'YYYY-MM-DD HH:mm:ss', input: 'DD/MM/YYYY HH:mm' }">
+                        <template #default="{ inputValue, inputEvents }">
+                          <div class="relative">
+                            <input :value="inputValue" v-on="inputEvents" placeholder="Opcional. Por defecto: Inmediata" readonly class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 cursor-pointer focus:ring-2 focus:ring-[var(--color-primary)]" />
+                            <button v-if="form.fecha_publicacion" @click.stop="form.fecha_publicacion = null" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-700">
+                              <X class="w-4 h-4" />
+                            </button>
+                          </div>
+                        </template>
+                      </DatePicker>
+                      <div v-else class="text-sm font-medium text-gray-900">
+                        {{ formatFecha(form.fecha_publicacion) }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="border-t border-gray-200 bg-gray-50 p-6 flex flex-col gap-3 shrink-0">
+                  <div v-if="showDisclaimer" class="flex flex-col items-center text-center">
+                    <AlertTriangle class="w-8 h-8 text-rose-600 mb-2" />
+                    <p class="text-sm font-bold text-rose-900 mb-1">¿Eliminar permanentemente?</p>
+                    <p class="text-xs text-rose-700 mb-4">Esta acción no se puede deshacer y borrará el registro del sistema.</p>
+                    <div class="flex gap-3 w-full">
+                      <button @click="emit('delete', aviso.id_aviso)" class="flex-1 bg-rose-600 text-white px-4 py-2.5 rounded-md text-sm font-bold hover:bg-rose-700 transition">Confirmar</button>
+                      <button @click="showDisclaimer = false" class="flex-1 bg-white text-gray-700 border border-gray-300 px-4 py-2.5 rounded-md text-sm font-bold hover:bg-gray-50 transition">Cancelar</button>
+                    </div>
+                  </div>
+
+                  <template v-else>
+                    <template v-if="isViewMode">
+                      <button @click="isEditing = true" class="w-full flex justify-center items-center gap-2 text-white px-4 py-3 rounded-md text-sm font-bold shadow-sm transition" style="background-color: var(--color-accent)">
+                        <Edit2 class="w-4 h-4" /> Activar Edición
+                      </button>
+                      <button @click="showDisclaimer = true" class="w-full flex justify-center items-center gap-2 bg-rose-50 text-rose-600 border border-rose-200 px-4 py-3 rounded-md text-sm font-bold hover:bg-rose-100 transition mt-2">
+                        <Trash2 class="w-4 h-4" /> Eliminar permanentemente
+                      </button>
+                    </template>
+                    
+                    <template v-else>
+                      <button @click="handleSubmit" :disabled="loading" class="w-full flex justify-center items-center gap-2 text-white px-4 py-3 rounded-md text-sm font-bold shadow-sm transition disabled:opacity-50" style="background-color: var(--color-accent)">
+                        <Save class="w-4 h-4" /> {{ loading ? 'Guardando...' : 'Guardar Información' }}
+                      </button>
+                      <button @click="aviso ? isEditing = false : emit('close')" class="w-full px-4 py-3 border border-gray-300 rounded-md text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 transition">
+                        Cancelar
+                      </button>
+                    </template>
+                  </template>
+                </div>
+              </DialogPanel>
+            </TransitionChild>
+          </div>
+        </div>
+      </div>
+    </Dialog>
+  </TransitionRoot>
+</template>
