@@ -54,35 +54,38 @@ const formatFecha = (fechaStr: string | null) => {
 <template>
   <div 
     @click="emit('click', aviso)"
-    class="relative bg-white rounded-md shadow-sm border border-gray-100 overflow-hidden cursor-pointer transition-all duration-300 hover:shadow hover:scale-[1.02] group flex flex-col h-full"
+    class="relative bg-white rounded-t-md shadow-sm border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-md hover:scale-[1.02] hover:z-30 group flex flex-col h-full"
     :class="{ 'opacity-60 grayscale-[30%]': isTemporal }"
     :style="{ borderLeft: `4px solid ${prioridadColor}` }"
   >
-    <div class="p-4 flex-1 flex flex-col">
-      <div class="flex justify-between items-start mb-2 gap-2">
-        <h3 class="text-lg font-black text-gray-900 line-clamp-2 leading-tight group-hover:text-[var(--color-primary)] transition-colors">
-          {{ aviso.titulo }}
-        </h3>
-        <div 
-          class="flex items-center justify-center p-1.5 rounded-md shrink-0"
-          :style="{ backgroundColor: estadoConfig.bg, color: estadoConfig.color }"
-          :title="aviso.estado"
-        >
-          <component :is="estadoConfig.icon" class="w-4 h-4 stroke-[2.5]" />
-        </div>
-      </div>
+    
+    <div class="absolute inset-0 right-0 w-full h-full overflow-hidden rounded-t-md pointer-events-none">
+        <component 
+            :is="estadoConfig.icon" 
+            class="absolute -right-8 top-1/2 -translate-y-1/2 w-32 h-32 opacity-10 pointer-events-none z-0 transition-transform duration-500 group-hover:scale-110"
+            :style="{ color: estadoConfig.color }"
+        />
+    </div>
+
+    <div class="p-4 flex-1 flex flex-col relative z-10">
+      <h3 class="text-xl font-black text-gray-900 line-clamp-2 leading-tight group-hover:text-[var(--color-primary)] transition-colors mb-2">
+        {{ aviso.titulo }}
+      </h3>
       
-      <p class="text-xs text-gray-500 line-clamp-2 mb-3 flex-1">
+      <p class="text-xs text-gray-500 line-clamp-2 mb-4 flex-1">
         {{ aviso.descripcion }}
       </p>
 
-      <div class="flex flex-wrap gap-1.5 mb-4">
-        <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-gray-100 text-gray-600 border border-gray-200">
+      <div class="flex flex-wrap gap-1.5 mt-auto">
+        <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-gray-50 text-gray-600 border border-gray-200">
           {{ aviso.tipo }}
         </span>
       </div>
+    </div>
 
-      <div class="flex flex-col gap-1.5 pt-3 border-t border-gray-50">
+    <div class="absolute top-[calc(100%-1px)] left-[-4px] w-[calc(100%+4px)] bg-white border border-gray-100 border-t-0 rounded-b-md px-4 shadow-xl z-20 max-h-0 opacity-0 overflow-hidden group-hover:max-h-28 group-hover:opacity-100 group-hover:pb-4 transition-all duration-300 ease-out"
+         :style="{ borderLeft: `4px solid ${prioridadColor}` }">
+      <div class="flex flex-col gap-1.5 pt-3 mt-1 border-t border-gray-100">
         <div class="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
           <Calendar class="w-3.5 h-3.5" />
           <span>Creado: {{ formatFecha(aviso.fecha_creacion) }}</span>
