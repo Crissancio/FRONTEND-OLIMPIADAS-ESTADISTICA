@@ -1,5 +1,3 @@
-import type { PaginatedResponse, ResponseBase } from '@/shared/types/api.types'
-
 export interface ColaboradorResponseDTO {
   id_colaborador: number
   nombres: string
