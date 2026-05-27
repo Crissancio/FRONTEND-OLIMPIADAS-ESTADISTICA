@@ -37,4 +37,5 @@ export interface AvisoFilters {
   prioridad?: 'ALTA' | 'MEDIA' | 'BAJA'
   estado?: 'BORRADOR' | 'PUBLICADO' | 'OCULTO'
   fecha_publicacion?: string
+  fecha_creacion?: string 
 }

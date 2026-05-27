@@ -2,7 +2,7 @@
 import { ref, reactive, watch, computed } from 'vue'
 import { DatePicker } from 'v-calendar'
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue'
-import { X, Save, Edit2, Trash2, AlertTriangle, Globe, EyeOff } from 'lucide-vue-next'
+import { X, Save, Edit2, Trash2, AlertTriangle, Globe, EyeOff, Calendar } from 'lucide-vue-next'
 import 'v-calendar/style.css'
 
 const props = defineProps<{
@@ -62,6 +62,15 @@ const formatFecha = (fechaStr: string | null) => {
     hour: '2-digit', minute: '2-digit'
   }).format(date)
 }
+
+const getPrioridadColor = (prioridad: string) => {
+  switch (prioridad) {
+    case 'ALTA': return 'bg-rose-50 text-rose-700 border-rose-200'
+    case 'MEDIA': return 'bg-amber-50 text-amber-700 border-amber-200'
+    case 'BAJA': return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    default: return 'bg-gray-50 text-gray-700 border-gray-200'
+  }
+}
 </script>
 
 <template>
@@ -103,21 +112,52 @@ const formatFecha = (fechaStr: string | null) => {
                     </div>
                   </div>
 
-                  <div class="space-y-5 relative" :class="{ 'opacity-80 pointer-events-none': loading }">
+                  <div v-if="isViewMode" class="space-y-5">
+                    <div>
+                      <h2 class="text-2xl font-black text-gray-900 leading-tight mb-3">
+                        {{ form.titulo }}
+                      </h2>
+                      <div class="flex flex-wrap gap-2">
+                        <span class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-gray-100 text-gray-600 border border-gray-200">
+                          {{ form.tipo }}
+                        </span>
+                        <span :class="['px-2.5 py-1 text-[11px] font-bold rounded-md border', getPrioridadColor(form.prioridad)]">
+                          Prioridad {{ form.prioridad }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Descripción General</h3>
+                      <p class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed bg-gray-50 p-4 rounded-md border border-gray-100">
+                        {{ form.descripcion }}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 class="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Fecha de Publicación</h3>
+                      <div class="flex items-center gap-2 text-sm font-medium text-gray-900">
+                        <Calendar class="w-4 h-4 text-gray-500" />
+                        {{ formatFecha(form.fecha_publicacion) }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else class="space-y-5 relative" :class="{ 'opacity-80 pointer-events-none': loading }">
                     <div>
                       <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Título del Aviso *</label>
-                      <input v-model="form.titulo" :disabled="isViewMode" type="text" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] disabled:bg-transparent disabled:border-transparent disabled:px-0 disabled:font-black disabled:text-lg" />
+                      <input v-model="form.titulo" type="text" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] transition-all" placeholder="Escriba el título del aviso..." />
                     </div>
 
                     <div>
                       <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Descripción General *</label>
-                      <textarea v-model="form.descripcion" :disabled="isViewMode" rows="4" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] disabled:bg-transparent disabled:border-transparent disabled:px-0 disabled:resize-none"></textarea>
+                      <textarea v-model="form.descripcion" rows="5" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] transition-all resize-none" placeholder="Detalle la información..."></textarea>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                       <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Tipo *</label>
-                        <select v-model="form.tipo" :disabled="isViewMode" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] disabled:bg-transparent disabled:border-transparent disabled:px-0 disabled:font-medium disabled:appearance-none">
+                        <select v-model="form.tipo" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] transition-all">
                           <option value="" disabled>Seleccione</option>
                           <option v-for="t in tipos" :key="t" :value="t">{{ t }}</option>
                         </select>
@@ -125,7 +165,7 @@ const formatFecha = (fechaStr: string | null) => {
 
                       <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Prioridad *</label>
-                        <select v-model="form.prioridad" :disabled="isViewMode" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] disabled:bg-transparent disabled:border-transparent disabled:px-0 disabled:font-medium disabled:appearance-none">
+                        <select v-model="form.prioridad" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] transition-all">
                           <option value="BAJA">BAJA</option>
                           <option value="MEDIA">MEDIA</option>
                           <option value="ALTA">ALTA</option>
@@ -135,19 +175,16 @@ const formatFecha = (fechaStr: string | null) => {
 
                     <div>
                       <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Fecha de Publicación</label>
-                      <DatePicker v-if="!isViewMode" v-model.string="form.fecha_publicacion" mode="dateTime" is24hr :min-date="today" :masks="{ modelValue: 'YYYY-MM-DD HH:mm:ss', input: 'DD/MM/YYYY HH:mm' }">
+                      <DatePicker v-model.string="form.fecha_publicacion" mode="dateTime" is24hr :min-date="today" :masks="{ modelValue: 'YYYY-MM-DD HH:mm:ss', input: 'DD/MM/YYYY HH:mm' }">
                         <template #default="{ inputValue, inputEvents }">
                           <div class="relative">
-                            <input :value="inputValue" v-on="inputEvents" placeholder="Opcional. Por defecto: Inmediata" readonly class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 cursor-pointer focus:ring-2 focus:ring-[var(--color-primary)]" />
+                            <input :value="inputValue" v-on="inputEvents" placeholder="Opcional. Por defecto: Inmediata" readonly class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 cursor-pointer focus:ring-2 focus:ring-[var(--color-primary)] transition-all" />
                             <button v-if="form.fecha_publicacion" @click.stop="form.fecha_publicacion = null" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-700">
                               <X class="w-4 h-4" />
                             </button>
                           </div>
                         </template>
                       </DatePicker>
-                      <div v-else class="text-sm font-medium text-gray-900">
-                        {{ formatFecha(form.fecha_publicacion) }}
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -166,7 +203,7 @@ const formatFecha = (fechaStr: string | null) => {
                   <template v-else>
                     <template v-if="isViewMode">
                       <button @click="isEditing = true" class="w-full flex justify-center items-center gap-2 text-white px-4 py-3 rounded-md text-sm font-bold shadow-sm transition" style="background-color: var(--color-accent)">
-                        <Edit2 class="w-4 h-4" /> Activar Edición
+                        <Edit2 class="w-4 h-4" /> Modificar Información
                       </button>
                       <button @click="showDisclaimer = true" class="w-full flex justify-center items-center gap-2 bg-rose-50 text-rose-600 border border-rose-200 px-4 py-3 rounded-md text-sm font-bold hover:bg-rose-100 transition mt-2">
                         <Trash2 class="w-4 h-4" /> Eliminar permanentemente
