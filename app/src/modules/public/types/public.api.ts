@@ -88,6 +88,7 @@ export type ColaboradorResponseDTO = {
   nombres: string
   paterno: string
   materno: string | null
+  perfil?: string | null
 }
 
 export type TipoColaborador = 'PERSONAL ACADEMICO' | 'ADMINISTRATIVO' | 'COLABORADOR'
