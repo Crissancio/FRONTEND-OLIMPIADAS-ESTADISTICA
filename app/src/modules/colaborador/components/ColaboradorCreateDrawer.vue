@@ -21,40 +21,64 @@ const formData = ref({
   tipo: 'COLABORADOR',
   presentacion: ''
 })
+const ROLES_DISPONIBLES = [
+  'DIRECTOR(A)',
+  'DOCENTE TITULAR',
+  'DOCENTE INTERINO',
+  'INVESTIGADOR(A)',
+  'AUXILIAR DE DOCENCIA',
+  'ESTUDIANTE',
+  'ASISTENTE ADMINISTRATIVO',
+  'TÉCNICO(A) DE LABORATORIO',
+  'AUXILIAR DE INVESTIGACIÓN',
+  'AUXILIAR DE INTERACCION',
+  'PASANTE'
+]
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const imageRef = ref<HTMLImageElement | null>(null)
 const rawImageUrl = ref<string | null>(null)
+const isDragging = ref(false) 
 let cropperInstance: Cropper | null = null
+
+const processFile = (file: File) => {
+  if (!file.type.startsWith('image/')) return 
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    rawImageUrl.value = e.target?.result as string
+    nextTick(() => {
+      if (imageRef.value) {
+        if (cropperInstance) cropperInstance.destroy()
+        
+        cropperInstance = new Cropper(imageRef.value, {
+          aspectRatio: 1,
+          viewMode: 1,
+          dragMode: 'move',
+          autoCropArea: 1,
+          restore: false,
+          guides: true,
+          center: true,
+          highlight: false,
+          cropBoxMovable: true,
+          cropBoxResizable: true,
+          toggleDragModeOnDblclick: false,
+        } as any)
+      }
+    })
+  }
+  reader.readAsDataURL(file)
+}
 
 const handleFileSelect = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      rawImageUrl.value = e.target?.result as string
-      nextTick(() => {
-        if (imageRef.value) {
-          if (cropperInstance) cropperInstance.destroy()
-          
-          cropperInstance = new Cropper(imageRef.value, {
-            aspectRatio: 1,
-            viewMode: 1,
-            dragMode: 'move',
-            autoCropArea: 1,
-            restore: false,
-            guides: true,
-            center: true,
-            highlight: false,
-            cropBoxMovable: true,
-            cropBoxResizable: true,
-            toggleDragModeOnDblclick: false,
-          } as any)
-        }
-      })
-    }
-    reader.readAsDataURL(file)
-  }
+  if (file) processFile(file)
+}
+
+const handleDrop = (event: DragEvent) => {
+  isDragging.value = false
+  const file = event.dataTransfer?.files?.[0]
+  if (file) processFile(file)
 }
 
 const triggerFileInput = () => fileInputRef.value?.click()
@@ -65,6 +89,7 @@ const handleClose = () => {
     cropperInstance = null
   }
   rawImageUrl.value = null
+  isDragging.value = false
   formData.value = { nombres: '', paterno: '', materno: '', correo: '', rol: '', tipo: 'COLABORADOR', presentacion: '' }
   emit('close')
 }
@@ -127,16 +152,27 @@ onUnmounted(() => {
                       
                       <div>
                         <label class="block text-sm font-medium text-text-main mb-1">Fotografía de Perfil</label>
-                        <div v-if="!rawImageUrl" @click="triggerFileInput" class="mt-1 flex justify-center rounded-xl border-2 border-dashed border-gray-300 px-6 py-8 hover:border-primary hover:bg-gray-50 cursor-pointer transition-colors">
-                          <div class="text-center">
-                            <UploadCloud class="mx-auto h-10 w-10 text-gray-400" />
-                            <div class="mt-4 flex text-sm leading-6 text-gray-600 justify-center">
+                        <div 
+                          v-if="!rawImageUrl" 
+                          @click="triggerFileInput"
+                          @dragover.prevent="isDragging = true"
+                          @dragleave.prevent="isDragging = false"
+                          @drop.prevent="handleDrop"
+                          :class="[
+                            'mt-1 flex justify-center rounded-xl border-2 border-dashed px-6 py-8 cursor-pointer transition-colors',
+                            isDragging ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary hover:bg-gray-50'
+                          ]"
+                        >
+                          <div class="text-center pointer-events-none">
+                            <UploadCloud :class="['mx-auto h-10 w-10 transition-colors', isDragging ? 'text-primary' : 'text-gray-400']" />
+                            <div class="mt-4 flex text-sm leading-6 justify-center">
                               <span class="font-semibold text-primary hover:text-primary-dark">Sube un archivo</span>
-                              <p class="pl-1">o arrastra y suelta</p>
+                              <p class="pl-1 text-gray-600">o arrastra y suelta aquí</p>
                             </div>
                             <p class="text-xs leading-5 text-gray-500">PNG, JPG hasta 5MB</p>
                           </div>
                         </div>
+                        
                         <div v-else class="relative w-full h-64 bg-gray-100 rounded-xl overflow-hidden">
                           <img ref="imageRef" :src="rawImageUrl" class="max-w-full block" />
                           <button type="button" @click="rawImageUrl = null" class="absolute top-2 right-2 z-10 rounded-full bg-white p-1 shadow hover:bg-gray-100 text-error">
@@ -170,7 +206,16 @@ onUnmounted(() => {
 
                       <div>
                         <label class="block text-sm font-medium text-text-main mb-1">Rol</label>
-                        <input v-model="formData.rol" required placeholder="Ej: Docente Titular" class="input-base" />
+                        <input 
+                          v-model="formData.rol" 
+                          list="sugerencias-roles"
+                          required 
+                          placeholder="Ej: Docente Titular"
+                          class="input-base" 
+                        />
+                        <datalist id="sugerencias-roles">
+                          <option v-for="rol in ROLES_DISPONIBLES" :key="rol" :value="rol"></option>
+                        </datalist>
                       </div>
 
                       <div>

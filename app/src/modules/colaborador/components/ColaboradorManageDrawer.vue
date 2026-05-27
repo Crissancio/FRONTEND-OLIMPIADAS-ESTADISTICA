@@ -90,7 +90,7 @@ const confirmDelete = async () => {
                 <div class="flex h-full flex-col bg-white shadow-2xl" v-if="store.colaboradorActual">
                   
                   <div class="relative bg-primary px-6 py-8 text-center text-white">
-                    <button @click="handleClose" class="absolute right-4 top-4 rounded-full p-1 hover:bg-white/10 transition-colors">
+                    <button @click="handleClose" class="absolute right-4 top-4 rounded-full p-1 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors">
                       <X class="h-5 w-5" />
                     </button>
                     <div class="mx-auto mb-3 h-24 w-24 overflow-hidden rounded-full border-4 border-white shadow-md">
@@ -106,10 +106,19 @@ const confirmDelete = async () => {
                   <div class="flex-1 overflow-y-auto p-6">
                     
                     <div class="mb-6 flex gap-2">
-                      <Button :variant="isEditing ? 'outline' : 'primary'" class="flex-1" @click="isEditing = !isEditing">
+                      <Button 
+                        variant="outline" 
+                        :class="['flex-1 border-gray-200 transition-colors focus:ring-2 focus:ring-primary/50', isEditing ? 'bg-gray-100 text-gray-900' : 'hover:bg-gray-50 hover:text-gray-900']" 
+                        @click="isEditing = !isEditing"
+                      >
                         {{ isEditing ? 'Cancelar Edición' : 'Editar Datos' }}
                       </Button>
-                      <Button v-if="!isEditing" :variant="store.colaboradorActual.estado === 'ACTIVO' ? 'outline' : 'accent'" class="flex-1" @click="toggleEstado">
+                      <Button 
+                        v-if="!isEditing" 
+                        variant="outline" 
+                        class="flex-1 border-gray-200 hover:bg-gray-50 hover:text-gray-900 transition-colors focus:ring-2 focus:ring-primary/50" 
+                        @click="toggleEstado"
+                      >
                         <UserMinus v-if="store.colaboradorActual.estado === 'ACTIVO'" class="mr-2 h-4 w-4" />
                         <ShieldCheck v-else class="mr-2 h-4 w-4" />
                         {{ store.colaboradorActual.estado === 'ACTIVO' ? 'Dar de Baja' : 'Dar de Alta' }}
@@ -144,19 +153,23 @@ const confirmDelete = async () => {
 
                       <div class="pt-6 border-t border-gray-100 mt-auto">
                         <div v-if="!showDeleteConfirm">
-                          <button @click="showDeleteConfirm = true" class="w-full flex items-center justify-center gap-2 rounded-lg border border-error/20 bg-error/5 py-2.5 text-sm font-medium text-error transition-colors hover:bg-error hover:text-white">
+                          <button @click="showDeleteConfirm = true" class="w-full flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-medium text-red-600 transition-all hover:bg-red-600 hover:text-white hover:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                             <Trash2 class="h-4 w-4" /> Eliminar permanentemente
                           </button>
                         </div>
-                        <div v-else class="rounded-lg border border-error bg-error/5 p-4 animate-fade-in">
+                        <div v-else class="rounded-lg border border-red-300 bg-red-50 p-4 animate-fade-in shadow-sm">
                           <div class="flex items-start gap-3">
-                            <AlertTriangle class="h-5 w-5 text-error shrink-0" />
+                            <AlertTriangle class="h-5 w-5 text-red-600 shrink-0" />
                             <div>
-                              <h4 class="text-sm font-bold text-error">¿Estás absolutamente seguro?</h4>
-                              <p class="mt-1 text-xs text-error/80 mb-3">Esta acción no se puede deshacer. Los datos del colaborador se borrarán del sistema.</p>
+                              <h4 class="text-sm font-bold text-red-800">¿Estás absolutamente seguro?</h4>
+                              <p class="mt-1 text-xs text-red-700 mb-3">Esta acción no se puede deshacer. Los datos del colaborador se borrarán del sistema.</p>
                               <div class="flex gap-2">
-                                <Button variant="ghost" size="sm" @click="showDeleteConfirm = false" class="text-text-muted">Cancelar</Button>
-                                <Button variant="primary" size="sm" class="bg-error hover:bg-error/90 border-none text-white" @click="confirmDelete">Sí, eliminar</Button>
+                                <Button variant="outline" size="sm" @click="showDeleteConfirm = false" class="border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800 focus:ring-2 focus:ring-red-200">
+                                  Cancelar
+                                </Button>
+                                <Button variant="primary" size="sm" class="bg-red-600 text-white border-transparent hover:bg-red-700 focus:ring-2 focus:ring-red-600 focus:ring-offset-1" @click="confirmDelete">
+                                  Sí, eliminar
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -201,7 +214,7 @@ const confirmDelete = async () => {
                         <label class="block text-xs font-medium text-text-main mb-1">Presentación</label>
                         <textarea v-model="formData.presentacion" rows="3" class="input-base resize-none"></textarea>
                       </div>
-                      <Button variant="primary" class="w-full mt-4" type="submit" :disabled="store.isLoading">
+                      <Button variant="primary" class="w-full mt-4 transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-1 hover:brightness-95" type="submit" :disabled="store.isLoading">
                         Guardar Cambios
                       </Button>
                     </form>

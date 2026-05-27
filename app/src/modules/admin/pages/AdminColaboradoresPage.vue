@@ -11,6 +11,7 @@ const store = useColaboradoresStore()
 
 const searchTerm = ref('')
 const selectedCategory = ref('')
+const selectedEstado = ref('') // Nueva variable para el estado
 const isCreateDrawerOpen = ref(false)
 const isManageDrawerOpen = ref(false)
 const selectedColaboradorId = ref<number | null>(null)
@@ -33,7 +34,8 @@ const loadData = async (reset = false) => {
     page: currentPage.value,
     limit: 12,
     nombre: searchTerm.value || null,
-    tipo: selectedCategory.value || null
+    tipo: selectedCategory.value || null,
+    estado: selectedEstado.value || null // Se envía el estado a la petición
   })
 
   if (store.meta && currentPage.value >= store.meta.total_pages) {
@@ -44,7 +46,7 @@ const loadData = async (reset = false) => {
 }
 
 let timeoutId: ReturnType<typeof setTimeout>
-watch([searchTerm, selectedCategory], () => {
+watch([searchTerm, selectedCategory, selectedEstado], () => {
   clearTimeout(timeoutId)
   timeoutId = setTimeout(() => loadData(true), 500)
 })
@@ -89,19 +91,24 @@ const openManageDrawer = (id: number) => {
     </div>
 
     <div class="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm border border-gray-100 sm:flex-row">
-      <div class="relative w-full sm:w-96">
+      <div class="relative w-full flex-1">
         <Search class="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-text-muted" />
         <input 
           v-model="searchTerm" 
-          class="input-base pl-9" 
+          class="input-base w-full pl-9" 
           placeholder="Buscar por nombre, apellidos..." 
         />
       </div>
-      <select v-model="selectedCategory" class="input-base sm:w-64 cursor-pointer">
+      <select v-model="selectedCategory" class="input-base sm:w-56 cursor-pointer">
         <option value="">Todas las categorías</option>
         <option value="PERSONAL ACADEMICO">Personal académico</option>
         <option value="ADMINISTRATIVO">Administrativo</option>
         <option value="COLABORADOR">Colaborador</option>
+      </select>
+      <select v-model="selectedEstado" class="input-base sm:w-48 cursor-pointer">
+        <option value="">Todos los estados</option>
+        <option value="ACTIVO">Activo</option>
+        <option value="INACTIVO">Inactivo</option>
       </select>
     </div>
 
