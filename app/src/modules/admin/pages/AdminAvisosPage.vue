@@ -114,7 +114,20 @@ const handleDelete = async (id: number) => {
     </div>
 
     <AvisoFilters @filter="handleFilters" />
-
+    <div class="flex flex-wrap items-center justify-start gap-6 px-2">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 rounded-full" style="background-color: var(--color-aviso-prioridad-alta)"></div>
+        <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Prioridad Alta</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 rounded-full" style="background-color: var(--color-aviso-prioridad-media)"></div>
+        <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Prioridad Media</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 rounded-full" style="background-color: var(--color-aviso-prioridad-baja)"></div>
+        <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Prioridad Baja</span>
+      </div>
+    </div>
     <div v-if="avisosStore.avisos.length === 0 && !avisosStore.loading" class="bg-white rounded-md border border-dashed border-gray-300 flex flex-col items-center justify-center py-20 text-center">
       <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
         <Search class="w-8 h-8 text-gray-400" />
