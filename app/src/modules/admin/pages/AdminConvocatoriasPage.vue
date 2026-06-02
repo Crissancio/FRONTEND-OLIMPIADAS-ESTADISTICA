@@ -1,44 +1,100 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  Plus, Search, Filter, Settings, FileText
-} from 'lucide-vue-next'
+import { Plus } from 'lucide-vue-next'
+import { useConvocatoriasStore } from '../../convocatorias/stores/convocatorias.store'
+import type { EstadoConvocatoria, EstadoTemporal, ConvocatoriaFilters } from '../../convocatorias/types/convocatorias.api'
+
+// Importación de componentes especializados
+import ConvocatoriasFilters from '../components/ConvocatoriasFilters.vue'
+import ConvocatoriasTable from '../components/ConvocatoriasTable.vue'
+
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
-import Badge from '@/shared/components/ui/atoms/Badge.vue'
 import CreateConvocatoriaDialog from '@/modules/admin/components/CreateConvocatoriaDialog.vue'
-import { useConvocatorias } from '@/modules/admin/composables/useConvocatorias'
 
 const router = useRouter()
+const convocatoriasStore = useConvocatoriasStore()
+
+// Estados reactivos locales para los filtros y control de scroll
 const isDialogOpen = ref(false)
 const searchTerm = ref('')
-const selectedStatus = ref('all')
-const { convocatorias, isLoading, error, total, refresh } = useConvocatorias()
+const estadoFilter = ref<EstadoConvocatoria | 'all'>('all')
+const estadoTemporalFilter = ref<EstadoTemporal | 'all'>('all')
+const dateRangeFilter = ref<{ start: Date; end: Date } | null>(null)
 
-// Ensure list reflects changes (e.g. publish) when returning.
-onMounted(() => {
-  void refresh()
+const currentPage = ref(1)
+const isLoadingMore = ref(false)
+
+// Función unificada de llamadas al Store
+const syncConvocatorias = async (isScrollLoad = false) => {
+  if (isScrollLoad) {
+    isLoadingMore.value = true
+  }
+
+  const filters: ConvocatoriaFilters = {
+    page: currentPage.value,
+    limit: 10,
+    estado: estadoFilter.value === 'all' ? null : estadoFilter.value,
+    estado_temporal: estadoTemporalFilter.value === 'all' ? null : estadoTemporalFilter.value,
+    start_date: dateRangeFilter.value?.start ? dateRangeFilter.value.start.toISOString().split('T')[0] : null,
+    end_date: dateRangeFilter.value?.end ? dateRangeFilter.value.end.toISOString().split('T')[0] : null
+  }
+
+  await convocatoriasStore.fetchConvocatorias(filters)
+  isLoadingMore.value = false
+}
+
+// Resetea la página a 1 ante cualquier cambio de filtros de Servidor
+const handleFilterChange = async () => {
+  currentPage.value = 1
+  await syncConvocatorias(false)
+}
+
+// Resetea todos los controles a su estado inicial limpio
+const handleClearFilters = async () => {
+  searchTerm.value = ''
+  estadoFilter.value = 'all'
+  estadoTemporalFilter.value = 'all'
+  dateRangeFilter.value = null
+  currentPage.value = 1
+  await syncConvocatorias(false)
+}
+
+// Manejador del trigger de scroll infinito emitido por la tabla
+const handleLoadMore = async () => {
+  if (isLoadingMore.value || convocatoriasStore.loading) return
+  
+  const meta = convocatoriasStore.meta
+  // Validamos si ya se descargaron todos los ítems existentes según la metadata del API
+  if (meta && convocatoriasStore.convocatorias.length >= meta.total) return
+
+  currentPage.value++
+  await syncConvocatorias(true)
+}
+
+// Redirección a la futura página de administración detallada
+const handleManageConvocatoria = (id: number) => {
+  router.push(`/admin/convocatoria/${id}/gestionar`)
+}
+
+onMounted(async () => {
+  currentPage.value = 1
+  await syncConvocatorias(false)
 })
 
+// Búsqueda en tiempo real local (instantánea sobre el dataset acumulado en el store)
 const filteredConvocatorias = computed(() => {
-  return convocatorias.value.filter((conv) => {
-    const matchesSearch =
-      conv.nombre.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-      String(conv.gestion).includes(searchTerm.value)
-    const matchesStatus = selectedStatus.value === 'all' || conv.estado === selectedStatus.value
-    return matchesSearch && matchesStatus
+  return convocatoriasStore.convocatorias.filter((conv) => {
+    if (!searchTerm.value) return true
+    const term = searchTerm.value.toLowerCase()
+    return (
+      conv.nombre_convocatoria.toLowerCase().includes(term) ||
+      String(conv.gestion).includes(term)
+    )
   })
 })
-
-const estadoClass = (estado: string) => {
-  if (estado === 'Activa') return 'bg-success/10 text-success border-success/20'
-  if (estado === 'Borrador') return 'bg-warning/10 text-warning border-warning/20'
-  if (estado === 'Inscripcion en curso') return 'bg-primary/10 text-primary border-primary/20'
-  if (estado === 'Proxima') return 'bg-accent/10 text-accent border-accent/20'
-  return 'bg-gray-100 text-text-muted border-gray-200'
-}
 </script>
 
 <template>
@@ -46,7 +102,7 @@ const estadoClass = (estado: string) => {
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
         <h1 class="text-2xl font-heading font-bold text-text-main">Convocatorias</h1>
-        <p class="text-text-muted text-sm mt-1">Gestiona las olimpiadas, fases y resultados.</p>
+        <p class="text-text-muted text-sm mt-1">Gestiona las olimpiadas, fases y parámetros generales.</p>
       </div>
       <Button 
         @click="isDialogOpen = true"
@@ -58,116 +114,37 @@ const estadoClass = (estado: string) => {
       </Button>
     </div>
 
-    <Card class="rounded-xl border-gray-200 shadow-soft overflow-hidden bg-white">
-      <CardContent class="p-0">
-        <!-- Toolbar -->
-        <div class="p-4 border-b border-gray-200 flex flex-col sm:flex-row gap-4 items-center bg-gray-50/50">
-          <div class="relative w-full sm:w-80">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search class="h-4 w-4 text-text-muted" />
-            </div>
-            <input 
-              v-model="searchTerm"
-              type="text" 
-              class="w-full pl-9 pr-4 py-2 border-gray-300 rounded-md leading-5 bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors text-sm transition-colors" 
-              placeholder="Buscar convocatoria..."
-            />
-          </div>
-           <div class="w-full sm:w-auto">
-             <select
-               v-model="selectedStatus"
-               class="w-full sm:w-44 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
-             >
-               <option value="all">Todos los estados</option>
-               <option value="Activa">Activa</option>
-               <option value="Inscripcion en curso">Inscripcion en curso</option>
-               <option value="Proxima">Proxima</option>
-               <option value="Borrador">Borrador</option>
-               <option value="Finalizada">Finalizada</option>
-             </select>
-           </div>
-          <Button variant="outline" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50 py-2 rounded-md text-sm font-medium transition-colors">
-            <Filter class="w-4 h-4" />
-            Filtros
-          </Button>
-        </div>
+    <div v-if="convocatoriasStore.error && currentPage === 1" class="bg-red-50 border border-red-100 text-danger p-4 rounded-xl text-sm">
+      Error al sincronizar datos de convocatorias. Por favor, intente de nuevo.
+    </div>
 
-        <!-- Table -->
-        <div class="overflow-x-auto">
-          <div v-if="isLoading" class="px-6 py-8 text-sm text-text-muted">Cargando convocatorias...</div>
-          <div v-else-if="error" class="px-6 py-8 text-sm text-error">{{ error }}</div>
-          <table class="w-full text-left border-collapse">
-            <thead class="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th class="px-6 py-4 font-bold text-xs uppercase text-text-muted tracking-wider">Nombre</th>
-                <th class="px-6 py-4 font-bold text-xs uppercase text-text-muted tracking-wider">Gestión</th>
-                <th class="px-6 py-4 font-bold text-xs uppercase text-text-muted tracking-wider">Inscritos</th>
-                <th class="px-6 py-4 font-bold text-xs uppercase text-text-muted tracking-wider">Estado</th>
-                <th class="px-6 py-4 text-right font-bold text-xs uppercase text-text-muted tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr v-for="conv in filteredConvocatorias" :key="conv.id" class="hover:bg-gray-50/50 transition-colors">
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <FileText class="w-5 h-5 text-primary" />
-                    </div>
-                    <span class="font-bold text-text-main">{{ conv.nombre }}</span>
-                  </div>
-                </td>
-                  <td class="px-6 py-4 text-text-muted font-medium">{{ conv.gestion }}</td>
-                  <td class="px-6 py-4 text-text-muted font-medium">{{ conv.inscritos }}</td>
-                  <td class="px-6 py-4">
-                    <Badge 
-                     variant="outline"
-                     :class="`px-2.5 py-1 rounded border ${estadoClass(conv.estado)}`"
-                    >
-                    <template v-if="conv.estado === 'Activa'">
-                      <span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse mr-1.5"></span>
-                    </template>
-                    {{ conv.estado }}
-                  </Badge>
-                </td>
-                <td class="px-6 py-4 text-right">
-                  <div class="flex items-center justify-end gap-2">
-                    <!-- Button
-                       variant="ghost" 
-                       size="icon"
-                       class="text-text-muted hover:text-primary hover:bg-primary/10"
-                       title="Ver Detalles"
-                       @click="router.push(`/admin/convocatoria/visualizar/${conv.id}`)"
-                     >
-                       <Eye class="w-4 h-4" />
-                     </Button -->
-                     <Button 
-                       variant="ghost" 
-                       size="icon"
-                       class="text-text-muted hover:text-text-main hover:bg-gray-100"
-                       title="Administrar"
-                       @click="router.push(`/admin/convocatoria/${conv.id}/gestionar`)"
-                     >
-                       <Settings class="w-4 h-4" />
-                     </Button>
-                  </div>
-                </td>
-              </tr>
-              <tr v-if="!isLoading && !error && filteredConvocatorias.length === 0">
-                <td colspan="5" class="px-6 py-10 text-center text-sm text-text-muted">Sin resultados</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    <Card v-else class="rounded-xl border-gray-200 shadow-soft overflow-hidden bg-white">
+      <CardContent class="p-0 flex flex-col">
+        
+        <ConvocatoriasFilters 
+          v-model:searchTerm="searchTerm"
+          v-model:estado="estadoFilter"
+          v-model:estadoTemporal="estadoTemporalFilter"
+          v-model:dateRange="dateRangeFilter"
+          @filter-change="handleFilterChange"
+          @clear-filters="handleClearFilters"
+        />
 
-        <!-- Pagination placeholder -->
+        <ConvocatoriasTable 
+          :items="filteredConvocatorias"
+          :is-loading="convocatoriasStore.loading && currentPage === 1"
+          :is-loading-more="isLoadingMore"
+          @manage="handleManageConvocatoria"
+          @load-more="handleLoadMore"
+        />
+
         <div class="p-4 border-t border-gray-200 flex items-center justify-between text-sm text-text-muted bg-gray-50/50">
           <span>
-            Mostrando {{ filteredConvocatorias.length }} de {{ total || convocatorias.length }} convocatorias
+            Mostrando {{ filteredConvocatorias.length }} de {{ convocatoriasStore.meta?.total || filteredConvocatorias.length }} convocatorias
           </span>
-          <div class="flex gap-1">
-            <Button variant="outline" size="sm" class="text-text-muted border-gray-200" disabled>Anterior</Button>
-            <Button variant="outline" size="sm" class="text-text-muted border-gray-200" disabled>Siguiente</Button>
-          </div>
+          <span v-if="convocatoriasStore.loading && currentPage === 1" class="text-xs text-primary animate-pulse font-medium">
+            Sincronizando...
+          </span>
         </div>
       </CardContent>
     </Card>

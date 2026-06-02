@@ -1,84 +1,169 @@
-import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
-import { PublicService } from '@/modules/public/services/public.service'
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { publicService } from '../services/public.service';
 import type {
-  ColaboradorResponseDTO,
+  GetColaboradoresPublicParams,
+  GetMaterialesPublicParams,
+  GetResultadosFinalesPublicParams,
+  GetAvisosPublicosParams,
+  PublicColaboradorResponseDTO,
+  ColegioPublicoMinifiedDTO,
+  MaterialPublicoGeneralDTO,
+  ResultadoPublicoGeneralDTO,
+  AvisoPublicoDTO,
+  ConvocatoriaInicioDTO,
   ConvocatoriaDetalleDTO,
-  InicioResponseDTO,
-  TipoColaborador
-} from '@/modules/public/types/public.api'
+  ConvocatoriaListPublicDTO,
+  ConvocatoriaMinified
+} from '../types/public.api';
+import type { PaginationMeta } from '@/shared/types/api.types';
+import type { ApiError } from '@/app/api/api-error';
 
 export const usePublicStore = defineStore('public', () => {
-  const inicio = ref<InicioResponseDTO | null>(null)
-  const detalleById = ref<Record<number, ConvocatoriaDetalleDTO>>({})
-  const personalByTipo = ref<Record<TipoColaborador, ColaboradorResponseDTO[]>>({
-    'PERSONAL ACADEMICO': [],
-    ADMINISTRATIVO: [],
-    COLABORADOR: [],
-  })
-  const isLoadingInicio = ref(false)
-  const isLoadingDetalle = ref(false)
-  const isLoadingPersonal = ref(false)
-  const error = ref<string | null>(null)
+  // ================= ESTADOS =================
+  const loading = ref<boolean>(false);
+  const error = ref<ApiError | null>(null);
 
-  const convocatoriaInicio = computed(() => inicio.value?.convocatoria ?? null)
+  // Landing / Inicio
+  const inicioData = ref<ConvocatoriaInicioDTO | null>(null);
+  
+  // Listas generales
+  const convocatoriasList = ref<ConvocatoriaListPublicDTO[]>([]);
+  const convocatoriasMinified = ref<ConvocatoriaMinified[]>([]);
+  const colegiosMinified = ref<ColegioPublicoMinifiedDTO[]>([]);
+  
+  // Detalle actual
+  const currentConvocatoriaDetalle = ref<ConvocatoriaDetalleDTO | null>(null);
 
-  async function loadInicio() {
-    isLoadingInicio.value = true
-    error.value = null
+  // Estados paginados
+  const avisos = ref<AvisoPublicoDTO[]>([]);
+  const metaAvisos = ref<PaginationMeta | null>(null);
+
+  const colaboradores = ref<PublicColaboradorResponseDTO[]>([]);
+  const metaColaboradores = ref<PaginationMeta | null>(null);
+
+  const materiales = ref<MaterialPublicoGeneralDTO[]>([]);
+  const metaMateriales = ref<PaginationMeta | null>(null);
+
+  const resultados = ref<ResultadoPublicoGeneralDTO[]>([]);
+  const metaResultados = ref<PaginationMeta | null>(null);
+
+  // ================= ACCIONES =================
+  
+  async function fetchInicio() {
+    loading.value = true; error.value = null;
     try {
-      const res = await PublicService.getInicio()
-      inicio.value = res.data
-      return res.data
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Error cargando inicio'
-      throw err
-    } finally {
-      isLoadingInicio.value = false
-    }
+      const response = await publicService.obtenerInicio();
+      inicioData.value = response.data;
+      return response.data;
+    } catch (err) { error.value = err as ApiError; throw err; }
+    finally { loading.value = false; }
   }
 
-  async function loadDetalle(convocatoriaId: number) {
-    isLoadingDetalle.value = true
-    error.value = null
+  async function fetchConvocatoriaDetalle(id: number) {
+    loading.value = true; error.value = null;
     try {
-      const res = await PublicService.getConvocatoriaDetalle(convocatoriaId)
-      detalleById.value = { ...detalleById.value, [convocatoriaId]: res.data }
-      return res.data
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Error cargando convocatoria'
-      throw err
-    } finally {
-      isLoadingDetalle.value = false
-    }
+      const response = await publicService.obtenerConvocatoriaDetalle(id);
+      currentConvocatoriaDetalle.value = response.data;
+      return response.data;
+    } catch (err) { error.value = err as ApiError; throw err; }
+    finally { loading.value = false; }
   }
 
-  async function loadPersonal(tipo: TipoColaborador) {
-    isLoadingPersonal.value = true
-    error.value = null
+  async function fetchConvocatorias() {
+    loading.value = true; error.value = null;
     try {
-      const res = await PublicService.getPersonal(tipo)
-      personalByTipo.value[tipo] = res.data
-      return res.data
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Error cargando personal'
-      throw err
-    } finally {
-      isLoadingPersonal.value = false
-    }
+      const response = await publicService.obtenerConvocatoriasList();
+      convocatoriasList.value = response.data;
+      return response.data;
+    } catch (err) { error.value = err as ApiError; throw err; }
+    finally { loading.value = false; }
   }
+
+  async function fetchConvocatoriasMinified() {
+    loading.value = true; error.value = null;
+    try {
+      const response = await publicService.obtenerConvocatoriasMinified();
+      convocatoriasMinified.value = response.data;
+      return response.data;
+    } catch (err) { error.value = err as ApiError; throw err; }
+    finally { loading.value = false; }
+  }
+
+  async function fetchColegiosMinified() {
+    loading.value = true; error.value = null;
+    try {
+      const response = await publicService.obtenerColegiosMinified();
+      colegiosMinified.value = response.data;
+      return response.data;
+    } catch (err) { error.value = err as ApiError; throw err; }
+    finally { loading.value = false; }
+  }
+
+  async function fetchAvisos(params?: GetAvisosPublicosParams) {
+    loading.value = true; error.value = null;
+    try {
+      const response = await publicService.obtenerAvisos(params);
+      avisos.value = response.data.items;
+      metaAvisos.value = response.data.meta;
+    } catch (err) { error.value = err as ApiError; }
+    finally { loading.value = false; }
+  }
+
+  async function fetchColaboradores(params: GetColaboradoresPublicParams) {
+    loading.value = true; error.value = null;
+    try {
+      const response = await publicService.obtenerColaboradores(params);
+      colaboradores.value = response.data.items;
+      metaColaboradores.value = response.data.meta;
+    } catch (err) { error.value = err as ApiError; }
+    finally { loading.value = false; }
+  }
+
+  async function fetchMateriales(params?: GetMaterialesPublicParams) {
+    loading.value = true; error.value = null;
+    try {
+      const response = await publicService.obtenerMateriales(params);
+      materiales.value = response.data.items;
+      metaMateriales.value = response.data.meta;
+    } catch (err) { error.value = err as ApiError; }
+    finally { loading.value = false; }
+  }
+
+  async function fetchResultados(params?: GetResultadosFinalesPublicParams) {
+    loading.value = true; error.value = null;
+    try {
+      const response = await publicService.obtenerResultadosFinales(params);
+      resultados.value = response.data.items;
+      metaResultados.value = response.data.meta;
+    } catch (err) { error.value = err as ApiError; }
+    finally { loading.value = false; }
+  }
+
+  // Las funciones específicas (por Id) que no requieran guardarse globalmente en el store
+  // se pueden llamar directamente desde el componente usando el servicio publicService.
 
   return {
-    inicio,
-    detalleById,
-    personalByTipo,
-    isLoadingInicio,
-    isLoadingDetalle,
-    isLoadingPersonal,
+    loading,
     error,
-    convocatoriaInicio,
-    loadInicio,
-    loadDetalle,
-    loadPersonal,
-  }
-})
+    inicioData,
+    convocatoriasList,
+    convocatoriasMinified,
+    colegiosMinified,
+    currentConvocatoriaDetalle,
+    avisos, metaAvisos,
+    colaboradores, metaColaboradores,
+    materiales, metaMateriales,
+    resultados, metaResultados,
+
+    fetchInicio,
+    fetchConvocatoriaDetalle,
+    fetchConvocatorias,
+    fetchConvocatoriasMinified,
+    fetchColegiosMinified,
+    fetchAvisos,
+    fetchColaboradores,
+    fetchMateriales,
+    fetchResultados
+  };
+});

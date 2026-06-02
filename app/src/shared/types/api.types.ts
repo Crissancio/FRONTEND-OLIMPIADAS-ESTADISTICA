@@ -16,6 +16,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface ResponseBase<T> {
+  succes?:boolean
   data: T
   message: string
 }

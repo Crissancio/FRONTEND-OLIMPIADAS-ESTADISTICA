@@ -1,38 +1,50 @@
-import { apiClient } from '@/app/api/api-client'
+import { customInstance } from '@/app/api/mutator';
 import type {
+  LoginDTO,
   AdminCreateDTO,
   CambiarContrasenaDTO,
-  CambiarContrasenaResponseDTO,
-  LoginDTO,
-  LogoutResponseDTO,
-  ResponseBase,
-  TokenDataDTO,
-  UsuarioAutenticadoDTO
-} from '../types/auth.types'
+  LoginResponse,
+  AuthMeResponse,
+  CambiarContrasenaResponse,
+  LogoutResponse
+} from '../types/auth.api';
 
-export const AuthService = {
-  async login(payload: LoginDTO): Promise<ResponseBase<TokenDataDTO>> {
-    const { data } = await apiClient.post<ResponseBase<TokenDataDTO>>('/auth/login', payload)
-    return data
+export const authService = {
+  login(data: LoginDTO) {
+    return customInstance<LoginResponse>({
+      url: '/api/v1/auth/login',
+      method: 'POST',
+      data
+    });
   },
 
-  async registrarAdmin(payload: AdminCreateDTO): Promise<ResponseBase<UsuarioAutenticadoDTO>> {
-    const { data } = await apiClient.post<ResponseBase<UsuarioAutenticadoDTO>>('/auth/admins', payload)
-    return data
+  registrarAdmin(data: AdminCreateDTO) {
+    return customInstance<AuthMeResponse>({
+      url: '/api/v1/auth/admins',
+      method: 'POST',
+      data
+    });
   },
 
-  async me(): Promise<ResponseBase<UsuarioAutenticadoDTO>> {
-    const { data } = await apiClient.get<ResponseBase<UsuarioAutenticadoDTO>>('/auth/me')
-    return data
+  obtenerUsuarioLogueado() {
+    return customInstance<AuthMeResponse>({
+      url: '/api/v1/auth/me',
+      method: 'GET'
+    });
   },
 
-  async cambiarContrasena(payload: CambiarContrasenaDTO): Promise<ResponseBase<CambiarContrasenaResponseDTO>> {
-    const { data } = await apiClient.patch<ResponseBase<CambiarContrasenaResponseDTO>>('/auth/me/password', payload)
-    return data
+  cambiarContrasena(data: CambiarContrasenaDTO) {
+    return customInstance<CambiarContrasenaResponse>({
+      url: '/api/v1/auth/me/password',
+      method: 'PATCH',
+      data
+    });
   },
 
-  async logout(): Promise<ResponseBase<LogoutResponseDTO>> {
-    const { data } = await apiClient.post<ResponseBase<LogoutResponseDTO>>('/auth/logout')
-    return data
+  logout() {
+    return customInstance<LogoutResponse>({
+      url: '/api/v1/auth/logout',
+      method: 'POST'
+    });
   }
-}
+};

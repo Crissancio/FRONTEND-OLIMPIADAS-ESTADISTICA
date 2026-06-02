@@ -1,74 +1,104 @@
-import { apiClient } from '@/app/api/api-client'
-import type { PaginatedResponse, ResponseBase } from '@/shared/types/api.types'
+import { customInstance } from '@/app/api/mutator';
 import type {
-  ColegioResponseDTO,
-  ColegioDetailResponseDTO,
+  ColegioFilters,
+  PaginatedColegioResponse,
   ColegioCreateDTO,
   ColegioUpdateDTO,
-  ColegioFilters,
-  CSVUploadResponseDTO,
-  CSVImportDBResponseDTO,
-  ColegioCSVImportDTO
-} from '../types/colegios.api'
+  ColegioResponse,
+  ColegioDetailResponse,
+  GeneralDictResponse,
+  BodySubirCsvColegios,
+  CSVUploadWrapperResponse,
+  ColegioCSVImportDTO,
+  CSVImportDBWrapperResponse
+} from '../types/colegios.api';
 
 export const colegiosService = {
-  async listar(page: number = 1, limit: number = 10, filters?: ColegioFilters) {
-    const params = { page, limit, ...filters }
-    const response = await apiClient.get<PaginatedResponse<ColegioResponseDTO>>('/colegios', { params })
-    return response.data
+  // ================= LECTURA =================
+  listarColegios(params?: ColegioFilters) {
+    return customInstance<PaginatedColegioResponse>({
+      url: '/api/v1/colegios',
+      method: 'GET',
+      params
+    });
   },
 
-  async obtenerPorId(id: number) {
-    const response = await apiClient.get<ResponseBase<ColegioDetailResponseDTO>>(`/colegios/${id}`)
-    return response.data
+  obtenerColegioPorId(id: number) {
+    return customInstance<ColegioDetailResponse>({
+      url: `/api/v1/colegios/${id}`,
+      method: 'GET'
+    });
   },
 
-  async crear(data: ColegioCreateDTO) {
-    const response = await apiClient.post<ResponseBase<ColegioResponseDTO>>('/colegios', data)
-    return response.data
+  // ================= ESCRITURA =================
+  crearColegio(data: ColegioCreateDTO) {
+    return customInstance<ColegioResponse>({
+      url: '/api/v1/colegios',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data
+    });
   },
 
-  async actualizar(id: number, data: ColegioUpdateDTO) {
-    const response = await apiClient.put<ResponseBase<ColegioResponseDTO>>(`/colegios/${id}`, data)
-    return response.data
+  actualizarColegio(id: number, data: ColegioUpdateDTO) {
+    return customInstance<ColegioResponse>({
+      url: `/api/v1/colegios/${id}`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data
+    });
   },
 
-  async bajaLogica(id: number) {
-    const response = await apiClient.patch<ResponseBase<ColegioResponseDTO>>(`/colegios/${id}/baja`)
-    return response.data
+  // ================= ESTADOS Y ELIMINACIÓN =================
+  bajaLogicaColegio(id: number) {
+    return customInstance<ColegioResponse>({
+      url: `/api/v1/colegios/${id}/baja`,
+      method: 'PATCH'
+    });
   },
 
-  async altaLogica(id:number){
-    const response = await apiClient.patch<ResponseBase<ColegioResponseDTO>>(`/colegios/${id}/alta`)
-    return response.data
+  altaLogicaColegio(id: number) {
+    return customInstance<ColegioResponse>({
+      url: `/api/v1/colegios/${id}/alta`,
+      method: 'PATCH'
+    });
   },
 
-  async eliminarTotal(id: number) {
-    const response = await apiClient.delete<ResponseBase<Record<string, never>>>(`/colegios/${id}`)
-    return response.data
+  eliminarColegio(id: number) {
+    return customInstance<GeneralDictResponse>({
+      url: `/api/v1/colegios/${id}`,
+      method: 'DELETE'
+    });
   },
 
-  async subirCsv(departamento: string, file: File) {
-    const formData = new FormData()
-    formData.append('departamento', departamento)
-    formData.append('file', file)
-    const response = await apiClient.post<ResponseBase<CSVUploadResponseDTO>>('/colegios/subir-csv', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-    return response.data
+  // ================= CARGA MASIVA (CSV) =================
+  subirCsvColegios(data: BodySubirCsvColegios) {
+    const formData = new FormData();
+    formData.append('departamento', data.departamento);
+    formData.append('file', data.file);
+
+    return customInstance<CSVUploadWrapperResponse>({
+      url: '/api/v1/colegios/subir-csv',
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/form-data' },
+      data: formData
+    });
   },
 
-  async importarCSV(data: ColegioCSVImportDTO[]) {
-    const response = await apiClient.post<ResponseBase<CSVImportDBResponseDTO>>('/colegios/csv', data)
-    return response.data
+  descargarCsvError(filename: string) {
+    return customInstance<Blob>({
+      url: `/api/v1/colegios/csv-error/${filename}`,
+      method: 'GET',
+      responseType: 'blob' // Importante para manejar descargas de archivos
+    });
   },
 
-  async descargarErroresCSV(filename: string) {
-    const response = await apiClient.get(`/colegios/csv-error/${filename}`, {
-      responseType: 'blob'
-    })
-    return response.data
+  importarColegiosCsv(data: ColegioCSVImportDTO[]) {
+    return customInstance<CSVImportDBWrapperResponse>({
+      url: '/api/v1/colegios/csv',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data
+    });
   }
-}
+};

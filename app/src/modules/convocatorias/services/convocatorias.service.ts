@@ -1,57 +1,70 @@
-import { apiClient } from '@/app/api/api-client'
+import { customInstance } from '@/app/api/mutator';
 import type {
+  ConvocatoriaFilters,
+  PaginatedConvocatoriaResponse,
   ConvocatoriaCreateDTO,
-  ConvocatoriaResponseDTO,
+  ConvocatoriaResponse,
   ConvocatoriaUpdateDTO,
-  PaginatedResponse,
-  ResponseBase
-} from '@/modules/convocatorias/types/convocatorias.api'
+  BaseDictResponse
+} from '../types/convocatorias.api';
 
-export const ConvocatoriasService = {
-  async list(params?: {
-    page?: number
-    limit?: number
-  }): Promise<PaginatedResponse<ConvocatoriaResponseDTO>> {
-    const { data } = await apiClient.get<PaginatedResponse<ConvocatoriaResponseDTO>>('/convocatorias', {
+export const convocatoriasService = {
+  listarConvocatorias(params?: ConvocatoriaFilters) {
+    return customInstance<PaginatedConvocatoriaResponse>({
+      url: '/api/v1/convocatorias',
+      method: 'GET',
       params
-    })
-    return data
+    });
   },
 
-  async getById(convocatoria_id: number): Promise<ResponseBase<ConvocatoriaResponseDTO>> {
-    const { data } = await apiClient.get<ResponseBase<ConvocatoriaResponseDTO>>(
-      `/convocatorias/${convocatoria_id}`
-    )
-    return data
+  crearConvocatoria(data: ConvocatoriaCreateDTO) {
+    return customInstance<ConvocatoriaResponse>({
+      url: '/api/v1/convocatorias',
+      method: 'POST',
+      data
+    });
   },
 
-  async create(payload: ConvocatoriaCreateDTO): Promise<ResponseBase<ConvocatoriaResponseDTO>> {
-    const { data } = await apiClient.post<ResponseBase<ConvocatoriaResponseDTO>>('/convocatorias', payload)
-    return data
+  obtenerConvocatoriaPorId(id: number) {
+    return customInstance<ConvocatoriaResponse>({
+      url: `/api/v1/convocatorias/${id}`,
+      method: 'GET'
+    });
   },
 
-  async update(
-    convocatoria_id: number,
-    payload: ConvocatoriaUpdateDTO
-  ): Promise<ResponseBase<ConvocatoriaResponseDTO>> {
-    const { data } = await apiClient.put<ResponseBase<ConvocatoriaResponseDTO>>(
-      `/convocatorias/${convocatoria_id}`,
-      payload
-    )
-    return data
+  actualizarConvocatoria(id: number, data: ConvocatoriaUpdateDTO) {
+    return customInstance<ConvocatoriaResponse>({
+      url: `/api/v1/convocatorias/${id}`,
+      method: 'PUT',
+      data
+    });
   },
 
-  async remove(convocatoria_id: number): Promise<ResponseBase<ConvocatoriaResponseDTO>> {
-    const { data } = await apiClient.delete<ResponseBase<ConvocatoriaResponseDTO>>(
-      `/convocatorias/${convocatoria_id}`
-    )
-    return data
+  eliminarConvocatoriaFisica(id: number) {
+    return customInstance<BaseDictResponse>({
+      url: `/api/v1/convocatorias/${id}`,
+      method: 'DELETE'
+    });
   },
 
-  async publish(convocatoria_id: number): Promise<ResponseBase<ConvocatoriaResponseDTO>> {
-    const { data } = await apiClient.post<ResponseBase<ConvocatoriaResponseDTO>>(
-      `/convocatorias/${convocatoria_id}/publicar`
-    )
-    return data
+  publicarConvocatoria(id: number) {
+    return customInstance<ConvocatoriaResponse>({
+      url: `/api/v1/convocatorias/${id}/publicar`,
+      method: 'PUT'
+    });
+  },
+
+  ocultarConvocatoria(id: number) {
+    return customInstance<ConvocatoriaResponse>({
+      url: `/api/v1/convocatorias/${id}/ocultar`,
+      method: 'PUT'
+    });
+  },
+
+  cancelarConvocatoria(id: number) {
+    return customInstance<ConvocatoriaResponse>({
+      url: `/api/v1/convocatorias/${id}/cancelar`,
+      method: 'PUT'
+    });
   }
-}
+};

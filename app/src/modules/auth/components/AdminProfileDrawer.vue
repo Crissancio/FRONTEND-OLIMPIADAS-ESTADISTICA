@@ -4,11 +4,11 @@ import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } fro
 import { KeyRound, Mail, Save, ShieldCheck, X } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import { useAuthStore } from '@/app/stores/auth.store'
-import type { CambiarContrasenaDTO, UsuarioAutenticadoDTO } from '@/modules/auth/types/auth.types'
+import type { CambiarContrasenaDTO, UsuarioAutenticado } from '@/modules/auth/types/auth.api'
 
 const props = defineProps<{
   open: boolean
-  user: UsuarioAutenticadoDTO | null
+  user: UsuarioAutenticado | null
 }>()
 
 const emit = defineEmits<{
@@ -45,7 +45,7 @@ const changePassword = async () => {
   if (!passwordForm.value.contrasena_actual || !passwordForm.value.nueva_contrasena || !passwordForm.value.repetir_nueva_contrasena) return
   isSavingPassword.value = true
   try {
-    await authStore.cambiarContrasena(passwordForm.value)
+    await authStore.changePassword(passwordForm.value)
     passwordOpen.value = false
     passwordForm.value = { contrasena_actual: '', nueva_contrasena: '', repetir_nueva_contrasena: '' }
   } finally {

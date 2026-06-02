@@ -5,7 +5,9 @@ import { FileText, Hash } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
-import { useConvocatorias } from '@/modules/admin/composables/useConvocatorias'
+
+// Importamos el Store y el DTO correspondiente
+import { useConvocatoriasStore } from '@/modules/convocatorias/stores/convocatorias.store'
 import type { ConvocatoriaCreateDTO } from '@/modules/convocatorias/types/convocatorias.api'
 
 const props = defineProps<{
@@ -17,9 +19,8 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
-const { createConvocatoria } = useConvocatorias()
+const convocatoriasStore = useConvocatoriasStore()
 
-const isLoading = ref(false)
 const form = ref({
   nombre: '',
   gestion: String(new Date().getFullYear()),
@@ -142,7 +143,6 @@ const handleSubmit = async () => {
   if (!form.value.nombre.trim()) return
   if (!form.value.gestion.trim()) return
 
-  isLoading.value = true
   try {
     const payload: ConvocatoriaCreateDTO = {
       nombre_convocatoria: form.value.nombre.trim(),
@@ -155,11 +155,11 @@ const handleSubmit = async () => {
       monto_inscripcion: montoValue.value
     }
 
-    const created = await createConvocatoria(payload)
+    const created = await convocatoriasStore.createConvocatoria(payload)
     close()
-    router.push(`/admin/convocatoria/${created.id}/gestionar?nuevaConvocatoria=true`)
-  } finally {
-    isLoading.value = false
+    router.push(`/admin/convocatoria/${created.id_convocatoria}/gestionar?nuevaConvocatoria=true`)
+  } catch (error) {
+    console.error('Error al crear la convocatoria:', error)
   }
 }
 </script>
@@ -175,7 +175,7 @@ const handleSubmit = async () => {
             </div>
             <div>
               <h2 class="font-heading text-xl font-bold text-text-main">Crear Nueva Convocatoria</h2>
-              <p class="text-sm text-text-muted">Se creara con estado borrador.</p>
+              <p class="text-sm text-text-muted">Se creará con estado borrador.</p>
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@ const handleSubmit = async () => {
               </div>
 
               <div>
-                <label class="mb-1.5 block text-sm font-semibold text-text-main"><Hash class="mr-1 inline h-3.5 w-3.5" />Gestion</label>
+                <label class="mb-1.5 block text-sm font-semibold text-text-main"><Hash class="mr-1 inline h-3.5 w-3.5" />Gestión</label>
                 <input v-model="form.gestion" required type="number" min="2020" max="2100" class="h-11 w-full rounded-xl border border-gray-300 bg-gray-50 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors" />
               </div>
 
@@ -213,18 +213,18 @@ const handleSubmit = async () => {
               </div>
 
               <div>
-                <label class="mb-1.5 block text-sm font-semibold text-text-main">Descripcion</label>
+                <label class="mb-1.5 block text-sm font-semibold text-text-main">Descripción</label>
                 <textarea v-model="form.descripcion" required class="min-h-[12rem] w-full rounded-xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"></textarea>
               </div>
             </section>
 
-            <section class="space-y-4 rounded-xl border border-gray-200 border-l-4 border-l-accent bg-white p-3 sm:p-4">
+            <section class="space-y-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4">
               <div>
                 <h3 class="font-heading text-base font-bold text-text-main">Fechas de la convocatoria</h3>
                 <p class="mt-1 text-sm text-text-muted">Selecciona fechas directamente en los calendarios.</p>
               </div>
 
-              <div class="grid grid-cols-1 gap-4 2xl:grid-cols-2">
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="rounded-xl border border-gray-200 bg-gray-50/50 p-2 sm:p-3">
                   <label class="mb-2 block text-sm font-semibold text-text-main">Inicio Olimpiada</label>
                   <VDatePicker v-model="form.inicioOlimpiada" mode="date" locale="es" :first-day-of-week="2" :min-date="minInicioOlimpiada" expanded />
@@ -237,15 +237,15 @@ const handleSubmit = async () => {
                 </div>
 
                 <div class="rounded-xl border border-gray-200 bg-gray-50/50 p-2 sm:p-3" :class="!form.inicioOlimpiada || !form.finOlimpiada ? 'opacity-60' : ''">
-                  <label class="mb-2 block text-sm font-semibold text-text-main">Inicio Inscripcion</label>
+                  <label class="mb-2 block text-sm font-semibold text-text-main">Inicio Inscripción</label>
                   <VDatePicker v-model="form.inicioInscripcion" mode="dateTime" is24hr locale="es" :first-day-of-week="2" :min-date="minInscripcion" :max-date="maxInscripcion" expanded :disabled="!form.inicioOlimpiada || !form.finOlimpiada" />
                   <p v-if="!form.inicioOlimpiada || !form.finOlimpiada" class="mt-2 text-xs font-medium text-text-muted">Define primero el periodo de olimpiada.</p>
                 </div>
 
                 <div class="rounded-xl border border-gray-200 bg-gray-50/50 p-2 sm:p-3" :class="!form.inicioInscripcion ? 'opacity-60' : ''">
-                  <label class="mb-2 block text-sm font-semibold text-text-main">Fin Inscripcion</label>
+                  <label class="mb-2 block text-sm font-semibold text-text-main">Fin Inscripción</label>
                   <VDatePicker v-model="form.finInscripcion" mode="dateTime" is24hr locale="es" :first-day-of-week="2" :min-date="minFinInscripcion" :max-date="maxInscripcion" expanded :disabled="!form.inicioInscripcion" />
-                  <p v-if="!form.inicioInscripcion" class="mt-2 text-xs font-medium text-text-muted">Selecciona primero el inicio de inscripcion.</p>
+                  <p v-if="!form.inicioInscripcion" class="mt-2 text-xs font-medium text-text-muted">Selecciona primero el inicio de inscripción.</p>
                 </div>
               </div>
             </section>
@@ -253,7 +253,9 @@ const handleSubmit = async () => {
 
           <div class="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" @click="close">Cancelar</Button>
-            <Button type="submit" variant="accent" :disabled="isLoading">{{ isLoading ? 'Creando...' : 'Crear Convocatoria' }}</Button>
+            <Button type="submit" variant="accent" :disabled="convocatoriasStore.loading">
+              {{ convocatoriasStore.loading ? 'Creando...' : 'Crear Convocatoria' }}
+            </Button>
           </div>
         </form>
       </CardContent>

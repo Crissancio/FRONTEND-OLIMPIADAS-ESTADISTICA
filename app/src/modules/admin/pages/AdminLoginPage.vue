@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/app/stores/auth.store'
+import VueTurnstile from 'vue-turnstile'
 import {
   Lock,
   Mail,
@@ -19,8 +20,14 @@ import Button from '@/shared/components/ui/atoms/Button.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
 const email = ref('')
 const password = ref('')
+const username_hp = ref('')
+const cf_turnstile_response = ref('')
+
+const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY
+
 const error = ref('')
 const errorStatusCode = ref<number | undefined>(undefined)
 const isLoading = ref(false)
@@ -40,16 +47,30 @@ const getLoginErrorMessage = (status?: number, fallback?: string) => {
 const handleLogin = async () => {
   error.value = ''
   errorStatusCode.value = undefined
+
+  if (!cf_turnstile_response.value) {
+    error.value = 'Por favor, completa la verificación de seguridad.'
+    return
+  }
+
   isLoading.value = true
 
   try {
-    await authStore.login({ correo: email.value, contrasena: password.value })
+    const payload = {
+      correo: email.value,
+      contrasena: password.value,
+      cf_turnstile_response: cf_turnstile_response.value,
+      ...(username_hp.value.trim() ? { username_hp: username_hp.value.trim() } : {})
+    }
+
+    await authStore.login(payload)
     router.push('/admin')
   } catch (e) {
     const apiError = toApiError(e)
     errorStatusCode.value = apiError.status
-    error.value = getLoginErrorMessage(apiError.status, authStore.error ?? apiError.message)
+    error.value = getLoginErrorMessage(apiError.status,  apiError.message)
     isLoading.value = false
+    cf_turnstile_response.value = ''
   }
 }
 </script>
@@ -101,6 +122,19 @@ const handleLogin = async () => {
         <Card class="overflow-hidden rounded-xl border-white/10 bg-white shadow-soft">
           <CardContent class="p-8">
             <form class="space-y-6" @submit.prevent="handleLogin">
+              
+              <div class="absolute opacity-0 -z-10 w-0 h-0 overflow-hidden" aria-hidden="true">
+                <label for="sys_config_verification_token">Verification Token</label>
+                <input 
+                  id="sys_config_verification_token"
+                  name="sys_config_verification_token"
+                  v-model="username_hp" 
+                  type="text" 
+                  tabindex="-1" 
+                  autocomplete="new-password" 
+                />
+              </div>
+
               <div class="space-y-2">
                 <label class="block text-sm font-semibold text-text-main">Correo Electrónico</label>
                 <div class="relative">
@@ -141,11 +175,18 @@ const handleLogin = async () => {
                 </div>
               </div>
 
+              <div class="flex justify-center py-2">
+                <vue-turnstile 
+                  :site-key="siteKey" 
+                  v-model="cf_turnstile_response" 
+                />
+              </div>
+
               <Button
                 type="submit"
                 size="lg"
-                :disabled="isLoading"
-                class="h-auto w-full rounded-xl bg-accent px-8 py-6 font-bold text-primary shadow-soft transition-all hover:bg-accent/90"
+                :disabled="isLoading || !cf_turnstile_response"
+                class="h-auto w-full rounded-xl bg-accent px-8 py-6 font-bold text-primary shadow-soft transition-all hover:bg-accent/90 disabled:cursor-not-allowed"
               >
                 <template v-if="isLoading">
                   <Loader2 class="h-5 w-5 animate-spin" />

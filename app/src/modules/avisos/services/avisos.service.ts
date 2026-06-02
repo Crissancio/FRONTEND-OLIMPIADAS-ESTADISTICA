@@ -1,87 +1,78 @@
-import { apiClient } from '@/app/api/api-client'
-import { toApiError } from '@/app/api/api-error'
-import type { ResponseBase, PaginatedResponse } from '@/shared/types/api.types'
-import type { 
-  AvisoDTO, 
-  AvisoCreateDTO, 
-  AvisoUpdateDTO, 
-  AvisoEstadoUpdateDTO, 
-  AvisoFilters 
-} from '../types/avisos.api'
+import { customInstance } from '@/app/api/mutator';
+import type {
+  AvisoFilters,
+  PaginatedAvisoResponse,
+  AvisoResponse,
+  AvisoCreateDTO,
+  AvisoUpdateDTO,
+  AvisoEstadoUpdateDTO
+} from '../types/avisos.api';
+
 export const avisosService = {
-  async obtenerAvisos(page: number, limit: number, filters: AvisoFilters = {}) {
-    try {
-      const response = await apiClient.get<PaginatedResponse<AvisoDTO>>('/avisos', {
-        params: { page, limit, ...filters }
-      })
-      return response.data
-    } catch (error) {
-      throw toApiError(error)
-    }
+  // ================= LECTURA: PÚBLICA =================
+  listarAvisosPublicos(params?: AvisoFilters) {
+    return customInstance<PaginatedAvisoResponse>({
+      url: '/api/v1/avisos',
+      method: 'GET',
+      params
+    });
   },
 
-  async obtenerAvisoPorId(id: number) {
-    try {
-      const response = await apiClient.get<ResponseBase<AvisoDTO>>(`/avisos/${id}`)
-      return response.data
-    } catch (error) {
-      throw toApiError(error)
-    }
+  obtenerAvisoPublico(avisoId: number) {
+    return customInstance<AvisoResponse>({
+      url: `/api/v1/avisos/${avisoId}`,
+      method: 'GET'
+    });
   },
 
-  async obtenerAvisosAdmin(page: number, limit: number, filters: AvisoFilters = {}) {
-    try {
-      const response = await apiClient.get<PaginatedResponse<AvisoDTO>>('/avisos/admin', {
-        params: { page, limit, ...filters }
-      })
-      return response.data
-    } catch (error) {
-      throw toApiError(error)
-    }
+  // ================= LECTURA: ADMIN =================
+  listarAvisosAdmin(params?: AvisoFilters) {
+    return customInstance<PaginatedAvisoResponse>({
+      url: '/api/v1/avisos/admin',
+      method: 'GET',
+      params
+    });
   },
 
-  async obtenerAvisoAdminPorId(id: number) {
-    try {
-      const response = await apiClient.get<ResponseBase<AvisoDTO>>(`/avisos/admin/${id}`)
-      return response.data
-    } catch (error) {
-      throw toApiError(error)
-    }
+  obtenerAvisoAdmin(avisoId: number) {
+    return customInstance<AvisoResponse>({
+      url: `/api/v1/avisos/admin/${avisoId}`,
+      method: 'GET'
+    });
   },
 
-  async crearAviso(data: AvisoCreateDTO) {
-    try {
-      const response = await apiClient.post<ResponseBase<AvisoDTO>>('/avisos', data)
-      return response.data
-    } catch (error) {
-      throw toApiError(error)
-    }
+  // ================= ESCRITURA (ADMIN) =================
+  crearAviso(data: AvisoCreateDTO) {
+    return customInstance<AvisoResponse>({
+      url: '/api/v1/avisos',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data
+    });
   },
 
-  async actualizarAviso(id: number, data: AvisoUpdateDTO) {
-    try {
-      const response = await apiClient.put<ResponseBase<AvisoDTO>>(`/avisos/${id}`, data)
-      return response.data
-    } catch (error) {
-      throw toApiError(error)
-    }
+  actualizarAviso(avisoId: number, data: AvisoUpdateDTO) {
+    return customInstance<AvisoResponse>({
+      url: `/api/v1/avisos/${avisoId}`,
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      data
+    });
   },
 
-  async cambiarEstadoAviso(id: number, data: AvisoEstadoUpdateDTO) {
-    try {
-      const response = await apiClient.patch<ResponseBase<AvisoDTO>>(`/avisos/${id}/estado`, data)
-      return response.data
-    } catch (error) {
-      throw toApiError(error)
-    }
+  cambiarEstadoAviso(avisoId: number, data: AvisoEstadoUpdateDTO) {
+    return customInstance<AvisoResponse>({
+      url: `/api/v1/avisos/${avisoId}/estado`,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      data
+    });
   },
 
-  async eliminarAviso(id: number) {
-    try {
-      const response = await apiClient.delete<ResponseBase<AvisoDTO>>(`/avisos/${id}`)
-      return response.data
-    } catch (error) {
-      throw toApiError(error)
-    }
+  eliminarAviso(avisoId: number) {
+    return customInstance<AvisoResponse>({
+      url: `/api/v1/avisos/${avisoId}`,
+      method: 'DELETE'
+    });
   }
-}
+};
