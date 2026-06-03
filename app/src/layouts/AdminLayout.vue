@@ -65,7 +65,7 @@ onMounted(async () => {
 
   if (!user.value) {
     try {
-      await authStore.fetchMe()
+      await authStore.fetchCurrentUser()
     } catch {
       router.replace('/admin/login')
     }
@@ -75,7 +75,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="isAuthenticated" class="flex h-screen bg-background font-sans overflow-hidden">
+  <div v-if="isAuthenticated" class="flex h-screen bg-background font-sans overflow-hidden z-50">
    
     <!-- Sidebar -->
     <aside 

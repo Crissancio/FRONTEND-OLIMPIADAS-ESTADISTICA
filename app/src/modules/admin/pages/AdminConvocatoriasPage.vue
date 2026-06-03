@@ -1,90 +1,75 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus } from 'lucide-vue-next'
+import { Plus, Loader2 } from 'lucide-vue-next'
 import { useConvocatoriasStore } from '../../convocatorias/stores/convocatorias.store'
 import type { EstadoConvocatoria, EstadoTemporal, ConvocatoriaFilters } from '../../convocatorias/types/convocatorias.api'
 
-// Importación de componentes especializados
-import ConvocatoriasFilters from '../components/ConvocatoriasFilters.vue'
-import ConvocatoriasTable from '../components/ConvocatoriasTable.vue'
-
+import ConvocatoriasFilters from '@/modules/convocatorias/components/ConvocatoriasFilters.vue'
+import ConvocatoriasTable from '@/modules/convocatorias/components/ConvocatoriasTable.vue'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
-import CreateConvocatoriaDialog from '@/modules/admin/components/CreateConvocatoriaDialog.vue'
+import CreateConvocatoriaDialog from '@/modules/convocatorias/components/CreateConvocatoriaDialog.vue'
 
 const router = useRouter()
 const convocatoriasStore = useConvocatoriasStore()
 
-// Estados reactivos locales para los filtros y control de scroll
 const isDialogOpen = ref(false)
 const searchTerm = ref('')
 const estadoFilter = ref<EstadoConvocatoria | 'all'>('all')
 const estadoTemporalFilter = ref<EstadoTemporal | 'all'>('all')
 const dateRangeFilter = ref<{ start: Date; end: Date } | null>(null)
 
-const currentPage = ref(1)
-const isLoadingMore = ref(false)
+const buildFilters = (): ConvocatoriaFilters => ({
+  page: convocatoriasStore.currentFilters.page || 1,
+  limit: 10,
+  estado: estadoFilter.value === 'all' ? null : estadoFilter.value,
+  estado_temporal: estadoTemporalFilter.value === 'all' ? null : estadoTemporalFilter.value,
+  start_date: dateRangeFilter.value?.start ? dateRangeFilter.value.start.toISOString().split('T')[0] : null,
+  end_date: dateRangeFilter.value?.end ? dateRangeFilter.value.end.toISOString().split('T')[0] : null
+})
 
-// Función unificada de llamadas al Store
-const syncConvocatorias = async (isScrollLoad = false) => {
-  if (isScrollLoad) {
-    isLoadingMore.value = true
-  }
-
-  const filters: ConvocatoriaFilters = {
-    page: currentPage.value,
-    limit: 10,
-    estado: estadoFilter.value === 'all' ? null : estadoFilter.value,
-    estado_temporal: estadoTemporalFilter.value === 'all' ? null : estadoTemporalFilter.value,
-    start_date: dateRangeFilter.value?.start ? dateRangeFilter.value.start.toISOString().split('T')[0] : null,
-    end_date: dateRangeFilter.value?.end ? dateRangeFilter.value.end.toISOString().split('T')[0] : null
-  }
-
-  await convocatoriasStore.fetchConvocatorias(filters)
-  isLoadingMore.value = false
-}
-
-// Resetea la página a 1 ante cualquier cambio de filtros de Servidor
 const handleFilterChange = async () => {
-  currentPage.value = 1
-  await syncConvocatorias(false)
+  const filters = buildFilters()
+  filters.page = 1 
+  await convocatoriasStore.fetchConvocatorias(filters, false)
 }
 
-// Resetea todos los controles a su estado inicial limpio
 const handleClearFilters = async () => {
   searchTerm.value = ''
   estadoFilter.value = 'all'
   estadoTemporalFilter.value = 'all'
   dateRangeFilter.value = null
-  currentPage.value = 1
-  await syncConvocatorias(false)
+  await convocatoriasStore.fetchConvocatorias({ page: 1, limit: 10, estado: null, estado_temporal: null, start_date: null, end_date: null }, false)
 }
 
-// Manejador del trigger de scroll infinito emitido por la tabla
 const handleLoadMore = async () => {
-  if (isLoadingMore.value || convocatoriasStore.loading) return
+  if (convocatoriasStore.loading) return
   
   const meta = convocatoriasStore.meta
-  // Validamos si ya se descargaron todos los ítems existentes según la metadata del API
   if (meta && convocatoriasStore.convocatorias.length >= meta.total) return
 
-  currentPage.value++
-  await syncConvocatorias(true)
+  const nextPage = (convocatoriasStore.currentFilters.page || 1) + 1
+  await convocatoriasStore.fetchConvocatorias({ ...buildFilters(), page: nextPage }, true)
 }
 
-// Redirección a la futura página de administración detallada
 const handleManageConvocatoria = (id: number) => {
   router.push(`/admin/convocatoria/${id}/gestionar`)
 }
 
 onMounted(async () => {
-  currentPage.value = 1
-  await syncConvocatorias(false)
+  if (convocatoriasStore.convocatorias.length === 0) {
+    await convocatoriasStore.fetchConvocatorias(buildFilters(), false)
+  }
 })
 
-// Búsqueda en tiempo real local (instantánea sobre el dataset acumulado en el store)
+onUnmounted(() => {
+  if (!router.currentRoute.value.path.includes('/convocatoria')) {
+    convocatoriasStore.resetStore()
+  }
+})
+
 const filteredConvocatorias = computed(() => {
   return convocatoriasStore.convocatorias.filter((conv) => {
     if (!searchTerm.value) return true
@@ -114,8 +99,8 @@ const filteredConvocatorias = computed(() => {
       </Button>
     </div>
 
-    <div v-if="convocatoriasStore.error && currentPage === 1" class="bg-red-50 border border-red-100 text-danger p-4 rounded-xl text-sm">
-      Error al sincronizar datos de convocatorias. Por favor, intente de nuevo.
+    <div v-if="convocatoriasStore.error && !convocatoriasStore.convocatorias.length" class="bg-red-50 border border-red-100 text-danger p-4 rounded-xl text-sm">
+      {{ convocatoriasStore.error }}
     </div>
 
     <Card v-else class="rounded-xl border-gray-200 shadow-soft overflow-hidden bg-white">
@@ -132,8 +117,8 @@ const filteredConvocatorias = computed(() => {
 
         <ConvocatoriasTable 
           :items="filteredConvocatorias"
-          :is-loading="convocatoriasStore.loading && currentPage === 1"
-          :is-loading-more="isLoadingMore"
+          :is-loading="convocatoriasStore.loading && convocatoriasStore.currentFilters.page === 1"
+          :is-loading-more="convocatoriasStore.loading && (convocatoriasStore.currentFilters.page || 1) > 1"
           @manage="handleManageConvocatoria"
           @load-more="handleLoadMore"
         />
@@ -142,7 +127,8 @@ const filteredConvocatorias = computed(() => {
           <span>
             Mostrando {{ filteredConvocatorias.length }} de {{ convocatoriasStore.meta?.total || filteredConvocatorias.length }} convocatorias
           </span>
-          <span v-if="convocatoriasStore.loading && currentPage === 1" class="text-xs text-primary animate-pulse font-medium">
+          <span v-if="convocatoriasStore.loading" class="flex items-center gap-2 text-primary font-medium">
+            <Loader2 class="w-4 h-4 animate-spin" />
             Sincronizando...
           </span>
         </div>
