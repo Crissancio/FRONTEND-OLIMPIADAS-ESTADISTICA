@@ -1,8 +1,11 @@
+import type { AvisoPrioridad, TipoAviso } from '@/modules/avisos/types/avisos.api'
+import type { EstadoTemporal } from '@/modules/convocatorias/types/convocatorias.api'
+
 export type HomeConvocatoria = {
   id: string
   nombre: string
   gestion: number
-  estado: string
+  estado_temporal: EstadoTemporal
   descripcionBreve: string
   fechas:string | null,
   inicio_olimpiadas: string | null
@@ -19,7 +22,8 @@ export type HomeAviso = {
   id: string
   titulo: string
   descripcion: string
-  tipo: 'IMPORTANTE' | 'COMUNICADO' | 'OTRO'
+  tipo: TipoAviso
+  prioridad: AvisoPrioridad
   fecha: string
 }
 export type MaterialPrincipalDTO = {

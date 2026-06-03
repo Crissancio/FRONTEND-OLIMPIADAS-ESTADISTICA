@@ -1,4 +1,6 @@
 import type { PaginationMeta } from '@/shared/types/api.types';
+import type { AvisoPrioridad, TipoAviso } from '@/modules/avisos/types/avisos.api';
+import type { EstadoTemporal } from '@/modules/convocatorias/types/convocatorias.api';
 
 // ==========================================
 // 1. UNIONS / ENUMS CONSTANTES
@@ -136,10 +138,10 @@ export type FasePublicaUnionDTO = FasePruebaPublicaDTO | FasePreparacionPublicaD
 
 // -- Avisos --
 export interface AvisoPublicoDTO {
-  prioridad: string;
+  prioridad: AvisoPrioridad;
   titulo: string;
   descripcion: string;
-  tipo: string;
+  tipo: TipoAviso;
 }
 
 // -- Categorías --
@@ -181,7 +183,7 @@ export interface ConvocatoriaInicioDTO {
   nombre_convocatoria: string;
   gestion: number;
   descripcion?: string | null;
-  estado_temporal: string;
+  estado_temporal: EstadoTemporal;
   monto_inscripcion?: string | null;
   inicio_olimpiadas?: string | null;
   fin_olimpiadas?: string | null;
@@ -194,7 +196,7 @@ export interface ConvocatoriaDetalleDTO {
   nombre_convocatoria: string;
   gestion: number;
   descripcion?: string | null;
-  estado_temporal: string;
+  estado_temporal: EstadoTemporal;
   monto_inscripcion?: string | null;
   inicio_olimpiadas?: string | null;
   fin_olimpiadas?: string | null;

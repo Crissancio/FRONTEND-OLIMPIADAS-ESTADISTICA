@@ -47,6 +47,21 @@ export const useAvisosStore = defineStore('avisos', () => {
     }
   }
 
+  async function fetchAvisosAdmin(page = 1, limit = 10, filters: AvisoFilters = {}) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const response = await avisosService.listarAvisosAdmin({ ...filters, page, limit });
+      avisos.value = page > 1 ? [...avisos.value, ...response.data.items] : response.data.items;
+      meta.value = response.data.meta;
+    } catch (err) {
+      error.value = err as ApiError;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   async function fetchAvisoById(id: number, isAdmin: boolean = false) {
     loading.value = true;
     error.value = null;
@@ -109,6 +124,10 @@ export const useAvisosStore = defineStore('avisos', () => {
     }
   }
 
+  async function toggleAvisoEstado(id: number, estado: 'PUBLICADO' | 'OCULTO') {
+    return changeEstadoAviso(id, { estado } as AvisoEstadoUpdateDTO);
+  }
+
   async function deleteAviso(id: number) {
     loading.value = true;
     error.value = null;
@@ -124,6 +143,10 @@ export const useAvisosStore = defineStore('avisos', () => {
     }
   }
 
+  async function removeAviso(id: number) {
+    return deleteAviso(id);
+  }
+
   return {
     avisos,
     currentAviso,
@@ -132,10 +155,13 @@ export const useAvisosStore = defineStore('avisos', () => {
     meta,
     
     fetchAvisos,
+    fetchAvisosAdmin,
     fetchAvisoById,
     createAviso,
     updateAviso,
     changeEstadoAviso,
-    deleteAviso
+    toggleAvisoEstado,
+    deleteAviso,
+    removeAviso
   };
 });

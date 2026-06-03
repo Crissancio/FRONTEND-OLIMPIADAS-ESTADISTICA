@@ -30,18 +30,15 @@ const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDa
 const formatRange = (start?: string | null, end?: string | null) => [formatDate(start), formatDate(end)].filter(Boolean).join(' - ')
 
 const convocatorias = computed<PublicConvocatoriaCard[]>(() => {
-  const conv = publicStore.inicio?.convocatoria
-  if (!conv) return []
-
-  return [{
+  return publicStore.convocatoriasList.map((conv) => ({
     id: String(conv.id_convocatoria),
     nombre: conv.nombre_convocatoria,
     gestion: conv.gestion,
-    estado: conv.estado,
+    estado: 'FINALIZADA',
     descripcionCompleta: conv.descripcion ?? 'Sin descripcion registrada.',
-    fechas: formatRange(conv.inicio_olimpiadas, conv.fin_olimpiadas) || formatRange(conv.fecha_inicio_inscripcion, conv.fecha_fin_inscripcion),
-    categorias: publicStore.inicio?.categorias?.length ?? 0,
-  }]
+    fechas: formatRange(conv.inicio_olimpiadas, conv.fin_olimpiadas),
+    categorias: 0,
+  }))
 })
 
 const years = computed(() => {
@@ -64,7 +61,7 @@ const loadConvocatorias = async () => {
   isLoading.value = true
   error.value = null
   try {
-    await publicStore.loadInicio()
+    await publicStore.fetchConvocatorias()
   } catch (err) {
     error.value = toApiError(err).message
   } finally {

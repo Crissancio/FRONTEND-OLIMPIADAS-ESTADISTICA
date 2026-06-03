@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { 
   Search, Trophy, Medal, Download, Award, Star 
 } from 'lucide-vue-next'
-import { resultadosMock } from '@/modules/convocatorias/data/convocatorias.data'
 import { usePublicStore } from '@/modules/public/stores/public.store'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
@@ -13,28 +12,56 @@ import Badge from '@/shared/components/ui/atoms/Badge.vue'
 const publicStore = usePublicStore()
 const searchTerm = ref('')
 const convFilter = ref('')
-const categoriaFilter = ref('secundaria')
+const categoriaFilter = ref('')
+const currentPage = ref(1)
+const sentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
 
 const filteredResultados = computed(() => {
-  return resultadosMock.filter(r => 
-    r.ci.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-    r.nombre.toLowerCase().includes(searchTerm.value.toLowerCase())
+  const term = searchTerm.value.toLowerCase()
+  return publicStore.resultados.filter(r => 
+    r.carnet_identidad.toLowerCase().includes(term) ||
+    `${r.nombres} ${r.paterno} ${r.materno ?? ''}`.toLowerCase().includes(term)
   )
 })
 
-const top3 = computed(() => filteredResultados.value.filter(r => r.pos <= 3).sort((a, b) => a.pos - b.pos))
-const others = computed(() => filteredResultados.value.filter(r => r.pos > 3))
+const sortedResultados = computed(() => [...filteredResultados.value].sort((a, b) => b.nota - a.nota))
+const top3 = computed(() => sortedResultados.value.slice(0, 3))
+const others = computed(() => sortedResultados.value.slice(3))
 
 const convocatoriaOptions = computed(() => {
-  const conv = publicStore.inicio?.convocatoria
-  if (!conv) return []
-  return [{ id: String(conv.id_convocatoria), label: `${conv.nombre_convocatoria} (${conv.gestion})` }]
+  return publicStore.convocatoriasMinified.map(conv => ({ id: String(conv.id_convocatoria), label: `${conv.nombre_convocatoria} (${conv.gestion})` }))
 })
 
+const loadResultados = async (reset = false) => {
+  if (reset) currentPage.value = 1
+  await publicStore.fetchResultados({
+    page: currentPage.value,
+    limit: 20,
+    id_convocatoria: convFilter.value ? Number(convFilter.value) : null,
+    id_categoria: categoriaFilter.value ? Number(categoriaFilter.value) : null,
+  }, !reset)
+}
+
+const loadMore = async () => {
+  if (publicStore.loading || !publicStore.metaResultados || currentPage.value >= publicStore.metaResultados.total_pages) return
+  currentPage.value += 1
+  await loadResultados(false)
+}
+
+watch([convFilter, categoriaFilter], () => void loadResultados(true))
+
 onMounted(async () => {
-  if (!publicStore.inicio) await publicStore.loadInicio()
+  await publicStore.fetchConvocatoriasMinified()
   convFilter.value = convocatoriaOptions.value[0]?.id ?? ''
+  await loadResultados(true)
+  observer = new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting) void loadMore()
+  }, { rootMargin: '160px' })
+  if (sentinel.value) observer.observe(sentinel.value)
 })
+
+onUnmounted(() => observer?.disconnect())
 </script>
 
 <template>
@@ -112,7 +139,7 @@ onMounted(async () => {
               <div class="w-full md:w-1/3 flex flex-col items-center order-2 md:order-1 h-[80%]">
                 <div class="bg-white border-2 border-slate-200 p-4 rounded-xl shadow-md w-full text-center relative mb-4 z-10 hover:-translate-y-2 transition-transform">
                   <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-200 text-text-muted rounded-full w-12 h-12 flex items-center justify-center border-4 border-white shadow-sm font-black text-xl">2</div>
-                  <h3 class="font-bold text-text-main mt-4 leading-tight">{{ top3[1].nombre }}</h3>
+                  <h3 class="font-bold text-text-main mt-4 leading-tight">{{ top3[1].nombres }} {{ top3[1].paterno }}</h3>
                   <p class="text-sm text-text-muted mt-1 font-medium">{{ top3[1].nota }}</p>
                 </div>
                 <div class="w-full bg-gradient-to-t from-slate-300 to-slate-200 flex-grow rounded-t-lg border-t-4 border-slate-400 opacity-90 shadow-inner flex items-center justify-center">
@@ -126,7 +153,7 @@ onMounted(async () => {
               <div class="w-full md:w-1/3 flex flex-col items-center order-1 md:order-2 h-full">
                 <div class="bg-white border-2 border-warning/20 p-5 rounded-xl shadow-lg w-full text-center relative mb-4 z-10 hover:-translate-y-2 transition-transform scale-105">
                   <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 rounded-full w-16 h-16 flex items-center justify-center border-4 border-white shadow-md font-black text-3xl">1</div>
-                  <h3 class="font-bold text-text-main mt-6 text-lg leading-tight">{{ top3[0].nombre }}</h3>
+                  <h3 class="font-bold text-text-main mt-6 text-lg leading-tight">{{ top3[0].nombres }} {{ top3[0].paterno }}</h3>
                   <p class="text-sm font-bold text-warning mt-1 bg-warning/10 inline-block px-2 py-1 rounded">{{ top3[0].nota }}</p>
                 </div>
                 <div class="w-full bg-gradient-to-t from-amber-400 to-amber-300 flex-grow rounded-t-lg border-t-4 border-amber-500 opacity-90 shadow-inner flex items-center justify-center">
@@ -140,7 +167,7 @@ onMounted(async () => {
               <div class="w-full md:w-1/3 flex flex-col items-center order-3 md:order-3 h-[70%]">
                 <div class="bg-white border-2 border-amber-700/30 p-4 rounded-xl shadow-md w-full text-center relative mb-4 z-10 hover:-translate-y-2 transition-transform">
                   <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-amber-700/80 text-white rounded-full w-12 h-12 flex items-center justify-center border-4 border-white shadow-sm font-black text-xl">3</div>
-                  <h3 class="font-bold text-text-main mt-4 leading-tight">{{ top3[2].nombre }}</h3>
+                  <h3 class="font-bold text-text-main mt-4 leading-tight">{{ top3[2].nombres }} {{ top3[2].paterno }}</h3>
                   <p class="text-sm text-text-muted mt-1 font-medium">{{ top3[2].nota }}</p>
                 </div>
                 <div class="w-full bg-gradient-to-t from-amber-800/20 to-amber-700/20 flex-grow rounded-t-lg border-t-4 border-amber-700/40 opacity-90 shadow-inner flex items-center justify-center">
@@ -165,14 +192,14 @@ onMounted(async () => {
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-              <tr v-for="res in (searchTerm ? filteredResultados : others)" :key="res.id" class="hover:bg-gray-50/50 transition-colors">
+              <tr v-for="(res, index) in (searchTerm ? filteredResultados : others)" :key="res.carnet_identidad" class="hover:bg-gray-50/50 transition-colors">
                 <td class="py-4 px-6">
                   <Badge variant="secondary" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-text-muted font-bold text-sm">
-                    {{ res.pos }}
+                    {{ searchTerm ? index + 1 : index + 4 }}
                   </Badge>
                 </td>
-                <td class="py-4 px-6 font-semibold text-text-main">{{ res.nombre }}</td>
-                <td class="py-4 px-6 text-text-muted font-medium">{{ res.ci }}</td>
+                <td class="py-4 px-6 font-semibold text-text-main">{{ res.nombres }} {{ res.paterno }} {{ res.materno ?? '' }}</td>
+                <td class="py-4 px-6 text-text-muted font-medium">{{ res.carnet_identidad }}</td>
                 <td class="py-4 px-6 text-right">
                   <Badge variant="outline" class="px-2.5 py-1 rounded bg-success/10 text-success font-bold border-success/20">
                     {{ res.nota }}
@@ -188,6 +215,7 @@ onMounted(async () => {
           </table>
         </CardContent>
       </Card>
+      <div ref="sentinel" class="h-16"></div>
     </div>
   </div>
 </template>

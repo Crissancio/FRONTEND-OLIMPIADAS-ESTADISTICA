@@ -1,26 +1,30 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Plus, Search, Filter, PlayCircle, FileText, ListChecks, Edit, Trash2, ExternalLink, ScrollText } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
-import { adminMaterialesMock, type AdminMaterial } from '@/modules/admin/data/admin.data'
+import { useMaterialesStore } from '@/modules/material/stores/material.store'
+import type { MaterialDTO, TipoMaterialEnum } from '@/modules/material/types/material.api'
 
 const searchTerm = ref('')
 const selectedType = ref('all')
+const materialStore = useMaterialesStore()
 
-const materiales = ref<AdminMaterial[]>([...adminMaterialesMock])
+onMounted(() => {
+  void materialStore.fetchMateriales({ page: 1, limit: 100 })
+})
 
 const filteredMaterials = computed(() => {
-  return materiales.value.filter((item) => {
+  return materialStore.materiales.filter((item) => {
     const matchesSearch = item.nombre_material.toLowerCase().includes(searchTerm.value.toLowerCase())
     const matchesType = selectedType.value === 'all' || item.tipo_material === selectedType.value
     return matchesSearch && matchesType
   })
 })
 
-const getTipoConfig = (tipo: AdminMaterial['tipo_material']) => {
+const getTipoConfig = (tipo: TipoMaterialEnum) => {
   switch (tipo) {
     case 'VIDEO':
       return { color: 'bg-error/10 text-error border-error/20', icon: PlayCircle }
@@ -33,6 +37,10 @@ const getTipoConfig = (tipo: AdminMaterial['tipo_material']) => {
     default:
       return { color: 'bg-gray-100 text-text-muted border-gray-200', icon: FileText }
   }
+}
+
+const openMaterial = (mat: MaterialDTO) => {
+  if (mat.enlace_acceso) window.open(mat.enlace_acceso, '_blank', 'noopener,noreferrer')
 }
 </script>
 
@@ -102,22 +110,22 @@ const getTipoConfig = (tipo: AdminMaterial['tipo_material']) => {
                 <td class="px-6 py-4">
                   <div class="flex flex-wrap gap-2">
                     <Badge variant="secondary" class="border border-gray-200 bg-white text-xs font-bold text-text-muted">
-                      {{ mat.nombreConvocatoria }}
+                      {{ mat.estado }}
                     </Badge>
-                    <Badge v-if="mat.fase" variant="secondary" class="border border-gray-200 bg-white text-xs font-bold text-text-muted">
-                      {{ mat.fase }}
+                    <Badge v-if="mat.estado_temporal" variant="secondary" class="border border-gray-200 bg-white text-xs font-bold text-text-muted">
+                      {{ mat.estado_temporal }}
                     </Badge>
                   </div>
                 </td>
                 <td class="px-6 py-4 text-right">
                   <div class="flex items-center justify-end gap-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-                    <Button variant="ghost" size="icon" class="text-text-muted hover:text-info">
+                    <Button variant="ghost" size="icon" class="text-text-muted hover:text-info" @click="openMaterial(mat)">
                       <ExternalLink class="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" class="text-text-muted hover:text-primary">
+                    <Button variant="ghost" size="icon" class="text-text-muted hover:text-primary" @click="materialStore.toggleVisibilidadMaterial(mat.id_material, mat.estado !== 'PUBLICO')">
                       <Edit class="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" class="text-text-muted hover:text-error">
+                    <Button variant="ghost" size="icon" class="text-text-muted hover:text-error" @click="materialStore.deleteMaterial(mat.id_material)">
                       <Trash2 class="h-4 w-4" />
                     </Button>
                   </div>
@@ -128,7 +136,7 @@ const getTipoConfig = (tipo: AdminMaterial['tipo_material']) => {
         </div>
 
         <div class="flex items-center justify-between border-t border-gray-200 bg-gray-50/50 p-4 text-sm text-text-muted">
-          <span>Mostrando {{ filteredMaterials.length }} de {{ materiales.length }} materiales</span>
+          <span>Mostrando {{ filteredMaterials.length }} de {{ materialStore.meta.total }} materiales</span>
           <div class="flex gap-1">
             <Button variant="outline" size="sm" class="border-gray-200 text-text-muted" disabled>Anterior</Button>
             <Button variant="outline" size="sm" class="border-gray-200 text-text-muted" disabled>Siguiente</Button>

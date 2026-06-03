@@ -1,5 +1,13 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { usePublicStore } from '@/modules/public/stores/public.store'
+
 const logoOpeSrc = `${import.meta.env.BASE_URL}logo-ope.svg`
+const publicStore = usePublicStore()
+
+onMounted(() => {
+  void publicStore.fetchConvocatoriaPrincipal()
+})
 </script>
 
 <template>

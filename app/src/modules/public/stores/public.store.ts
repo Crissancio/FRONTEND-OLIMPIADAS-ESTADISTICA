@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { computed } from 'vue';
 import { ref } from 'vue';
 import { publicService } from '../services/public.service';
 import type {
@@ -26,6 +27,7 @@ export const usePublicStore = defineStore('public', () => {
 
   // Landing / Inicio
   const inicioData = ref<ConvocatoriaInicioDTO | null>(null);
+  const convocatoriaPrincipal = ref<number | null>(null);
   
   // Listas generales
   const convocatoriasList = ref<ConvocatoriaListPublicDTO[]>([]);
@@ -47,6 +49,8 @@ export const usePublicStore = defineStore('public', () => {
 
   const resultados = ref<ResultadoPublicoGeneralDTO[]>([]);
   const metaResultados = ref<PaginationMeta | null>(null);
+  const inicio = inicioData;
+  const convocatoriaInicio = computed(() => inicioData.value);
 
   // ================= ACCIONES =================
   
@@ -56,6 +60,17 @@ export const usePublicStore = defineStore('public', () => {
       const response = await publicService.obtenerInicio();
       inicioData.value = response.data;
       return response.data;
+    } catch (err) { error.value = err as ApiError; throw err; }
+    finally { loading.value = false; }
+  }
+
+  async function fetchConvocatoriaPrincipal() {
+    if (convocatoriaPrincipal.value) return convocatoriaPrincipal.value;
+    loading.value = true; error.value = null;
+    try {
+      const response = await publicService.obtenerConvocatoriaPrincipalId();
+      convocatoriaPrincipal.value = response.data.id_convocatoria;
+      return convocatoriaPrincipal.value;
     } catch (err) { error.value = err as ApiError; throw err; }
     finally { loading.value = false; }
   }
@@ -100,41 +115,46 @@ export const usePublicStore = defineStore('public', () => {
     finally { loading.value = false; }
   }
 
-  async function fetchAvisos(params?: GetAvisosPublicosParams) {
+  async function fetchAvisos(params?: GetAvisosPublicosParams, append = false) {
     loading.value = true; error.value = null;
     try {
       const response = await publicService.obtenerAvisos(params);
-      avisos.value = response.data.items;
+      avisos.value = append ? [...avisos.value, ...response.data.items] : response.data.items;
       metaAvisos.value = response.data.meta;
     } catch (err) { error.value = err as ApiError; }
     finally { loading.value = false; }
   }
 
-  async function fetchColaboradores(params: GetColaboradoresPublicParams) {
+  async function fetchColaboradores(params: GetColaboradoresPublicParams, append = false) {
     loading.value = true; error.value = null;
     try {
       const response = await publicService.obtenerColaboradores(params);
-      colaboradores.value = response.data.items;
+      colaboradores.value = append ? [...colaboradores.value, ...response.data.items] : response.data.items;
       metaColaboradores.value = response.data.meta;
     } catch (err) { error.value = err as ApiError; }
     finally { loading.value = false; }
   }
 
-  async function fetchMateriales(params?: GetMaterialesPublicParams) {
+  async function loadPersonal(tipo: GetColaboradoresPublicParams['tipo']) {
+    await fetchColaboradores({ tipo, page: 1, limit: 100 });
+    return colaboradores.value;
+  }
+
+  async function fetchMateriales(params?: GetMaterialesPublicParams, append = false) {
     loading.value = true; error.value = null;
     try {
       const response = await publicService.obtenerMateriales(params);
-      materiales.value = response.data.items;
+      materiales.value = append ? [...materiales.value, ...response.data.items] : response.data.items;
       metaMateriales.value = response.data.meta;
     } catch (err) { error.value = err as ApiError; }
     finally { loading.value = false; }
   }
 
-  async function fetchResultados(params?: GetResultadosFinalesPublicParams) {
+  async function fetchResultados(params?: GetResultadosFinalesPublicParams, append = false) {
     loading.value = true; error.value = null;
     try {
       const response = await publicService.obtenerResultadosFinales(params);
-      resultados.value = response.data.items;
+      resultados.value = append ? [...resultados.value, ...response.data.items] : response.data.items;
       metaResultados.value = response.data.meta;
     } catch (err) { error.value = err as ApiError; }
     finally { loading.value = false; }
@@ -146,7 +166,10 @@ export const usePublicStore = defineStore('public', () => {
   return {
     loading,
     error,
+    inicio,
     inicioData,
+    convocatoriaPrincipal,
+    convocatoriaInicio,
     convocatoriasList,
     convocatoriasMinified,
     colegiosMinified,
@@ -157,12 +180,16 @@ export const usePublicStore = defineStore('public', () => {
     resultados, metaResultados,
 
     fetchInicio,
+    loadInicio: fetchInicio,
+    fetchConvocatoriaPrincipal,
     fetchConvocatoriaDetalle,
+    loadDetalle: fetchConvocatoriaDetalle,
     fetchConvocatorias,
     fetchConvocatoriasMinified,
     fetchColegiosMinified,
     fetchAvisos,
     fetchColaboradores,
+    loadPersonal,
     fetchMateriales,
     fetchResultados
   };

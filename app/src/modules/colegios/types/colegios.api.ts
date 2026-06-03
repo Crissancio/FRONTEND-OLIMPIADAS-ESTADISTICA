@@ -4,7 +4,7 @@ import type { DirectorDTO } from '@/modules/personas/types/personas.api'; // Reu
 // ==========================================
 // 1. UNIONS / ENUMS CONSTANTES
 // ==========================================
-export type EstadoColegio = 'REVISADO' | 'RECHAZADO' | 'PENDIENTE' | 'INACTIVO';
+export type EstadoColegio = 'ACTIVO' | 'REVISADO' | 'RECHAZADO' | 'PENDIENTE' | 'INACTIVO';
 export type TipoColegio = 'PRIVADO' | 'CONVENIO' | 'PUBLICO';
 export type TurnoColegio = 'MAÑANA' | 'TARDE' | 'NOCHE' | 'MIXTO';
 
@@ -16,9 +16,9 @@ export interface ColegioFilters {
   limit?: number;
   nombre?: string | null;
   municipio?: string | null;
-  estado?: EstadoColegio | null;
-  tipo?: TipoColegio | null;
-  turno?: TurnoColegio | null;
+  estado?: EstadoColegio | '' | null;
+  tipo?: TipoColegio | '' | null;
+  turno?: TurnoColegio | '' | null;
   director_nombre?: string | null;
 }
 
@@ -110,6 +110,8 @@ export interface CSVUploadResponseData {
   csv_errores_url?: string | null;
 }
 
+export type CSVUploadResponseDTO = CSVUploadResponseData;
+
 export interface CSVImportDBResponseData {
   insertados: number;
   errores: CSVImportErrorDTO[];
@@ -156,3 +158,7 @@ export interface GeneralDictResponse {
   data: Record<string, unknown>;
   message: string;
 }
+
+export type CSVImportDBResponseDTO = CSVImportDBResponseData;
+
+export type ColegioResponseDTO = ColegioDTO;

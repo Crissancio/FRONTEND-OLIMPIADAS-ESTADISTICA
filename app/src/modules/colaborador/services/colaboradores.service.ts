@@ -6,7 +6,7 @@ import type {
   ColaboradorPayload 
 } from '../types/colaboradores.api'
 
-const BASE_URL = '/personas/colaboradores'
+const BASE_URL = '/api/v1/personas/colaboradores'
 
 const createFormData = (payload: Partial<ColaboradorPayload>): FormData => {
   const formData = new FormData()

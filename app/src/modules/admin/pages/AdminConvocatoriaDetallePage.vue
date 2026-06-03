@@ -3,22 +3,23 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, AlertCircle, CheckCheck } from 'lucide-vue-next'
 
-// Componentes modulares inyectados
 import ConvocatoriaDetailTabs from '../components/ConvocatoriaDetailTabs.vue'
 import ConvocatoriaTabGeneral from '../components/ConvocatoriaTabGeneral.vue'
 import ConvocatoriaTabConfiguracion from '../components/ConvocatoriaTabConfiguracion.vue'
 import ConvocatoriaTabCategorias from '@/modules/categorias/components/ConvocatoriaTabCategorias.vue'
 import ConvocatoriaTabMaterial from '@/modules/material/components/ConvocatoriaTabMaterial.vue'
 
-// Estado Global de la Entidad Convocatorias
 import { useConvocatoriasStore } from '@/modules/convocatorias/stores/convocatorias.store'
+import Button from '@/shared/components/ui/atoms/Button.vue'
 
 const route = useRoute()
 const router = useRouter()
 const convocatoriasStore = useConvocatoriasStore()
 
 const activeTab = ref<'general' | 'categorias' | 'material' | 'configuracion'>('general')
-const convocatoriaId = Number(route.params.id)
+
+// Lectura correcta del ID definido en vue-router
+const convocatoriaId = Number(route.params.convocatoriaId)
 
 onMounted(async () => {
   if (convocatoriaId) {
@@ -78,7 +79,7 @@ function statusClass(status: string) {
         <Button 
           v-if="convocatoria.estado === 'BORRADOR'" 
           variant="accent" 
-          class="flex items-center gap-2 bg-accent text-white font-bold tracking-wider px-4 py-2 rounded-lg text-xs"
+          class="flex items-center gap-2 bg-accent text-white font-bold tracking-wider px-4 py-2 rounded-lg text-xs shadow-sm"
           @click="executePublish"
         >
           <CheckCheck class="h-4 w-4" />
@@ -91,7 +92,7 @@ function statusClass(status: string) {
       <div class="flex items-start gap-3">
         <AlertCircle class="mt-0.5 h-5 w-5 shrink-0 text-warning" />
         <p class="text-sm font-medium text-warning">
-          El evento está guardado como <strong>Borrador</strong>. Asegúrese de estructurar las categorías asociadas y subir el material didáctico requerido en sus respectivas pestañas antes de cambiar el estado a publicación global.
+          El evento está guardado como <strong>Borrador</strong>. Asegúrese de estructurar las categorías y subir el material didáctico requerido en sus respectivas pestañas antes de cambiar el estado a publicación global.
         </p>
       </div>
     </div>
@@ -103,17 +104,16 @@ function statusClass(status: string) {
         <ConvocatoriaTabGeneral 
           v-if="activeTab === 'general'" 
           :convocatoria="convocatoria" 
-          :categoriasCount="0" 
         />
         
         <ConvocatoriaTabCategorias 
           v-if="activeTab === 'categorias'" 
-          :convocatoriaId="convocatoriaId" 
+          :convocatoriaId="convocatoria.id_convocatoria" 
         />
         
         <ConvocatoriaTabMaterial 
           v-if="activeTab === 'material'" 
-          :convocatoriaId="convocatoriaId" 
+          :convocatoriaId="convocatoria.id_convocatoria" 
         />
         
         <ConvocatoriaTabConfiguracion 

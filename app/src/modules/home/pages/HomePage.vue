@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { usePublicStore } from '@/modules/public/stores/public.store'
-import type { AvisoInicioDTO, CategoriaResumenDTO, ConvocatoriaResponseDTO, MaterialPrincipalDTO } from '@/modules/public/types/public.api'
+import type { AvisoPublicoDTO, CategoriaInicioDTO, ConvocatoriaInicioDTO } from '@/modules/public/types/public.api'
+import type { AvisoPrioridad, TipoAviso } from '@/modules/avisos/types/avisos.api'
+import type { EstadoTemporal } from '@/modules/convocatorias/types/convocatorias.api'
 import { toApiError } from '@/app/api/api-error'
 import type { HomeConvocatoria, HomeAviso } from '../types/home.types'
 
@@ -19,99 +21,147 @@ const hasBackendConvocatoria = ref(false)
 const inicioLoadedOk = ref(false)
 const publicStore = usePublicStore()
 
-const mapAvisoTipo = (tipo: string): HomeAviso['tipo'] => {
-  const t = (tipo || '').toLowerCase()
-  if (t.includes('com')) return 'COMUNICADO'
-  if (t.includes('imp')) return 'IMPORTANTE'
-  return 'OTRO'
+const ESTADOS_TEMPORALES: EstadoTemporal[] = [
+  'BORRADOR',
+  'OCULTA',
+  'CANCELADA',
+  'PROXIMA',
+  'INSCRIPCIONES PROXIMAS',
+  'INSCRIPCION EN CURSO',
+  'EN CURSO',
+  'FINALIZADA',
+]
+
+const TIPOS_AVISO: TipoAviso[] = [
+  'CONVOCATORIA',
+  'INSCRIPCION',
+  'CRONOGRAMA',
+  'MATERIAL',
+  'EXAMEN',
+  'LOGISTICA',
+  'RESULTADO',
+  'RECLAMO',
+  'CEREMONIA',
+  'CAPACITACION',
+  'MANTENIMIENTO',
+  'SOPORTE',
+  'GENERAL',
+]
+
+const PRIORIDADES_AVISO: AvisoPrioridad[] = ['BAJA', 'MEDIA', 'ALTA']
+
+const normalizeEstadoTemporal = (estado?: string | null): EstadoTemporal => {
+  const normalized = (estado || '').toUpperCase().trim() as EstadoTemporal
+  return ESTADOS_TEMPORALES.includes(normalized) ? normalized : 'BORRADOR'
 }
 
-const formatFechas = (dto: ConvocatoriaResponseDTO): string => {
+const normalizeAvisoTipo = (tipo?: string | null): TipoAviso => {
+  const normalized = (tipo || '').toUpperCase().trim() as TipoAviso
+  return TIPOS_AVISO.includes(normalized) ? normalized : 'GENERAL'
+}
+
+const normalizeAvisoPrioridad = (prioridad?: string | null): AvisoPrioridad => {
+  const normalized = (prioridad || '').toUpperCase().trim() as AvisoPrioridad
+  return PRIORIDADES_AVISO.includes(normalized) ? normalized : 'MEDIA'
+}
+
+const avisosPage = ref(1)
+const avisosLimit = 5
+
+const formatFechas = (dto: ConvocatoriaInicioDTO): string => {
   const start = dto.inicio_olimpiadas
   const end = dto.fin_olimpiadas
   if (start || end) {
     return [start, end].filter(Boolean).join(' - ')
   }
-  const i = dto.fecha_inicio_inscripcion
-  const f = dto.fecha_fin_inscripcion
-  if (i || f) {
-    const iTxt = i ? new Date(i).toLocaleDateString() : ''
-    const fTxt = f ? new Date(f).toLocaleDateString() : ''
-    return [iTxt, fTxt].filter(Boolean).join(' - ')
-  }
   return ''
 }
 
-const mapCategorias = (categorias: CategoriaResumenDTO[]): HomeConvocatoria['categorias'] => {
+const mapCategorias = (categorias: CategoriaInicioDTO[]): HomeConvocatoria['categorias'] => {
   return (categorias ?? []).map((c, index) => ({
-    id_categoria:c.id_categoria ?? `${c.curso}-${index}`,
+    id_categoria: index,
     nombre_categoria: c.nombre_categoria,
-    curso: c.curso,
+    curso: Number(c.curso),
     nivel: c.nivel
   }))
 }
 
 // ACTUALIZADO: Ahora recibe materiales y mapea los nuevos campos de fechas
 const mapConvocatoria = (
-  dto: ConvocatoriaResponseDTO, 
-  categorias: CategoriaResumenDTO[] = [],
-  materiales: MaterialPrincipalDTO[] = []
+  dto: ConvocatoriaInicioDTO
 ): HomeConvocatoria => {
+  const materiales = [
+    { importancia_tipo: 'AFICHE', enlace_acceso: dto.material_principal?.afiche?.enlace_acceso ?? null },
+    { importancia_tipo: 'CONVOCATORIA', enlace_acceso: dto.material_principal?.convocatoria?.enlace_acceso ?? null },
+  ]
+
   return {
     id: String(dto.id_convocatoria),
     nombre: dto.nombre_convocatoria,
     gestion: dto.gestion,
-    estado: dto.estado,
+    estado_temporal: normalizeEstadoTemporal(dto.estado_temporal),
     descripcionBreve: dto.descripcion ?? '',
     fechas: formatFechas(dto),
-    categorias: mapCategorias(categorias),
+    categorias: mapCategorias(dto.categorias ?? []),
     // Nuevos campos para v-calendar
-    inicio_olimpiadas: dto.inicio_olimpiadas,
-    fin_olimpiadas: dto.fin_olimpiadas,
-    fecha_inicio_inscripcion: dto.fecha_inicio_inscripcion,
-    fecha_fin_inscripcion: dto.fecha_fin_inscripcion,
+    inicio_olimpiadas: dto.inicio_olimpiadas ?? null,
+    fin_olimpiadas: dto.fin_olimpiadas ?? null,
+    fecha_inicio_inscripcion: null,
+    fecha_fin_inscripcion: null,
     // Lista de materiales (Afiche y Convocatoria PDF)
     material_principal: materiales
   }
 }
 
-const mapAviso = (dto: AvisoInicioDTO, index: number): HomeAviso => {
-  const rawDate = dto.fecha_publicacion
-  const dateText = rawDate ? new Date(rawDate).toLocaleDateString() : ''
+const mapAviso = (dto: AvisoPublicoDTO, index: number): HomeAviso => {
   return {
     id: String(index),
     titulo: dto.titulo,
     descripcion: dto.descripcion,
-    tipo: mapAvisoTipo(dto.tipo),
-    fecha: dateText
+    tipo: normalizeAvisoTipo(dto.tipo),
+    prioridad: normalizeAvisoPrioridad(dto.prioridad),
+    fecha: ''
   }
 }
 
 const activeConv = computed(() => {
   const list = convocatoriasData.value
-  return list.find(c => c.estado === 'INSCRIPCION EN CURSO') || list.find(c => c.estado === 'ACTIVA') || list[0]
+  return list.find(c => c.estado_temporal === 'INSCRIPCION EN CURSO') || list.find(c => c.estado_temporal === 'EN CURSO') || list[0]
 })
 
 const showPreinscripcion = computed(() => {
-  const estado = (activeConv.value?.estado as string) ?? ''
-  return hasBackendConvocatoria.value && estado === 'INSCRIPCION EN CURSO'
+  return hasBackendConvocatoria.value && activeConv.value?.estado_temporal === 'INSCRIPCION EN CURSO'
 })
 
 const loadInicio = async () => {
   inicioLoading.value = true
   inicioError.value = null
+  avisosPage.value = 1
   try {
-    const dto = await publicStore.loadInicio()
+    const [inicioResult] = await Promise.allSettled([
+      publicStore.fetchInicio(),
+      publicStore.fetchAvisos({ page: avisosPage.value, limit: avisosLimit }),
+    ])
 
-    // ACTUALIZADO: Pasamos la lista de materiales al mapeador
-    const conv = dto.convocatoria 
-      ? [mapConvocatoria(dto.convocatoria, dto.categorias, dto.material_principal)] 
-      : []
+    avisosData.value = publicStore.avisos.map(mapAviso)
+    inicioLoadedOk.value = true
+
+    if (inicioResult.status !== 'fulfilled') {
+      inicioError.value = toApiError(inicioResult.reason).message
+      hasBackendConvocatoria.value = false
+      convocatoriasData.value = []
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' })
+      }, 50)
+      return
+    }
+
+    const dto = inicioResult.value
+
+    const conv = dto ? [mapConvocatoria(dto)] : []
 
     hasBackendConvocatoria.value = conv.length > 0
-    inicioLoadedOk.value = true
     convocatoriasData.value = conv
-    avisosData.value = dto.avisos?.length ? dto.avisos.map(mapAviso) : []
 
     // Asegurar que la vista esté arriba tras cargar
     setTimeout(() => {
@@ -127,6 +177,13 @@ const loadInicio = async () => {
   } finally {
     inicioLoading.value = false
   }
+}
+
+const loadMoreAvisos = async () => {
+  if (publicStore.loading || !publicStore.metaAvisos?.total_pages || avisosPage.value >= publicStore.metaAvisos.total_pages) return
+  avisosPage.value += 1
+  await publicStore.fetchAvisos({ page: avisosPage.value, limit: avisosLimit }, true)
+  avisosData.value = publicStore.avisos.map(mapAviso)
 }
 
 onMounted(() => {
@@ -146,6 +203,7 @@ onMounted(() => {
       <HomeAvisosList 
         :avisosData="avisosData"
         :inicioLoadedOk="inicioLoadedOk"
+        @load-more="loadMoreAvisos"
       />
     </section>
 

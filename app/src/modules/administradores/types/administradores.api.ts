@@ -16,6 +16,8 @@ export interface AdministradorDTO {
   estado: EstadoAdministrador;
 }
 
+export type AdministradorResponseDTO = AdministradorDTO;
+
 // DTOs de mutación
 export interface AdministradorCreateDTO {
   nombre: string;

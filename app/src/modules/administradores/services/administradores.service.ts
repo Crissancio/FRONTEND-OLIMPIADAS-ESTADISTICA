@@ -60,3 +60,13 @@ export const administradoresService = {
     });
   }
 };
+
+export const AdministradoresService = {
+  list: administradoresService.listarAdministradores,
+  create: administradoresService.crearAdministrador,
+  getById: administradoresService.obtenerAdministradorPorId,
+  update: administradoresService.actualizarAdministrador,
+  remove: administradoresService.eliminarAdministrador,
+  baja: administradoresService.bajaLogicaAdministrador,
+  alta: administradoresService.altaLogicaAdministrador,
+};

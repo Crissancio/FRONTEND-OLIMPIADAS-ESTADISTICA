@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { ArrowRight } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import type { HomeConvocatoria } from '../types/home.types'
@@ -20,6 +20,7 @@ const slides = computed(() => [
 
 const currentSlide = ref(0)
 const typedText = ref('')
+const descriptionRef = ref<HTMLElement | null>(null)
 let timer: ReturnType<typeof setInterval> | null = null
 let typeInterval: ReturnType<typeof setInterval> | null = null
 
@@ -51,10 +52,17 @@ const nextSlide = () => {
   currentSlide.value = (currentSlide.value + 1) % slides.value.length
 }
 
+const scrollDescriptionToEnd = () => {
+  void nextTick(() => {
+    const el = descriptionRef.value
+    if (el) el.scrollTop = el.scrollHeight
+  })
+}
+
 const getStatusBg = (estado?: string) => {
   const e = (estado || '').toUpperCase()
   if (e.includes('INSCRIPCION')) return 'bg-estado-inscripcion'
-  if (e.includes('ACTIVA')) return 'bg-estado-activa'
+  if (e === 'EN CURSO') return 'bg-estado-activa'
   if (e.includes('PROXIMA')) return 'bg-estado-proxima'
   if (e.includes('FINALIZADA')) return 'bg-estado-finalizada'
   return 'bg-estado-borrador'
@@ -68,6 +76,7 @@ const startTypewriter = () => {
   typeInterval = setInterval(() => {
     if (i < text.length) {
       typedText.value += text.charAt(i)
+      scrollDescriptionToEnd()
       i++
     } else {
       clearInterval(typeInterval!)
@@ -76,6 +85,7 @@ const startTypewriter = () => {
 }
 
 watch(currentSlide, startTypewriter)
+watch(typedText, scrollDescriptionToEnd)
 
 onMounted(() => {
   startTypewriter()
@@ -106,10 +116,10 @@ onUnmounted(() => {
       <Transition name="expand-h">
         <div
           v-if="currentSlide === 0 && props.hasBackendConvocatoria && props.activeConv"
-          :class="getStatusBg(props.activeConv.estado)"
+          :class="getStatusBg(props.activeConv.estado_temporal)"
           class="text-white py-1.5 px-4 text-xs sm:text-sm font-bold tracking-widest uppercase shadow-lg rounded-r-full whitespace-nowrap"
         >
-          {{ props.activeConv.estado }}
+          {{ props.activeConv.estado_temporal }}
         </div>
       </Transition>
     </div>
@@ -117,27 +127,23 @@ onUnmounted(() => {
     <!-- Bloque informativo en esquina superior izquierda (cuando slide != 0) -->
     <Transition name="slide-up-fade" mode="out-in">
       <div v-if="currentSlide !== 0" class="absolute top-6 lg:top-8 left-6 lg:left-8 flex gap-3 lg:gap-4 z-30 pointer-events-none w-[90%] md:w-auto">
-        <div class="w-1.5 lg:w-2 rounded-full shadow-lg" :class="getStatusBg(props.activeConv?.estado)"></div>
+        <div class="w-1.5 lg:w-2 rounded-full shadow-lg" :class="getStatusBg(props.activeConv?.estado_temporal)"></div>
         <div class="flex flex-col items-start justify-center">
           <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight drop-shadow-lg text-white">
             {{ mainTitle }}
           </h1>
-          <div v-if="currentGestion" class="text-sm sm:text-base lg:text-xl text-secondary font-semibold opacity-90 font-medium">
-            Gestión {{ currentGestion }}
-          </div>
         </div>
       </div>
     </Transition>
 
     <!-- Título y gestión en “primer plano” (solo slide 0) -->
     <Transition name="slide-up-fade" mode="out-in">
-      <div v-if="currentSlide === 0" class="absolute top-[calc(20%+2.5rem)] lg:top-[calc(25%+2.5rem)] left-6 lg:left-16 flex flex-col items-start gap-1 lg:gap-3 z-30 pointer-events-none">
+      <div v-if="currentSlide === 0" class="absolute top-[calc(20%+2.5rem)] lg:top-[calc(25%+2.5rem)] left-6 lg:left-16 z-30 pointer-events-none max-w-[90%] lg:max-w-[72%]">
         <h1 class="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight drop-shadow-2xl text-white">
           {{ mainTitle }}
+          <span v-if="currentGestion" class="mx-2 lg:mx-4 text-secondary/80">|</span>
+          <span v-if="currentGestion" class="text-secondary whitespace-nowrap">Gestion {{ currentGestion }}</span>
         </h1>
-        <div v-if="currentGestion" class="text-2xl lg:text-4xl text-secondary font-semibold opacity-90 font-medium">
-          Gestión {{ currentGestion }}
-        </div>
       </div>
     </Transition>
 
@@ -154,7 +160,10 @@ onUnmounted(() => {
 
     <!-- Descripción con efecto typewriter -->
     <div class="absolute bottom-40 lg:bottom-48 left-6 lg:left-16 w-[90%] lg:w-2/3 pr-6 z-30 pointer-events-none">
-      <p class="text-lg md:text-xl text-white/90 leading-relaxed max-w-2xl drop-shadow-md min-h-[60px]">
+      <p
+        ref="descriptionRef"
+        class="hero-description text-lg md:text-xl text-white/90 leading-relaxed max-w-2xl drop-shadow-md"
+      >
         {{ typedText }}<span class="animate-pulse">|</span>
       </p>
     </div>
@@ -234,5 +243,25 @@ onUnmounted(() => {
 .expand-h-leave-to {
   transform: scaleX(0);
   opacity: 0;
+}
+
+.hero-description {
+  max-height: 3.5rem;
+  min-height: 3.5rem;
+  overflow: hidden;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+}
+
+.hero-description::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hero-description {
+    max-height: 3.75rem;
+    min-height: 3.75rem;
+  }
 }
 </style>

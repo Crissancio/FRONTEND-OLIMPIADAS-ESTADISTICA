@@ -18,6 +18,7 @@ export const useColegiosStore = defineStore('colegios', () => {
   // ================= ESTADO =================
   const colegios = ref<ColegioDTO[]>([]);
   const currentColegio = ref<ColegioDetailDTO | null>(null);
+  const colegioActual = currentColegio;
   
   // Estado para la carga masiva (almacena la validación previa)
   const csvUploadResult = ref<CSVUploadResponseData | null>(null);
@@ -36,11 +37,14 @@ export const useColegiosStore = defineStore('colegios', () => {
   }
 
   // ================= ACCIONES: CRUD BÁSICO =================
-  async function fetchColegios(filters?: ColegioFilters) {
+  async function fetchColegios(pageOrFilters?: number | ColegioFilters, limit?: number, filters?: ColegioFilters) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await colegiosService.listarColegios(filters);
+      const params: ColegioFilters = typeof pageOrFilters === 'number'
+        ? { ...(filters ?? {}), page: pageOrFilters, limit }
+        : (pageOrFilters ?? {});
+      const response = await colegiosService.listarColegios(params);
       colegios.value = response.data.items;
       meta.value = response.data.meta;
     } catch (err) {
@@ -56,6 +60,7 @@ export const useColegiosStore = defineStore('colegios', () => {
     try {
       const response = await colegiosService.obtenerColegioPorId(id);
       currentColegio.value = response.data;
+      return response.data;
     } catch (err) {
       error.value = err as ApiError;
     } finally {
@@ -128,11 +133,14 @@ export const useColegiosStore = defineStore('colegios', () => {
   // ================= ACCIONES: CARGA MASIVA (CSV) =================
   
   // 1. Sube el archivo y guarda el resultado de la validación
-  async function uploadCsv(data: BodySubirCsvColegios) {
+  async function uploadCsv(dataOrDepartamento: BodySubirCsvColegios | string, file?: Blob) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await colegiosService.subirCsvColegios(data);
+      const payload: BodySubirCsvColegios = typeof dataOrDepartamento === 'string'
+        ? { departamento: dataOrDepartamento, file: file as Blob }
+        : dataOrDepartamento;
+      const response = await colegiosService.subirCsvColegios(payload);
       csvUploadResult.value = response.data;
       return response.data;
     } catch (err) {
@@ -185,6 +193,22 @@ export const useColegiosStore = defineStore('colegios', () => {
     }
   }
 
+  async function downloadCSVErrors(filename: string) {
+    return colegiosService.descargarCsvError(filename);
+  }
+
+  async function importCSV(validData: ColegioCSVImportDTO[]) {
+    return importCsv(validData);
+  }
+
+  async function enableColegio(id: number) {
+    return toggleBajaColegio(id, true);
+  }
+
+  async function disableColegio(id: number) {
+    return toggleBajaColegio(id, false);
+  }
+
   function resetCsvUploadResult() {
     csvUploadResult.value = null;
   }
@@ -192,8 +216,10 @@ export const useColegiosStore = defineStore('colegios', () => {
   return {
     colegios,
     currentColegio,
+    colegioActual,
     csvUploadResult,
     loading,
+    isLoading: loading,
     error,
     meta,
     
@@ -203,12 +229,16 @@ export const useColegiosStore = defineStore('colegios', () => {
     createColegio,
     updateColegio,
     toggleBajaColegio,
+    enableColegio,
+    disableColegio,
     deleteColegio,
 
     // CSV
     uploadCsv,
     importCsv,
+    importCSV,
     downloadCsvErrorFile,
+    downloadCSVErrors,
     resetCsvUploadResult
   };
 });

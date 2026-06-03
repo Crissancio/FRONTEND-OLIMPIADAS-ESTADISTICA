@@ -31,7 +31,7 @@ const openDocument = () => {
   <div class="bg-slate-50 relative flex flex-col p-6 lg:p-8 border-t lg:border-t-0 lg:border-r border-gray-200">
     
     <Badge 
-      v-if="props.activeConv.estado === 'ACTIVA'" 
+      v-if="props.activeConv.estado_temporal === 'EN CURSO'" 
       class="absolute top-4 left-4 bg-success text-white font-bold px-3 py-1 shadow-sm z-10"
     >
       EN CURSO

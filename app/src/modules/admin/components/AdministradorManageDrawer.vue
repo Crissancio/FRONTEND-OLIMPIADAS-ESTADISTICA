@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { AlertTriangle, Edit, Mail, Power, Save, Trash2, User, X } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
-import type { AdministradorResponseDTO } from '@/modules/auth/types/auth.types'
+import type { AdministradorResponseDTO } from '@/modules/administradores/types/administradores.api'
 
 const props = defineProps<{
   open: boolean
@@ -36,7 +36,7 @@ watch(
 const initials = computed(() => {
   const name = props.admin?.nombre.trim()
   if (!name) return 'AD'
-  return name.split(/\s+/).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('')
+  return name.split(/\s+/).slice(0, 2).map((part: string) => part.charAt(0).toUpperCase()).join('')
 })
 
 const isActivo = computed(() => props.admin?.estado?.toUpperCase() === 'ACTIVO')

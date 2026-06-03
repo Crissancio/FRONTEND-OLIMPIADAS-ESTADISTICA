@@ -6,8 +6,8 @@ import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 import AdministradorManageDrawer from '@/modules/admin/components/AdministradorManageDrawer.vue'
-import { AdministradoresService } from '@/modules/auth/services/administradores.service'
-import type { AdministradorResponseDTO } from '@/modules/auth/types/auth.types'
+import { AdministradoresService } from '@/modules/administradores/services/administradores.service'
+import type { AdministradorResponseDTO } from '@/modules/administradores/types/administradores.api'
 
 const administradores = ref<AdministradorResponseDTO[]>([])
 const isLoading = ref(false)

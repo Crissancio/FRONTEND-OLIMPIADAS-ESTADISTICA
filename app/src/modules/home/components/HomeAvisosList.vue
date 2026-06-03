@@ -8,6 +8,10 @@ const props = defineProps<{
   inicioLoadedOk: boolean
 }>()
 
+const emit = defineEmits<{
+  (e: 'load-more'): void
+}>()
+
 const avisosContainerRef = ref<HTMLElement | null>(null)
 const focusedAviso = ref(0)
 
@@ -28,7 +32,18 @@ const handleWheel = (e: WheelEvent) => {
   } else if (e.deltaY < 0 && focusedAviso.value > 0) {
     focusedAviso.value--
     scrollToFocused()
+  } else if (e.deltaY > 0 && focusedAviso.value >= props.avisosData.length - 1) {
+    emit('load-more')
   }
+}
+
+const handleScroll = () => {
+  const container = avisosContainerRef.value
+  if (!container) return
+  const nearEnd = window.innerWidth >= 1024
+    ? container.scrollTop + container.clientHeight >= container.scrollHeight - 80
+    : container.scrollLeft + container.clientWidth >= container.scrollWidth - 80
+  if (nearEnd) emit('load-more')
 }
 
 const scrollToFocused = () => {
@@ -66,12 +81,12 @@ const stopAutoScroll = () => {
 }
 
 // CORRECCIÓN: Fondo fuerte y texto blanco
-const getAvisoStyle = (tipo: string) => {
-  const t = (tipo || '').toUpperCase()
-  if (t.includes('COMUNICADO') || t.includes('INFO')) {
+const getAvisoStyle = (prioridad: string) => {
+  const p = (prioridad || '').toUpperCase()
+  if (p === 'BAJA') {
     return { text: 'text-white', bg: 'bg-aviso-comunicado', border: 'bg-aviso-comunicado' }
   }
-  if (t.includes('IMPORTANTE') || t.includes('URGENTE')) {
+  if (p === 'ALTA') {
     return { text: 'text-white', bg: 'bg-aviso-importante', border: 'bg-aviso-importante' }
   }
   return { text: 'text-white', bg: 'bg-aviso-otro', border: 'bg-aviso-otro' }
@@ -111,6 +126,7 @@ onUnmounted(() => {
       @mouseleave="isHovered = false"
       @touchstart="isHovered = true"
       @touchend="isHovered = false"
+      @scroll="handleScroll"
       ref="avisosContainerRef"
     >
       <div v-if="props.inicioLoadedOk && props.avisosData.length === 0" class="rounded-2xl border border-white/20 bg-white/10 p-6 text-sm font-semibold text-white/80 w-full">
@@ -127,13 +143,13 @@ onUnmounted(() => {
         @click="handleAvisoClick(i)"
       >
         <div class="bg-white/10 backdrop-blur-md p-5 lg:p-6 rounded-2xl border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)] relative overflow-hidden group hover:bg-white/15 transition-colors h-full flex flex-col">
-          <div :class="['absolute left-0 top-0 bottom-0 w-1.5', getAvisoStyle(aviso.tipo).border]"></div>
+          <div :class="['absolute left-0 top-0 bottom-0 w-1.5', getAvisoStyle(aviso.prioridad).border]"></div>
           <div class="pl-3 flex-1">
             <div class="flex items-center justify-between mb-3">
               <span :class="[
                 'text-[10px] lg:text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm',
-                getAvisoStyle(aviso.tipo).text,
-                getAvisoStyle(aviso.tipo).bg
+                getAvisoStyle(aviso.prioridad).text,
+                getAvisoStyle(aviso.prioridad).bg
               ]">
                 {{ aviso.tipo }}
               </span>

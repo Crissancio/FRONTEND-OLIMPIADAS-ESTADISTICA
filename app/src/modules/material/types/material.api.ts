@@ -4,7 +4,7 @@ import type { PaginationMeta } from '@/shared/types/api.types';
 // 1. UNIONS / ENUMS CONSTANTES
 // ==========================================
 export type TipoMaterialEnum = 
-  | 'EXAMEN' | 'SOLUCIONARIO' | 'EJERCICIOS' | 'DOCUMENTO' 
+  | 'VIDEO' | 'EXAMEN' | 'SOLUCIONARIO' | 'EJERCICIOS' | 'DOCUMENTO' 
   | 'AFICHE' | 'CONVOCATORIA' | 'REGLAMENTO' | 'DOCUMENTO_EXTERNO' 
   | 'ARCHIVO_EXTERNO' | 'PAGINA_EXTERNA' | 'VIDEO_EXTERNO' | 'OTRO';
 

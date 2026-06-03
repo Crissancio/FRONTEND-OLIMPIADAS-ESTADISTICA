@@ -4,7 +4,6 @@ import { Clock, CheckCircle2, FileEdit, AlertCircle, TrendingUp } from 'lucide-v
 import type { ActividadRecienteDTO } from '../../sistema/types/sistema.api'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
-import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import CardTitle from '@/shared/components/ui/atoms/CardTitle.vue'
 
 defineProps<{

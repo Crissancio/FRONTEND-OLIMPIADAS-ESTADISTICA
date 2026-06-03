@@ -24,7 +24,7 @@ export interface AvisoFilters {
   prioridad?: AvisoPrioridad | null;
   estado?: EstadoAviso | null;
   fecha_creacion?: string | null;
-  fecha_publicacion?: string | null;
+  fecha_publicacion: string | null;
 }
 
 // ==========================================
