@@ -10,11 +10,12 @@ import type {
   MaterialPrincipalCreateDTO,
   MaterialUpdateDTO,
   TipoMaterialEnum,
-  GeneralDictResponse
+  GeneralDictResponse,
+  MaterialPrincipalPorTipoResponse,
+  TipoMaterialPrincipal
 } from '../types/material.api';
 
 export const materialesService = {
-  // ================= LECTURA =================
   listarMateriales(params?: MaterialFilters) {
     return customInstance<PaginatedMaterialResponse>({
       url: '/api/v1/materiales',
@@ -51,7 +52,6 @@ export const materialesService = {
     });
   },
 
-  // ================= CREACIÓN =================
   crearMaterialExterno(data: MaterialExternoCreateDTO) {
     return customInstance<MaterialResponse>({
       url: '/api/v1/materiales/externo',
@@ -92,7 +92,6 @@ export const materialesService = {
     });
   },
 
-  // ================= ACTUALIZACIÓN / ESTADOS =================
   actualizarMaterial(idMaterial: number, data: MaterialUpdateDTO) {
     return customInstance<MaterialResponse>({
       url: `/api/v1/materiales/${idMaterial}`,
@@ -122,7 +121,6 @@ export const materialesService = {
     });
   },
 
-  // ================= RELACIONES =================
   ligarConvocatoria(idMaterial: number, idConvocatoria: number) {
     return customInstance<GeneralDictResponse>({
       url: `/api/v1/materiales/${idMaterial}/convocatoria/${idConvocatoria}`,
@@ -149,5 +147,12 @@ export const materialesService = {
       url: `/api/v1/materiales/${idMaterial}/fase/${idFase}`,
       method: 'DELETE'
     });
+  },
+
+  conseguirMaterialPrincipalTipo(tipo: TipoMaterialPrincipal) {
+    return customInstance<MaterialPrincipalPorTipoResponse>({
+      url: `/api/v1/materiales/principal/${tipo}`,
+      method: 'GET'
+    })
   }
 };

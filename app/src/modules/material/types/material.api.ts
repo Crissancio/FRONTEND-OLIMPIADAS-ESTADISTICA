@@ -1,8 +1,5 @@
 import type { PaginationMeta } from '@/shared/types/api.types';
 
-// ==========================================
-// 1. UNIONS / ENUMS CONSTANTES
-// ==========================================
 export type TipoMaterialEnum = 
   | 'VIDEO' | 'EXAMEN' | 'SOLUCIONARIO' | 'EJERCICIOS' | 'DOCUMENTO' 
   | 'AFICHE' | 'CONVOCATORIA' | 'REGLAMENTO' | 'DOCUMENTO_EXTERNO' 
@@ -11,17 +8,13 @@ export type TipoMaterialEnum =
 export type EstadoMaterial = 'BORRADOR' | 'PUBLICO' | 'OCULTO';
 
 export type EstadoTemporalMaterial = 'BORRADOR' | 'OCULTO' | 'VISIBLE' | 'NO_VISIBLE';
-
-// ==========================================
-// 2. PARÁMETROS DE FILTRADO
-// ==========================================
 export interface MaterialFilters {
   page?: number;
   limit?: number;
   estado?: EstadoMaterial | null;
   tipo_material?: TipoMaterialEnum | null;
   busqueda?: string | null;
-  // Rangos de fechas (Creación, Actualización, Publicación)
+  
   fc_start?: string | null;
   fc_end?: string | null;
   fa_start?: string | null;
@@ -30,9 +23,6 @@ export interface MaterialFilters {
   fp_end?: string | null;
 }
 
-// ==========================================
-// 3. SUB-ENTIDADES DE RELACIÓN
-// ==========================================
 export interface RelacionConvocatoriaDTO {
   id_convocatoria: number;
   nombre_convocatoria: string;
@@ -45,9 +35,6 @@ export interface RelacionFaseDTO {
   nombre_categoria: string;
 }
 
-// ==========================================
-// 4. ENTIDADES PRINCIPALES (DTOs de Respuesta)
-// ==========================================
 export interface MaterialDTO {
   id_material: number;
   nombre_material: string;
@@ -66,9 +53,6 @@ export interface MaterialDetalleDTO extends MaterialDTO {
   fases?: RelacionFaseDTO[];
 }
 
-// ==========================================
-// 5. PAYLOADS DE PETICIÓN (REQUEST)
-// ==========================================
 export interface MaterialExternoCreateDTO {
   nombre_material: string;
   descripcion?: string | null;
@@ -82,7 +66,7 @@ export interface MaterialArchivoCreateDTO {
   descripcion?: string | null;
   tipo_material: TipoMaterialEnum;
   fecha_publicacion?: string | null;
-  file: Blob; // Archivo físico a subir
+  file: Blob;
 }
 
 export interface MaterialPrincipalCreateDTO {
@@ -90,7 +74,7 @@ export interface MaterialPrincipalCreateDTO {
   tipo_material: TipoMaterialEnum;
   nombre_material: string;
   descripcion?: string | null;
-  file: Blob; // Archivo físico a subir
+  file: Blob;
 }
 
 export interface MaterialUpdateDTO {
@@ -101,9 +85,6 @@ export interface MaterialUpdateDTO {
   enlace_acceso?: string | null;
 }
 
-// ==========================================
-// 6. WRAPPERS DE RESPUESTA DE API
-// ==========================================
 export interface PaginatedMaterialResponse {
   success?: boolean;
   data: {
@@ -134,5 +115,18 @@ export interface MaterialDetalleResponse {
 export interface GeneralDictResponse {
   success?: boolean;
   data: Record<string, unknown>;
+  message: string;
+}
+
+export type TipoMaterialPrincipal = 'AFICHE' | 'CONVOCATORIA' | 'REGLAMENTO' ;
+export interface MaterialPrincipalPorTipo{
+  id_material: number;
+  nombre_material: string;
+  enlace_acceso: string;
+}
+
+export interface MaterialPrincipalPorTipoResponse{
+  success?: boolean;
+  data: MaterialPrincipalPorTipo;
   message: string;
 }

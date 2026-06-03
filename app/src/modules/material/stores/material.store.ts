@@ -8,7 +8,9 @@ import type {
   MaterialExternoCreateDTO,
   MaterialArchivoCreateDTO,
   MaterialPrincipalCreateDTO,
-  MaterialUpdateDTO
+  MaterialUpdateDTO,
+  MaterialPrincipalPorTipo,
+  TipoMaterialPrincipal
 } from '../types/material.api';
 import type { PaginationMeta } from '@/shared/types/api.types';
 import type { ApiError } from '@/app/api/api-error';
