@@ -6,7 +6,6 @@ import type {
   ConvocatoriaResponse,
   ConvocatoriaUpdateDTO,
   BaseDictResponse,
-  ConvocatoriaEstadistica,
   ConvocatoriaEstadisticaResponse
 } from '../types/convocatorias.api';
 
