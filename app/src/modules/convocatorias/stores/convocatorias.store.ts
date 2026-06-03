@@ -160,6 +160,20 @@ export const useConvocatoriasStore = defineStore('convocatorias', () => {
     }
   }
 
+  async function convocatoriaEstadisticas(id: number) { 
+    loading.value = true;
+    error.value = null;
+    try { 
+      const response = await convocatoriasService.estadisticasConvocatoria(id);
+      return response.data;
+    }catch(err){
+      error.value = err as ApiError;
+      throw err;
+    }finally{
+      loading.value = false;
+    }
+  }
+
   return {
     convocatorias,
     currentConvocatoria,
@@ -173,6 +187,7 @@ export const useConvocatoriasStore = defineStore('convocatorias', () => {
     removeConvocatoriaFisica,
     publishConvocatoria,
     hideConvocatoria,
-    cancelConvocatoria
+    cancelConvocatoria,
+    convocatoriaEstadisticas
   };
 });

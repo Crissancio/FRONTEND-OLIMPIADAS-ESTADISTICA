@@ -5,7 +5,9 @@ import type {
   ConvocatoriaCreateDTO,
   ConvocatoriaResponse,
   ConvocatoriaUpdateDTO,
-  BaseDictResponse
+  BaseDictResponse,
+  ConvocatoriaEstadistica,
+  ConvocatoriaEstadisticaResponse
 } from '../types/convocatorias.api';
 
 export const convocatoriasService = {
@@ -66,5 +68,12 @@ export const convocatoriasService = {
       url: `/api/v1/convocatorias/${id}/cancelar`,
       method: 'PUT'
     });
+  },
+
+  estadisticasConvocatoria(id: number) {
+    return customInstance<ConvocatoriaEstadisticaResponse>({
+      url: `/api/v1/convocatorias/${id}/estadisticas`,
+      method: 'GET'
+    });
   }
-};
+}

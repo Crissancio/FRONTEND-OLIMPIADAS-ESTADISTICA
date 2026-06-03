@@ -1,8 +1,5 @@
 import type { PaginationMeta } from '@/shared/types/api.types';
 
-// ==========================================
-// 1. UNIONS / ESTADOS CONSTANTES
-// ==========================================
 export type EstadoConvocatoria = 'BORRADOR' | 'PUBLICADA' | 'CANCELADA' | 'OCULTA';
 
 export type EstadoTemporal = 
@@ -10,9 +7,6 @@ export type EstadoTemporal =
   | 'INSCRIPCIONES PROXIMAS' | 'INSCRIPCION EN CURSO' 
   | 'EN CURSO' | 'FINALIZADA';
 
-// ==========================================
-// 2. PARÁMETROS DE BÚSQUEDA (FILTROS)
-// ==========================================
 export interface ConvocatoriaFilters {
   page?: number;
   limit?: number;
@@ -22,9 +16,6 @@ export interface ConvocatoriaFilters {
   end_date?: string | null;
 }
 
-// ==========================================
-// 3. ENTIDADES PRINCIPALES (DTOs)
-// ==========================================
 export interface ConvocatoriaDTO {
   id_convocatoria: number;
   nombre_convocatoria: string;
@@ -63,9 +54,6 @@ export interface ConvocatoriaUpdateDTO {
   monto_inscripcion?: number | null;
 }
 
-// ==========================================
-// 4. RESPUESTAS DE LA API (Wrappers limpios)
-// ==========================================
 export interface ConvocatoriaResponse {
   success?: boolean;
   data: ConvocatoriaDTO;
@@ -84,5 +72,18 @@ export interface PaginatedConvocatoriaResponse {
 export interface BaseDictResponse {
   success?: boolean;
   data: Record<string, unknown>;
+  message: string;
+}
+
+export interface ConvocatoriaEstadistica{
+  aprobados: number;
+  pedientes: number;
+  total: number;
+  total_categorias: number;
+}
+
+export interface ConvocatoriaEstadisticaResponse { 
+  success?: boolean;
+  data: ConvocatoriaEstadistica;
   message: string;
 }
