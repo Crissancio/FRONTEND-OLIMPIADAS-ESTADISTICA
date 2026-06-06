@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { BookOpen, Settings, FileText, BarChart3, Plus } from 'lucide-vue-next'
-import { useCategoriasStore } from '@/modules/categorias/stores/categorias.store'
 
 defineProps<{
   activeTab: string
 }>()
 
 // Emitimos un evento especial para abrir el modal desde el padre
-const emit = defineEmits(['update:activeTab', 'openCreateCategoria', 'selectCategoria'])
-
-const categoriasStore = useCategoriasStore()
+const emit = defineEmits(['update:activeTab', 'openCreateCategoria'])
 
 const tabItems = [
   { key: 'general', label: 'Vista General', icon: BarChart3 },
@@ -27,28 +24,21 @@ const updateWidth = () => {
 
 onMounted(() => {
   window.addEventListener('resize', updateWidth)
-  // No llamamos fetchCategorias aquí, el componente tabCategorias se encarga de eso.
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateWidth)
-  categoriasStore.clearCategorias()
 })
 
 const handleTabClick = (tabKey: string) => {
-  // 🔴 CORRECCIÓN PC: Si es desktop y es categorías, anular el click principal.
-  if (isDesktop.value && tabKey === 'categorias') {
-    return 
-  }
-  
-  // 🟢 CORRECCIÓN MÓVIL: Cambia la pestaña usando la lógica normal en lugar de un router.push
+  // Se eliminó el bloqueo. Ahora la pestaña funciona de forma normal en todos los dispositivos.
   emit('update:activeTab', tabKey)
 }
 </script>
 
 <template>
   <aside 
-    class="group flex shrink-0 flex-row lg:flex-col gap-2 rounded-xl border border-gray-200 bg-white p-2.5 shadow-soft transition-all duration-300 ease-in-out w-full lg:w-[68px] lg:hover:w-64 overflow-x-auto lg:overflow-visible z-10 h-fit"
+    class="group flex shrink-0 flex-row lg:flex-col gap-2 rounded-xl border border-gray-200 bg-white p-2.5 shadow-soft transition-all duration-300 ease-in-out w-full lg:w-[68px] lg:hover:w-64 lg:hover:scale-[1.02] lg:hover:shadow-lg overflow-x-auto lg:overflow-visible z-10 h-fit origin-top-left"
   >
     <div v-for="tab in tabItems" :key="tab.key" class="relative group/tab flex-1 lg:flex-none">
       <button
@@ -56,11 +46,11 @@ const handleTabClick = (tabKey: string) => {
         :class="[
           'flex w-full items-center transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-primary',
           isDesktop 
-            ? 'h-11 gap-3 rounded-lg px-3 text-left text-sm font-medium whitespace-nowrap hover:scale-[1.02]' 
-            : 'flex-col justify-center gap-1.5 py-2 px-1 rounded-lg text-[10px] sm:text-xs font-semibold text-center',
+            ? 'h-11 gap-3 rounded-lg px-3 text-left text-sm whitespace-nowrap' 
+            : 'flex-col justify-center gap-1.5 py-2 px-1 rounded-lg text-[10px] sm:text-xs text-center',
           activeTab === tab.key
-            ? 'bg-primary/10 text-primary font-bold'
-            : 'text-text-muted hover:bg-gray-50 hover:text-text-main'
+            ? 'bg-primary text-white font-bold shadow-md' // Nuevo estilo de tab activo
+            : 'text-text-muted hover:bg-gray-50 hover:text-text-main font-medium'
         ]"
         :title="tab.label"
       >
@@ -83,18 +73,8 @@ const handleTabClick = (tabKey: string) => {
 
       <div 
         v-if="isDesktop && tab.key === 'categorias'"
-        class="overflow-hidden transition-all duration-500 max-h-0 group-hover/tab:max-h-[500px] opacity-0 group-hover/tab:opacity-100 pl-10 pr-2 flex flex-col gap-1 mt-1"
+        class="overflow-hidden transition-all duration-500 max-h-0 group-hover/tab:max-h-[100px] opacity-0 group-hover/tab:opacity-100 pl-10 pr-2 flex flex-col gap-1 mt-1"
       >
-        <button
-          v-for="cat in categoriasStore.categorias"
-          :key="cat.id_categoria"
-          @click.stop="emit('update:activeTab', 'categorias')"
-          class="w-full text-left text-xs py-2 px-2 rounded-md text-text-muted hover:bg-primary/10 hover:text-primary hover:translate-x-1 transition-all truncate flex items-center gap-2"
-        >
-          <div class="w-1 h-1 rounded-full bg-primary/50 shrink-0"></div>
-          {{ cat.nombre_categoria }}
-        </button>
-        
         <button
           @click.stop="emit('openCreateCategoria')"
           class="w-full text-left text-xs py-2 px-2 mt-1 rounded-md text-accent font-bold hover:bg-accent/10 hover:translate-x-1 transition-all flex items-center gap-1.5"

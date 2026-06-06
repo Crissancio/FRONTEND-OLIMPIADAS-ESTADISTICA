@@ -124,7 +124,7 @@ defineExpose({
           </button>
         </div>
 
-        <div class="min-h-[160px]">
+        <div class="min-h-\[160px]">
           <div v-if="categoryModalTab === 'greek'" class="space-y-4 animate-fade-in">
             <div>
               <label class="mb-1.5 block text-sm font-semibold text-text-main">Selecciona una letra</label>
