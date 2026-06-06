@@ -124,10 +124,17 @@
   --color-publicacion-publica: #16A34A;
   --color-publicacion-publica-soft: #DCFCE7;
 
-  --color-danger: #DC2626;
-  --color-danger-hover: #B91C1C;
+  /* Danger Academic */
+
+  --color-danger: #EF4444;
+  --color-danger-hover: #DC2626;
+
   --color-danger-border: #FCA5A5;
-  --color-danger-soft: #FEE2E2;
+  --color-danger-border-hover: #F87171;
+
+  --color-danger-soft: #FEF2F2;
+  --color-danger-soft-hover: #FEE2E2;
+
   --color-danger-text: #DC2626;
   --color-danger-text-hover: #B91C1C;
 }
