@@ -14,13 +14,13 @@ export const adminRoutes: RouteRecordRaw[] = [
   {
     path: '/admin/convocatoria/:convocatoriaId/gestionar',
     name: 'admin-convocatoria-detalle',
-    component: () => import('@/modules/admin/pages/AdminConvocatoriaDetallePage.vue'),
+    component: () => import('@/modules/convocatorias/pages/AdminConvocatoriaDetallePage.vue'),
     meta: { title: 'Admin - Gestion Convocatoria' }
   },
   {
     path: '/admin/convocatoria/:convocatoriaId/categoria/:categoriaId/gestionar',
     name: 'admin-categoria-gestion',
-    component: () => import('@/modules/admin/pages/AdminCategoriaGestionPage.vue'),
+    component: () => import('@/modules/categorias/pages/AdminCategoriaGestionPage.vue'),
     meta: { title: 'Admin - Gestion Categoria' }
   },
   {

@@ -125,7 +125,7 @@ export interface MaterialPrincipalPorTipo{
   enlace_acceso: string;
 }
 
-export interface MaterialPrincipalPorTipoResponse{
+export interface MaterialPrincipalResponse{
   success?: boolean;
   data: MaterialPrincipalPorTipo;
   message: string;

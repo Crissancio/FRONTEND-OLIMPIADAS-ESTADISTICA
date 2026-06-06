@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, AlertCircle, CheckCheck } from 'lucide-vue-next'
 
@@ -9,29 +9,62 @@ import ConvocatoriaTabConfiguracion from '../components/ConvocatoriaTabConfigura
 import ConvocatoriaTabCategorias from '@/modules/categorias/components/ConvocatoriaTabCategorias.vue'
 import ConvocatoriaTabMaterial from '@/modules/material/components/ConvocatoriaTabMaterial.vue'
 
-import { useConvocatoriasStore } from '@/modules/convocatorias/stores/convocatorias.store'
 import Button from '@/shared/components/ui/atoms/Button.vue'
+
+import { convocatoriasService } from '../services/convocatorias.service'
+import type { ConvocatoriaDTO } from '../types/convocatorias.api'
 
 const route = useRoute()
 const router = useRouter()
-const convocatoriasStore = useConvocatoriasStore()
 
 const activeTab = ref<'general' | 'categorias' | 'material' | 'configuracion'>('general')
-
-// Lectura correcta del ID definido en vue-router
 const convocatoriaId = Number(route.params.convocatoriaId)
 
+const convocatoria = ref<ConvocatoriaDTO | null>(null)
+const isLoading = ref(true)
+const isPublishing = ref(false)
+
+const categoriasTabRef = ref<any>(null)
+
+const handleOpenCreateCategoria = () => {
+  activeTab.value = 'categorias'
+  nextTick(() => {
+    if (categoriasTabRef.value) {
+      categoriasTabRef.value.openCreateCategoryModal()
+    }
+  })
+}
 onMounted(async () => {
-  if (convocatoriaId) {
-    await convocatoriasStore.fetchConvocatoriaById(convocatoriaId)
+  if (!convocatoriaId) {
+    isLoading.value = false
+    return
   }
+  await fetchConvocatoria()
 })
 
-const convocatoria = computed(() => convocatoriasStore.currentConvocatoria)
+async function fetchConvocatoria() {
+  isLoading.value = true
+  try {
+    const response = await convocatoriasService.obtenerConvocatoriaPorId(convocatoriaId)
+    convocatoria.value = response.data
+  } catch (error) {
+    console.error('Error al cargar la convocatoria:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
 
 async function executePublish() {
-  if (convocatoria.value) {
-    await convocatoriasStore.publishConvocatoria(convocatoria.value.id_convocatoria)
+  if (!convocatoria.value) return
+  
+  isPublishing.value = true
+  try {
+    const response = await convocatoriasService.publicarConvocatoria(convocatoria.value.id_convocatoria)
+    convocatoria.value = response.data
+  } catch (error) {
+    console.error('Error al publicar la convocatoria:', error)
+  } finally {
+    isPublishing.value = false
   }
 }
 
@@ -46,9 +79,9 @@ function statusClass(status: string) {
 </script>
 
 <template>
-  <div v-if="convocatoriasStore.loading && !convocatoria" class="py-20 text-center">
+  <div v-if="isLoading" class="py-20 text-center">
     <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-2"></div>
-    <p class="text-text-muted text-sm font-medium">Sincronizando información de la convocatoria...</p>
+    <p class="text-text-muted text-sm font-medium">Cargando información de la convocatoria...</p>
   </div>
 
   <div v-else-if="!convocatoria" class="py-20 text-center">
@@ -80,10 +113,12 @@ function statusClass(status: string) {
           v-if="convocatoria.estado === 'BORRADOR'" 
           variant="accent" 
           class="flex items-center gap-2 bg-accent text-white font-bold tracking-wider px-4 py-2 rounded-lg text-xs shadow-sm"
+          :disabled="isPublishing"
           @click="executePublish"
         >
-          <CheckCheck class="h-4 w-4" />
-          PUBLICAR CONVOCATORIA
+          <span v-if="isPublishing" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          <CheckCheck v-else class="h-4 w-4" />
+          {{ isPublishing ? 'PUBLICANDO...' : 'PUBLICAR CONVOCATORIA' }}
         </Button>
       </div>
     </header>
@@ -98,7 +133,9 @@ function statusClass(status: string) {
     </div>
 
     <div class="flex flex-col gap-5 lg:flex-row lg:items-start">
-      <ConvocatoriaDetailTabs v-model:activeTab="activeTab" />
+      <ConvocatoriaDetailTabs v-model:activeTab="activeTab" 
+        @openCreateCategoria="handleOpenCreateCategoria"  
+      />
 
       <main class="min-w-0 flex-1 space-y-6">
         <ConvocatoriaTabGeneral 
@@ -108,6 +145,7 @@ function statusClass(status: string) {
         
         <ConvocatoriaTabCategorias 
           v-if="activeTab === 'categorias'" 
+          ref="categoriasTabRef"
           :convocatoriaId="convocatoria.id_convocatoria" 
         />
         

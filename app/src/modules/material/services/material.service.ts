@@ -11,7 +11,7 @@ import type {
   MaterialUpdateDTO,
   TipoMaterialEnum,
   GeneralDictResponse,
-  MaterialPrincipalPorTipoResponse,
+  MaterialPrincipalResponse,
   TipoMaterialPrincipal
 } from '../types/material.api';
 
@@ -150,8 +150,14 @@ export const materialesService = {
   },
 
   conseguirMaterialPrincipalTipo(tipo: TipoMaterialPrincipal) {
-    return customInstance<MaterialPrincipalPorTipoResponse>({
+    return customInstance<MaterialPrincipalResponse>({
       url: `/api/v1/materiales/principal/${tipo}`,
+      method: 'GET'
+    })
+  },
+  materialPrincipalConvocatoria(idConvocatoria: number){
+    return customInstance<MaterialPrincipalResponse>({
+      url: `/api/v1/materiales/principal/convocatoria/${idConvocatoria}`,
       method: 'GET'
     })
   }

@@ -153,15 +153,15 @@ const handleSubmit = async () => {
     const payload: ConvocatoriaCreateDTO = {
       nombre_convocatoria: form.value.nombre.trim(),
       gestion: Number(form.value.gestion),
-      descripcion: form.value.descripcion.trim() || undefined,
-      inicio_olimpiadas: toDateInputValue(form.value.inicioOlimpiada),
-      fin_olimpiadas: toDateInputValue(form.value.finOlimpiada),
-      fecha_inicio_inscripcion: toDateTimeInputValue(form.value.inicioInscripcion),
-      fecha_fin_inscripcion: toDateTimeInputValue(form.value.finInscripcion),
-      monto_inscripcion: montoValue.value ?? undefined 
+      descripcion: form.value.descripcion.trim() || null,
+      inicio_olimpiadas: toDateInputValue(form.value.inicioOlimpiada) || null,
+      fin_olimpiadas: toDateInputValue(form.value.finOlimpiada) || null,
+      fecha_inicio_inscripcion: toDateTimeInputValue(form.value.inicioInscripcion) || null,
+      fecha_fin_inscripcion: toDateTimeInputValue(form.value.finInscripcion) || null,
+      monto_inscripcion: montoValue.value ?? 0
     }
 
-    console.log('Payload enviado al backend:', JSON.parse(JSON.stringify(payload)))
+    console.log('Payload enviado al backend:', payload)
 
     const created = await convocatoriasService.crearConvocatoria(payload)
     await convocatoriasStore.fetchConvocatorias({ page: 1 }, false)
