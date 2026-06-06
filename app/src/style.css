@@ -111,6 +111,25 @@
   /* General */
   --color-aviso-tipo-general: #4b5563;
   --color-aviso-tipo-general-soft: #f3f4f6;
+
+  /* BORRADOR */
+  --color-publicacion-borrador: #D97706;
+  --color-publicacion-borrador-soft: #FEF3C7;
+
+  /* OCULTA */
+  --color-publicacion-oculta: #4B5563;
+  --color-publicacion-oculta-soft: #E5E7EB;
+
+  /* PUBLICA */
+  --color-publicacion-publica: #16A34A;
+  --color-publicacion-publica-soft: #DCFCE7;
+
+  --color-danger: #DC2626;
+  --color-danger-hover: #B91C1C;
+  --color-danger-border: #FCA5A5;
+  --color-danger-soft: #FEE2E2;
+  --color-danger-text: #DC2626;
+  --color-danger-text-hover: #B91C1C;
 }
 
 @import "./styles/theme.css";

@@ -11,10 +11,10 @@ import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
 import CardTitle from '@/shared/components/ui/atoms/CardTitle.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 
-// Dependencia del componente MaterialCard (asegúrate de que existe en esa ruta)
-import MaterialCard from '@/modules/admin/components/MaterialCard.vue'
-// El nuevo modal que acabamos de crear
+// Importación de los componentes hijos
+import ConvocatoriaMaterialCard from './ConvocatoriaMaterialCard.vue'
 import ConvocatoriaMaterialModal from './ConvocatoriaMaterialModal.vue'
+import ConvocatoriaMaterialAdminModal from './ConvocatoriaMaterialAdminModal.vue'
 
 const props = defineProps<{ convocatoriaId: number }>()
 
@@ -22,8 +22,9 @@ const isLoading = ref(true)
 const materialesList = ref<MaterialDTO[]>([])
 const loadError = ref('')
 
-// Referencia al modal
+// Referencias a los modales
 const materialModalRef = ref<InstanceType<typeof ConvocatoriaMaterialModal> | null>(null)
+const adminModalRef = ref<InstanceType<typeof ConvocatoriaMaterialAdminModal> | null>(null)
 
 const fetchMateriales = async () => {
   isLoading.value = true
@@ -49,29 +50,10 @@ const openCreateModal = () => {
   }
 }
 
-// Lógica de Visibilidad
-async function toggleVisibility(material: MaterialDTO) {
-  try {
-    if (material.estado === 'PUBLICO') {
-      await materialesService.ocultarMaterial(material.id_material)
-    } else {
-      await materialesService.publicarMaterial(material.id_material)
-    }
-    await fetchMateriales() // Recargar lista para ver el cambio
-  } catch (err) {
-    console.error('Error al cambiar visibilidad:', err)
-  }
-}
-
-// Lógica de Borrado
-async function deleteResource(id: number) {
-  if (confirm('¿Desea remover este recurso multimedia permanentemente de la convocatoria?')) {
-    try {
-      await materialesService.eliminarMaterial(id)
-      await fetchMateriales() // Recargar lista
-    } catch (err) {
-      console.error('Error al eliminar material:', err)
-    }
+// Función que recibe el ID desde la tarjeta y abre el Modal de Administración
+const openAdminModal = (idMaterial: number) => {
+  if (adminModalRef.value) {
+    adminModalRef.value.openModal(idMaterial)
   }
 }
 </script>
@@ -117,21 +99,25 @@ async function deleteResource(id: number) {
           </Button>
         </div>
 
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <MaterialCard
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <ConvocatoriaMaterialCard
             v-for="mat in materialesList"
             :key="mat.id_material"
             :material="mat"
-            @delete="deleteResource(mat.id_material)"
-            @toggle-visibility="toggleVisibility(mat)"
+            @admin="openAdminModal" 
           />
-        </div>
+          </div>
       </CardContent>
     </Card>
 
     <ConvocatoriaMaterialModal 
       ref="materialModalRef" 
       :convocatoria-id="convocatoriaId"
+      @refresh="fetchMateriales"
+    />
+
+    <ConvocatoriaMaterialAdminModal 
+      ref="adminModalRef" 
       @refresh="fetchMateriales"
     />
   </div>

@@ -1,7 +1,7 @@
 import type { PaginationMeta } from '@/shared/types/api.types';
 
 export type TipoMaterialEnum = 
-  | 'VIDEO' | 'EXAMEN' | 'SOLUCIONARIO' | 'EJERCICIOS' | 'DOCUMENTO' 
+  | 'EXAMEN' | 'SOLUCIONARIO' | 'EJERCICIOS' | 'DOCUMENTO' 
   | 'AFICHE' | 'CONVOCATORIA' | 'REGLAMENTO' | 'DOCUMENTO_EXTERNO' 
   | 'ARCHIVO_EXTERNO' | 'PAGINA_EXTERNA' | 'VIDEO_EXTERNO' | 'OTRO';
 
