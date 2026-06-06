@@ -28,16 +28,22 @@
   --color-text-main: #1E293B;
   --color-text-muted: #64748B;
 
-  --color-estado-borrador: #475569;
-  --color-estado-borrador-soft: #E2E8F0;
-  --color-estado-finalizada: #334155;
-  --color-estado-finalizada-soft: #CBD5E1;
-  --color-estado-proxima: #008AA8;
-  --color-estado-proxima-soft: #E0F7FA;
-  --color-estado-activa: #3A8742;
-  --color-estado-activa-soft: #E8F5E9;
-  --color-estado-inscripcion: #D48806;
-  --color-estado-inscripcion-soft: #FFF8E1;
+  --color-estado-borrador: #64748B;
+  --color-estado-borrador-soft: #F1F5F9;
+  --color-estado-oculta: #6B7280;
+  --color-estado-oculta-soft: #F3F4F6;
+  --color-estado-cancelada: #DC2626;
+  --color-estado-cancelada-soft: #FEE2E2;
+  --color-estado-proxima: #0284C7;
+  --color-estado-proxima-soft: #E0F2FE;
+  --color-estado-inscripciones-proximas: #7C3AED;
+  --color-estado-inscripciones-proximas-soft: #EDE9FE;
+  --color-estado-inscripcion: #D97706;
+  --color-estado-inscripcion-soft: #FEF3C7;
+  --color-estado-en-curso: #16A34A;
+  --color-estado-en-curso-soft: #DCFCE7;
+  --color-estado-finalizada: #475569;
+  --color-estado-finalizada-soft: #E2E8F0;
 
   --color-aviso-comunicado:  #238520 ;
   --color-aviso-comunicado-soft: #E9F3E9;

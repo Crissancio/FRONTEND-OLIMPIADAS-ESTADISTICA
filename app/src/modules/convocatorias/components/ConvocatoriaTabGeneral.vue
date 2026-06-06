@@ -122,6 +122,19 @@ function formatTime(dateStr?: string | null) {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 }
+function statusClass(status: string) {
+  switch (status) {
+    case 'BORRADOR': return 'bg-estado-borrador text-white border-white/20'
+    case 'OCULTA': return 'bg-estado-oculta text-white border-white/20'
+    case 'CANCELADA': return 'bg-estado-cancelada text-white border-white/20'
+    case 'PROXIMA': return 'bg-estado-proxima text-white border-white/20'
+    case 'INSCRIPCIONES PROXIMAS': return 'bg-estado-inscripciones-proximas text-white border-white/20'
+    case 'INSCRIPCION EN CURSO': return 'bg-estado-inscripcion text-white border-white/20'
+    case 'EN CURSO': return 'bg-estado-en-curso text-white border-white/20'
+    case 'FINALIZADA': return 'bg-estado-finalizada text-white border-white/20'
+    default: return 'bg-white/20 text-white border-white/10'
+  }
+}
 </script>
 
 <template>
@@ -142,7 +155,11 @@ function formatTime(dateStr?: string | null) {
         <div class="flex flex-col lg:flex-row gap-8">
           
           <div class="w-full lg:w-[60%] flex flex-col">
-            
+            <div class="mt-1 flex items-center gap-2 text-6xl text-gray-200">
+              <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border', statusClass(convocatoria.estado)]">
+                {{ convocatoria.estado_temporal }}
+              </span>
+            </div>
             <div class="mb-5">
               <h2 class="text-[36px] font-heading font-bold text-text-main leading-[1.1]">
                 {{ convocatoria.nombre_convocatoria }}
