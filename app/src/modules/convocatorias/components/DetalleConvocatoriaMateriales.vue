@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookOpen, FileText, Video, Link as LinkIcon, File, Download } from 'lucide-vue-next'
+import { BookOpen, FileText, Video, Link as LinkIcon, File, ExternalLink } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 
@@ -40,12 +40,13 @@ defineProps<{
             </div>
             <div>
               <p class="font-semibold text-text-main group-hover:text-primary transition-colors line-clamp-1">{{ mat.nombre }}</p>
-              <p class="text-sm text-text-muted flex gap-2">
-                <span>{{ mat.tipo }}</span>
+              <p class="text-sm text-text-muted">{{ mat.descripcion }}</p>
+              <p class="text-sm text-text-muted flex gap-2 font-extrabold">
+                <span>{{ mat.tipo.toUpperCase() }}</span>
               </p>
             </div>
           </div>
-          <Download class="w-5 h-5 shrink-0 text-gray-300 group-hover:text-primary transition-colors" />
+          <ExternalLink class="w-5 h-5 shrink-0 text-gray-300 group-hover:text-primary transition-colors" />
         </a>
       </div>
     </CardContent>

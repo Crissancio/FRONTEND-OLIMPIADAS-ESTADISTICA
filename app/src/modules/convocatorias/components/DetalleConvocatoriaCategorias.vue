@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, defineAsyncComponent } from 'vue'
+import { ref, computed } from 'vue'
 import { Users, Calendar, Loader2 } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
@@ -73,7 +73,7 @@ const getPhaseComponent = (fase: any) => {
       </div>
     </div>
     
-    <CardContent class="p-6 sm:p-8 bg-white min-h-100 relative">
+    <CardContent class="p-6 sm:p- bg-white min-h-100 relative">
       <div class="flex items-center justify-between mb-8">
         <h3 class="text-xl font-heading font-bold text-text-main flex items-center gap-2">
           <Calendar class="w-5 h-5 text-text-muted" />
