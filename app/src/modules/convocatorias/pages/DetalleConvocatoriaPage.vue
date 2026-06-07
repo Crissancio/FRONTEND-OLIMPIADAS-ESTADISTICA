@@ -42,16 +42,30 @@ const mapMaterial = (mat: MaterialPublicoRelacionDTO, index: number) => ({
   tamano: '', // Backend no devuelve tamaño en este DTO
 })
 
-const mapFase = (fase: FasePublicaUnionDTO) => ({
-  id: String(fase.id_fase),
-  nombre: fase.nombre_fase,
-  descripcion: fase.descripcion ?? 'Sin descripción registrada.',
-  tipo: fase.tipo_fase === 'PRUEBA' ? 'Prueba' : 'Preparación',
-  subtipo: '',
-  fechas: fase.tipo_fase === 'PRUEBA' ? formatDate(fase.fecha_realizacion) : formatRange(fase.fecha_inicio, fase.fecha_fin),
-  modalidad: fase.modalidad ? fase.modalidad.charAt(0) + fase.modalidad.slice(1).toLowerCase() : 'Presencial',
-  materiales: (materialesByFase.value[String(fase.id_fase)] ?? []).map((m, i) => mapMaterial(m, i)),
-})
+// En DetalleConvocatoriaPage.vue
+
+const mapFase = (fase: FasePublicaUnionDTO) => {
+  // Extraemos de forma segura si es prueba final (por si TypeScript aún no lo tiene en el interface)
+  const esPruebaFinal = fase.tipo_fase === 'PRUEBA' && (fase as any).es_prueba_final === true;
+
+  return {
+    id: String(fase.id_fase),
+    nombre: fase.nombre_fase,
+    descripcion: fase.descripcion ?? 'Sin descripción registrada.',
+    tipo: fase.tipo_fase === 'PRUEBA' ? 'Prueba' : 'Preparación',
+    subtipo: '',
+    
+    es_prueba_final: esPruebaFinal, 
+    
+     resultados: (fase as any).resultados || [],
+
+    fechas: fase.tipo_fase === 'PRUEBA' 
+      ? formatDate(fase.fecha_realizacion) 
+      : formatRange((fase as any).fecha_inicio, (fase as any).fecha_fin),
+    modalidad: fase.modalidad ? fase.modalidad.charAt(0) + fase.modalidad.slice(1).toLowerCase() : 'Presencial',
+    materiales: (materialesByFase.value[String(fase.id_fase)] ?? []).map((m, i) => mapMaterial(m, i)),
+  }
+}
 
 const conv = computed(() => {
   if (!detalle.value) return null
