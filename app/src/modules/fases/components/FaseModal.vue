@@ -271,20 +271,6 @@ defineExpose({ openCreate, openEdit, close })
       </CardHeader>
 
       <CardContent class="space-y-5 pt-4">
-        
-        <transition name="slide">
-          <div v-if="errorMessage" class="flex items-start gap-3 rounded-xl border border-danger bg-danger-soft p-3 shadow-sm">
-            <AlertCircle class="h-4 w-4 text-danger shrink-0 mt-0.5 " />
-            <div class="flex-1 min-w-0">
-              <h4 class="text-[11px] font-bold uppercase tracking-wider text-danger">Error</h4>
-              <p class="text-xs font-medium whitespace-pre-wrap text-danger">{{ errorMessage }}</p>
-            </div>
-            <button @click="errorMessage = null" class="text-danger/60 hover:text-danger-hover transition-colors shrink-0">
-              <X class="h-3 w-3 text-danger" />
-            </button>
-          </div>
-        </transition>
-
         <div class="relative rounded-xl border border-gray-200 bg-gray-50 p-1 max-w-sm mx-auto">
           <div
             class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg shadow-sm transition-all duration-300 ease-out"
@@ -454,9 +440,22 @@ defineExpose({ openCreate, openEdit, close })
           <textarea
             v-model="form.descripcion"
             placeholder="Instrucciones, temarios o detalles adicionales..."
-            class="min-h-[80px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+            class="min-h-20 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
           />
         </div>
+        
+        <transition name="slide">
+          <div v-if="errorMessage" class="flex items-start gap-3 rounded-xl border border-danger bg-danger-soft p-3 shadow-sm">
+            <AlertCircle class="h-4 w-4 text-danger shrink-0 mt-0.5 " />
+            <div class="flex-1 min-w-0">
+              <h4 class="text-[11px] font-bold uppercase tracking-wider text-danger">Error</h4>
+              <p class="text-xs font-medium whitespace-pre-wrap text-danger">{{ errorMessage }}</p>
+            </div>
+            <button @click="errorMessage = null" class="text-danger/60 hover:text-danger-hover transition-colors shrink-0">
+              <X class="h-3 w-3 text-danger" />
+            </button>
+          </div>
+        </transition>
 
         <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
           <Button variant="outline" @click="close" :disabled="isSubmitting">Cancelar</Button>
