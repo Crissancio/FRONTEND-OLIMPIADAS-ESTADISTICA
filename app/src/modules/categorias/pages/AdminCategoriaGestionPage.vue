@@ -81,10 +81,6 @@ const goBack = () => {
   router.push(`/admin/convocatoria/${convocatoriaId}/gestionar?tab=${tab}`)
 }
 
-const onCategoriaUpdated = (data: CategoriaLocal) => {
-  categoria.value = { ...data }
-}
-
 const onCategoriaDeleted = () => {
   router.push(`/admin/convocatoria/${convocatoriaId}/gestionar?tab=categorias`)
 }
@@ -120,6 +116,7 @@ const onChildError = (msg: string) => {
       <main class="min-w-0 flex-1 space-y-6">
         <TabFasesCategoria
           v-if="activeTab === 'fases'"
+          :convocatoria-id="Number(convocatoriaId)"
           :categoria-id="numericCategoriaId"
           @error="onChildError"
         />
@@ -134,7 +131,6 @@ const onChildError = (msg: string) => {
           v-if="activeTab === 'configuracion'"
           :categoria-id="numericCategoriaId"
           :categoria="categoria"
-          @updated="onCategoriaUpdated"
           @deleted="onCategoriaDeleted"
           @error="onChildError"
         />
