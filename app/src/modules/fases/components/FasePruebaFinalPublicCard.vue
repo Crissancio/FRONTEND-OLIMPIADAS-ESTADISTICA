@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Calendar, Monitor, MapPin, ChevronDown, Download, Trophy, Table, ExternalLink, FileText, Video, Link as LinkIcon, File, GraduationCap} from 'lucide-vue-next'
+import { Calendar, Monitor, MapPin, ChevronDown,  Trophy, Table, ExternalLink, FileText, Video, Link as LinkIcon, File} from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
