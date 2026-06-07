@@ -50,9 +50,10 @@ onMounted(() => {
   fetchMaterialesPrincipales()
 })
 
-const openModal = (tipo: TipoMaterialPrincipal) => {
+// Ahora pasamos el material actual si es que existe para mostrarlo en el modal
+const openModal = (tipo: TipoMaterialPrincipal, materialActual?: MaterialPrincipalPorTipo | null) => {
   if (modalRef.value) {
-    modalRef.value.openModal(tipo)
+    modalRef.value.openModal(tipo, materialActual?.enlace_acceso, materialActual?.nombre_material)
   }
 }
 
@@ -101,13 +102,13 @@ const openAdminModal = (idMaterial: number) => {
               </div>
             </div>
             <Badge v-if="afiche" variant="success" >Cargado</Badge>
-            <Badge v-else variant="outline">Falta</Badge>
+            <Badge v-else variant="outline" >Falta</Badge>
           </div>
           <div class="mt-4 flex items-center gap-2 pt-2 border-t border-gray-100">
             <Button v-if="afiche" variant="outline" size="sm" class="flex-1 text-xs" @click="openAdminModal(afiche.id_material)">
               <Settings class="mr-1.5 h-3.5 w-3.5" /> Editar
             </Button>
-            <Button v-if="isEditingFiles" variant="accent" size="sm" class="flex-1 text-xs" @click="openModal('AFICHE')">
+            <Button v-if="isEditingFiles" variant="accent" size="sm" class="flex-1 text-xs" @click="openModal('AFICHE', afiche)">
               <Upload class="mr-1.5 h-3.5 w-3.5" /> {{ afiche ? 'Reemplazar' : 'Subir' }}
             </Button>
           </div>
@@ -138,7 +139,7 @@ const openAdminModal = (idMaterial: number) => {
             <Button v-if="reglamento" variant="outline" size="sm" class="flex-1 text-xs" @click="openAdminModal(reglamento.id_material)">
               <Settings class="mr-1.5 h-3.5 w-3.5" /> Editar
             </Button>
-            <Button v-if="isEditingFiles" variant="accent" size="sm" class="flex-1 text-xs" @click="openModal('REGLAMENTO')">
+            <Button v-if="isEditingFiles" variant="accent" size="sm" class="flex-1 text-xs" @click="openModal('REGLAMENTO', reglamento)">
               <Upload class="mr-1.5 h-3.5 w-3.5" /> {{ reglamento ? 'Reemplazar' : 'Subir' }}
             </Button>
           </div>
@@ -169,7 +170,7 @@ const openAdminModal = (idMaterial: number) => {
             <Button v-if="convocatoriaPdf" variant="outline" size="sm" class="flex-1 text-xs" @click="openAdminModal(convocatoriaPdf.id_material)">
               <Settings class="mr-1.5 h-3.5 w-3.5" /> Editar
             </Button>
-            <Button v-if="isEditingFiles" variant="accent" size="sm" class="flex-1 text-xs" @click="openModal('CONVOCATORIA')">
+            <Button v-if="isEditingFiles" variant="accent" size="sm" class="flex-1 text-xs" @click="openModal('CONVOCATORIA', convocatoriaPdf)">
               <Upload class="mr-1.5 h-3.5 w-3.5" /> {{ convocatoriaPdf ? 'Reemplazar' : 'Subir' }}
             </Button>
           </div>
@@ -182,6 +183,7 @@ const openAdminModal = (idMaterial: number) => {
       ref="modalRef" 
       :convocatoria-id="convocatoria.id_convocatoria" 
       :convocatoria-nombre="convocatoria.nombre_convocatoria"
+      :convocatoria-gestion="convocatoria.gestion"
       @refresh="fetchMaterialesPrincipales"
     />
 

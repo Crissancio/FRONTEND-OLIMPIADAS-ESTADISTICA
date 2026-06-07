@@ -12,7 +12,8 @@ const variantClasses = {
   secondary: 'bg-gray-100 text-text-main hover:bg-gray-200',
   outline: 'bg-transparent border border-gray-200 text-text-main hover:bg-gray-50',
   destructive: 'bg-red-500 text-white hover:bg-red-600',
-  success: 'bg-green-500 text-white hover:bg-green-600'
+  success: 'bg-green-500 text-white hover:bg-green-600',
+  not_allowed: 'border'
 }
 </script>
 

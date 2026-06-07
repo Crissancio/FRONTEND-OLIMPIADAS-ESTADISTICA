@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { X, Image as ImageIcon, FileText, Check, AlertCircle } from 'lucide-vue-next'
+import { X, Image as ImageIcon, FileText, Check, AlertCircle, Loader2 } from 'lucide-vue-next'
 import { materialesService } from '@/modules/material/services/material.service'
 import type { TipoMaterialPrincipal, TipoMaterialEnum } from '@/modules/material/types/material.api'
+
+// Importamos VuePdfEmbed
+import VuePdfEmbed from 'vue-pdf-embed'
 
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
@@ -12,7 +15,8 @@ import Button from '@/shared/components/ui/atoms/Button.vue'
 
 const props = defineProps<{ 
   convocatoriaId: number, 
-  convocatoriaNombre: string 
+  convocatoriaNombre: string,
+  convocatoriaGestion: number
 }>()
 const emit = defineEmits(['refresh'])
 
@@ -23,34 +27,44 @@ const errorMsg = ref('')
 const documentModalTab = ref<'nuevo' | 'existente'>('nuevo')
 const documentModifying = ref<TipoMaterialPrincipal | null>(null)
 
-// Campos del formulario para material nuevo
+// Campos del formulario para material nuevo y datos del archivo actual
 const formNombre = ref('')
 const formDescripcion = ref('')
 const attachedFile = ref<File | null>(null)
+
+const currentFileUrl = ref<string | null>(null)
 
 const selectedArchivoExistenteId = ref<number | null>(null)
 const materialesExistentes = ref<any[]>([])
 
 const previewUrl = computed(() => {
-  if (documentModalTab.value === 'nuevo' && attachedFile.value) {
-    return URL.createObjectURL(attachedFile.value)
+  if (documentModalTab.value === 'nuevo') {
+    if (attachedFile.value) return URL.createObjectURL(attachedFile.value)
+    if (currentFileUrl.value) return currentFileUrl.value // Mostramos el actual por defecto
   }
   if (documentModalTab.value === 'existente' && selectedArchivoExistenteId.value) {
     const file = materialesExistentes.value.find(m => m.id_material === selectedArchivoExistenteId.value)
     return file ? file.enlace_acceso : null
   }
-  return null
+  return currentFileUrl.value
 })
 
-const isPreviewImage = computed(() => {
-  if (documentModifying.value === 'AFICHE') return true
-  if (previewUrl.value) {
-    return previewUrl.value.match(/\.(jpeg|jpg|gif|png)$/i) != null || (attachedFile.value && attachedFile.value.type.startsWith('image/'))
-  }
-  return false
+// Clasificador de tipos de archivo
+const fileType = computed<'image' | 'pdf' | 'doc' | 'none'>(() => {
+  if (!previewUrl.value) return 'none'
+  const url = previewUrl.value.toLowerCase()
+  const mime = attachedFile.value?.type.toLowerCase() || ''
+  
+  if (url.match(/\.(jpeg|jpg|gif|png)$/i) || mime.startsWith('image/')) return 'image'
+  if (url.match(/\.pdf$/i) || mime === 'application/pdf') return 'pdf'
+  if (url.match(/\.(doc|docx)$/i) || mime.includes('word') || mime.includes('officedocument')) return 'doc'
+  
+  return 'none'
 })
 
-const openModal = async (tipo: TipoMaterialPrincipal) => {
+const isPreviewImage = computed(() => fileType.value === 'image')
+
+const openModal = async (tipo: TipoMaterialPrincipal, materialActualUrl?: string, materialActualNombre?: string) => {
   documentModifying.value = tipo
   attachedFile.value = null
   selectedArchivoExistenteId.value = null
@@ -58,8 +72,10 @@ const openModal = async (tipo: TipoMaterialPrincipal) => {
   errorMsg.value = ''
   materialesExistentes.value = []
   
-  // Autocompletamos con un nombre por defecto amigable, pero que se pueda editar
-  formNombre.value = `${tipo} - ${props.convocatoriaNombre}`.substring(0, 100)
+  currentFileUrl.value = materialActualUrl || null
+  
+  // Si hay un material actual, usamos su nombre, si no, uno sugerido.
+  formNombre.value = materialActualNombre ? materialActualNombre : `${tipo}_${props.convocatoriaGestion}`.substring(0, 100)
   formDescripcion.value = ''
   
   isOpen.value = true
@@ -70,10 +86,8 @@ const loadMaterialesExistentes = async () => {
   isLoading.value = true
   errorMsg.value = ''
   try {
-    // Usamos el servicio tipado 
     const res = await materialesService.conseguirMaterialPrincipalTipo(documentModifying.value)
     const data = res.data
-    // Prevenimos fallos asegurando un array compatible
     materialesExistentes.value = Array.isArray(data) ? data : ((data as any).items || Object.values(data) || [])
   } catch (err: any) {
     extractError(err, 'No se pudieron cargar los materiales existentes.')
@@ -95,7 +109,6 @@ const handleFileUpload = (event: Event) => {
   if (target.files && target.files.length > 0) attachedFile.value = target.files[0]
 }
 
-// === EXTRACCIÓN ROBUSTA DE ERRORES ===
 const extractError = (err: any, fallbackMsg: string) => {
   console.error('Error detallado de API:', err.response?.data || err)
   const responseData = err.response?.data || err.data
@@ -124,22 +137,22 @@ const saveArchivosRequeridos = async () => {
 
   try {
     if (documentModalTab.value === 'nuevo') {
-      if (!attachedFile.value) throw new Error('Debe seleccionar un archivo válido.')
+      if (!attachedFile.value && !currentFileUrl.value) throw new Error('Debe seleccionar un archivo válido.')
       if (!formNombre.value.trim()) throw new Error('El nombre del material es obligatorio.')
       
-      // Llamada al método de Creación de Archivo Principal
-      await materialesService.crearMaterialPrincipal({
-        id_convocatoria: props.convocatoriaId,
-        tipo_material: documentModifying.value as TipoMaterialEnum,
-        nombre_material: formNombre.value.trim(),
-        descripcion: formDescripcion.value.trim() || undefined,
-        file: attachedFile.value
-      })
+      if (attachedFile.value) {
+        await materialesService.crearMaterialPrincipal({
+          id_convocatoria: props.convocatoriaId,
+          tipo_material: documentModifying.value as TipoMaterialEnum,
+          nombre_material: formNombre.value.trim(),
+          descripcion: formDescripcion.value.trim() || undefined,
+          file: attachedFile.value
+        })
+      }
 
     } else {
       if (!selectedArchivoExistenteId.value) throw new Error('Debe seleccionar un archivo de la lista.')
       
-      // Llamada al nuevo método Ligar usando el DTO
       await materialesService.ligarMaterialPrincipalConvocatoria({
         id_material: selectedArchivoExistenteId.value,
         id_convocatoria: props.convocatoriaId,
@@ -172,28 +185,45 @@ defineExpose({ openModal })
         </CardTitle>
       </CardHeader>
       
-      <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-100">
+      <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-112.5 relative">
         
+        <div v-if="isLoading" class="absolute inset-0 z-50 bg-white/70 backdrop-blur-[2px] flex flex-col items-center justify-center rounded-b-xl">
+          <Loader2 class="h-10 w-10 text-primary animate-spin mb-3" />
+          <p class="text-sm font-bold text-primary tracking-wide">Procesando y Guardando...</p>
+        </div>
+
         <div class="shrink-0 bg-gray-50 border-b sm:border-b-0 sm:border-r border-gray-200 flex flex-col p-4 items-center justify-center">
           <p class="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-3 w-full text-center">Vista Previa</p>
           
-          <div class="w-32 h-44 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex items-center justify-center relative shrink-0">
+          <div class="w-56 h-72 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex items-center justify-center relative shrink-0">
             <template v-if="previewUrl">
-              <img v-if="isPreviewImage" :src="previewUrl" class="w-full h-full object-cover" />
-              <iframe v-else :src="previewUrl" class="w-full h-full border-none"></iframe>
-              <div class="absolute inset-0 bg-black/5 pointer-events-none"></div>
+              
+              <img v-if="fileType === 'image'" :src="previewUrl" class="w-full h-full object-cover" />
+              
+              <div v-else-if="fileType === 'pdf'" class="w-full h-full overflow-hidden flex items-center justify-center bg-gray-100">
+                <VuePdfEmbed :source="previewUrl" :page="1" class="w-full h-full object-contain" />
+              </div>
+
+              <div v-else-if="fileType === 'doc'" class="flex flex-col items-center justify-center p-4 text-center h-full w-full bg-blue-50/30">
+                <div class="h-14 w-14 rounded-full bg-blue-100 flex items-center justify-center mb-3">
+                  <FileText class="h-7 w-7 text-blue-600" />
+                </div>
+                <p class="text-xs font-bold text-blue-900 mb-1">Documento Word</p>
+                <p class="text-[10px] text-gray-500 leading-tight">La previsualización visual no está disponible para DOCX.</p>
+              </div>
+
             </template>
             <template v-else>
               <div class="text-center p-4">
-                <ImageIcon v-if="documentModifying === 'AFICHE'" class="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                <FileText v-else class="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                <p class="text-[10px] text-gray-400 font-medium leading-tight">Sin selección</p>
+                <ImageIcon v-if="documentModifying === 'AFICHE'" class="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                <FileText v-else class="h-10 w-10 text-gray-300 mx-auto mb-2" />
+                <p class="text-[11px] text-gray-400 font-medium leading-tight">Sin selección</p>
               </div>
             </template>
           </div>
         </div>
 
-        <div class="flex-1 flex flex-col overflow-hidden w-full">
+        <div class="flex-1 flex flex-col overflow-hidden w-full relative">
           <div class="flex border-b border-gray-200 text-xs sm:text-sm shrink-0">
             <button 
               type="button" 
@@ -218,18 +248,17 @@ defineExpose({ openModal })
             <transition name="fade-slide">
               <div v-if="errorMsg" class="flex items-start gap-3 rounded-xl border border-error/30 bg-error/10 p-3 shadow-sm shrink-0">
                 <AlertCircle class="h-4 w-4 text-error shrink-0 mt-0.5" />
-                <div class="flex-1">
+                <div class="flex-1 min-w-0">
                   <h4 class="text-[11px] font-bold text-error uppercase tracking-wider">Error</h4>
                   <p class="text-xs text-error/90 font-medium wrap-break-word whitespace-pre-wrap">{{ errorMsg }}</p>
                 </div>
-                <button @click="errorMsg = ''" class="text-error/60 hover:text-error transition-colors">
+                <button @click="errorMsg = ''" class="text-error/60 hover:text-error transition-colors shrink-0">
                   <X class="h-3 w-3" />
                 </button>
               </div>
             </transition>
 
             <div v-if="documentModalTab === 'nuevo'" class="flex-1 flex flex-col space-y-4">
-              
               <div>
                 <label class="block text-xs font-bold text-text-main mb-1.5">Nombre del Material <span class="text-error">*</span></label>
                 <input 
@@ -263,19 +292,14 @@ defineExpose({ openModal })
                   Formatos aceptados: <strong class="text-text-main">PDF, DOC, DOCX, JPG, PNG</strong>.
                 </p>
               </div>
-
             </div>
 
             <div v-else class="flex-1 flex flex-col h-full">
               <label class="block text-xs font-bold text-text-main uppercase tracking-wider mb-3">
                 Materiales en Repositorio ({{ documentModifying }})
               </label>
-              
-              <div v-if="isLoading && materialesExistentes.length === 0" class="flex-1 flex items-center justify-center">
-                <span class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
-              </div>
 
-              <div v-else-if="materialesExistentes.length === 0" class="flex-1 flex flex-col items-center justify-center text-center py-6 border border-dashed border-gray-200 rounded-xl bg-gray-50">
+              <div v-if="materialesExistentes.length === 0 && !isLoading" class="flex-1 flex flex-col items-center justify-center text-center py-6 border border-dashed border-gray-200 rounded-xl bg-gray-50">
                 <FileText class="h-8 w-8 text-gray-300 mb-2" />
                 <p class="text-xs text-text-muted font-medium">No se encontraron materiales previos de este tipo.</p>
               </div>
@@ -289,18 +313,18 @@ defineExpose({ openModal })
                   :class="selectedArchivoExistenteId === file.id_material ? 'border-primary bg-primary/5 shadow-sm' : 'border-gray-200 hover:border-gray-300'"
                 >
                   <div class="flex items-center gap-3 min-w-0">
-                    <div class="rounded-lg p-2" :class="selectedArchivoExistenteId === file.id_material ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-text-muted'">
+                    <div class="rounded-lg p-2 shrink-0" :class="selectedArchivoExistenteId === file.id_material ? 'bg-primary/20 text-primary' : 'bg-gray-100 text-text-muted'">
                       <ImageIcon v-if="documentModifying === 'AFICHE'" class="h-4 w-4" />
                       <FileText v-else class="h-4 w-4" />
                     </div>
-                    <div>
-                      <p class="text-xs font-bold text-text-main truncate max-w-55" :title="file.nombre_material">
+                    <div class="min-w-0 flex-1">
+                      <p class="text-xs font-bold text-text-main truncate" :title="file.nombre_material">
                         {{ file.nombre_material }}
                       </p>
                     </div>
                   </div>
                   
-                  <div v-if="selectedArchivoExistenteId === file.id_material" class="h-5 w-5 rounded-full bg-primary flex items-center justify-center animate-scale-up shrink-0">
+                  <div v-if="selectedArchivoExistenteId === file.id_material" class="h-5 w-5 rounded-full bg-primary flex items-center justify-center animate-scale-up shrink-0 ml-2">
                     <Check class="h-3 w-3 text-white stroke-[3px]" />
                   </div>
                 </div>
@@ -314,9 +338,9 @@ defineExpose({ openModal })
             <Button 
               variant="accent" 
               @click="saveArchivosRequeridos" 
-              :disabled="isLoading || (documentModalTab === 'nuevo' && (!attachedFile || !formNombre)) || (documentModalTab === 'existente' && !selectedArchivoExistenteId)"
+              :disabled="isLoading || (documentModalTab === 'nuevo' && !attachedFile && !currentFileUrl) || (documentModalTab === 'existente' && !selectedArchivoExistenteId)"
             >
-              <span v-if="isLoading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>
+              <Loader2 v-if="isLoading" class="h-4 w-4 animate-spin mr-2" />
               {{ isLoading ? 'Procesando...' : 'Confirmar Archivo' }}
             </Button>
           </div>
