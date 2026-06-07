@@ -92,7 +92,7 @@ onUnmounted(() => observer?.disconnect())
             <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Convocatoria</label>
             <select 
               v-model="convFilter"
-              class="w-full bg-gray-50 border-gray-200 text-text-main rounded-xl px-4 py-3 focus-visible:ring-primary font-medium h-[50px]"
+              class="w-full bg-gray-50 border-gray-200 text-text-main rounded-xl px-4 py-3 focus-visible:ring-primary font-medium h-12.5"
             >
               <option v-for="conv in convocatoriaOptions" :key="conv.id" :value="conv.id">
                 {{ conv.label }}
@@ -103,7 +103,7 @@ onUnmounted(() => observer?.disconnect())
             <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Categoría</label>
             <select 
               v-model="categoriaFilter"
-              class="w-full bg-gray-50 border-gray-200 text-text-main rounded-xl px-4 py-3 focus-visible:ring-primary font-medium h-[50px]"
+              class="w-full bg-gray-50 border-gray-200 text-text-main rounded-xl px-4 py-3 focus-visible:ring-primary font-medium h-12.5"
             >
               <option value="secundaria">Nivel Secundaria</option>
               <option value="universitario">Nivel Universitario</option>
@@ -133,7 +133,7 @@ onUnmounted(() => observer?.disconnect())
             <Star class="w-6 h-6 text-warning fill-amber-500" />
           </h2>
           
-          <div class="flex flex-col md:flex-row justify-center items-end gap-6 h-[400px] md:h-[350px] max-w-4xl mx-auto px-4">
+          <div class="flex flex-col md:flex-row justify-center items-end gap-6 h-100 md:h-87.5 max-w-4xl mx-auto px-4">
             <!-- 2nd Place -->
             <template v-if="top3[1]">
               <div class="w-full md:w-1/3 flex flex-col items-center order-2 md:order-1 h-[80%]">
@@ -142,7 +142,7 @@ onUnmounted(() => observer?.disconnect())
                   <h3 class="font-bold text-text-main mt-4 leading-tight">{{ top3[1].nombres }} {{ top3[1].paterno }}</h3>
                   <p class="text-sm text-text-muted mt-1 font-medium">{{ top3[1].nota }}</p>
                 </div>
-                <div class="w-full bg-gradient-to-t from-slate-300 to-slate-200 flex-grow rounded-t-lg border-t-4 border-slate-400 opacity-90 shadow-inner flex items-center justify-center">
+                <div class="w-full bg-linear-to-t from-slate-300 to-slate-200 grow rounded-t-lg border-t-4 border-slate-400 opacity-90 shadow-inner flex items-center justify-center">
                   <Medal class="w-12 h-12 text-text-muted/50" />
                 </div>
               </div>
@@ -156,7 +156,7 @@ onUnmounted(() => observer?.disconnect())
                   <h3 class="font-bold text-text-main mt-6 text-lg leading-tight">{{ top3[0].nombres }} {{ top3[0].paterno }}</h3>
                   <p class="text-sm font-bold text-warning mt-1 bg-warning/10 inline-block px-2 py-1 rounded">{{ top3[0].nota }}</p>
                 </div>
-                <div class="w-full bg-gradient-to-t from-amber-400 to-amber-300 flex-grow rounded-t-lg border-t-4 border-amber-500 opacity-90 shadow-inner flex items-center justify-center">
+                <div class="w-full bg-linear-to-t from-amber-400 to-amber-300 grow rounded-t-lg border-t-4 border-amber-500 opacity-90 shadow-inner flex items-center justify-center">
                   <Trophy class="w-16 h-16 text-warning/50" />
                 </div>
               </div>
@@ -170,7 +170,7 @@ onUnmounted(() => observer?.disconnect())
                   <h3 class="font-bold text-text-main mt-4 leading-tight">{{ top3[2].nombres }} {{ top3[2].paterno }}</h3>
                   <p class="text-sm text-text-muted mt-1 font-medium">{{ top3[2].nota }}</p>
                 </div>
-                <div class="w-full bg-gradient-to-t from-amber-800/20 to-amber-700/20 flex-grow rounded-t-lg border-t-4 border-amber-700/40 opacity-90 shadow-inner flex items-center justify-center">
+                <div class="w-full bg-linear-to-t from-amber-800/20 to-amber-700/20 grow rounded-t-lg border-t-4 border-amber-700/40 opacity-90 shadow-inner flex items-center justify-center">
                   <Award class="w-10 h-10 text-amber-800/30" />
                 </div>
               </div>
