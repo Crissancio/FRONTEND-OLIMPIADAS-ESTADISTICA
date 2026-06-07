@@ -11,7 +11,6 @@ import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
 import CardTitle from '@/shared/components/ui/atoms/CardTitle.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 
-// Importación de los componentes hijos
 import ConvocatoriaMaterialCard from './ConvocatoriaMaterialCard.vue'
 import ConvocatoriaMaterialModal from './ConvocatoriaMaterialModal.vue'
 import ConvocatoriaMaterialAdminModal from './ConvocatoriaMaterialAdminModal.vue'
@@ -22,7 +21,6 @@ const isLoading = ref(true)
 const materialesList = ref<MaterialDTO[]>([])
 const loadError = ref('')
 
-// Referencias a los modales
 const materialModalRef = ref<InstanceType<typeof ConvocatoriaMaterialModal> | null>(null)
 const adminModalRef = ref<InstanceType<typeof ConvocatoriaMaterialAdminModal> | null>(null)
 
@@ -50,7 +48,6 @@ const openCreateModal = () => {
   }
 }
 
-// Función que recibe el ID desde la tarjeta y abre el Modal de Administración
 const openAdminModal = (idMaterial: number) => {
   if (adminModalRef.value) {
     adminModalRef.value.openModal(idMaterial)
@@ -116,7 +113,8 @@ const openAdminModal = (idMaterial: number) => {
       @refresh="fetchMateriales"
     />
 
-    <ConvocatoriaMaterialAdminModal 
+    <ConvocatoriaMaterialAdminModal
+      :convocatoria-id="convocatoriaId"
       ref="adminModalRef" 
       @refresh="fetchMateriales"
     />

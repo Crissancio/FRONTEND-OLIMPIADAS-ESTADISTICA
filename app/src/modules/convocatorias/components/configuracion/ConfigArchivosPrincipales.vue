@@ -187,7 +187,8 @@ const openAdminModal = (idMaterial: number) => {
       @refresh="fetchMaterialesPrincipales"
     />
 
-    <ConvocatoriaMaterialAdminModal 
+    <ConvocatoriaMaterialAdminModal
+      :convocatoria-id="convocatoria.id_convocatoria" 
       ref="adminModalRef" 
       @refresh="fetchMaterialesPrincipales"
     />

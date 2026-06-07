@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { X, Edit3, Save, Ban, Eye, EyeOff, Calendar as CalendarIcon, Link as LinkIcon, FileText, Trash2 } from 'lucide-vue-next'
+import { X, Edit3, Save, Ban, Eye, EyeOff, Calendar as CalendarIcon, Link as LinkIcon, FileText, Trash2, Unlink } from 'lucide-vue-next'
 import { DatePicker as VDatePicker } from 'v-calendar'
 import 'v-calendar/style.css'
 
@@ -13,6 +13,10 @@ import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
 import CardTitle from '@/shared/components/ui/atoms/CardTitle.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 
+const props = defineProps<{
+  convocatoriaId: number
+}>()
+
 const emit = defineEmits(['refresh'])
 
 const isOpen = ref(false)
@@ -21,6 +25,8 @@ const isEditing = ref(false)
 const isSubmitting = ref(false)
 const isTogglingStatus = ref(false)
 const isDeleting = ref(false)
+const isUnlinking = ref(false)
+const showUnlinkConfirm = ref(false)
 const localError = ref('')
 
 const material = ref<MaterialDetalleDTO | null>(null)
@@ -81,10 +87,36 @@ const isFormValid = computed(() => {
   return true
 })
 
+const extractError = (err: any, fallbackMsg: string) => {
+  console.log('Error recibido:', err)
+
+  const responseData =
+    err?.response?.data ??
+    err?.data ??
+    err?.details ??
+    null
+
+  if (responseData) {
+    localError.value =
+      responseData.error ||
+      responseData.message ||
+      responseData.detail ||
+      fallbackMsg
+
+    return
+  }
+
+  localError.value =
+    err?.message && !err.message.includes('status code')
+      ? err.message
+      : fallbackMsg
+}
+
 const openModal = async (idMaterial: number) => {
   isOpen.value = true
   isLoading.value = true
   isEditing.value = false
+  showUnlinkConfirm.value = false
   localError.value = ''
   
   try {
@@ -92,7 +124,7 @@ const openModal = async (idMaterial: number) => {
     material.value = res.data
     populateForm()
   } catch (err: any) {
-    handleError(err)
+    extractError(err, 'Error al obtener la información del material.')
   } finally {
     isLoading.value = false
   }
@@ -116,6 +148,7 @@ const populateForm = () => {
 const closeModal = () => {
   isOpen.value = false
   material.value = null
+  showUnlinkConfirm.value = false
 }
 
 const toggleEdit = () => {
@@ -124,22 +157,6 @@ const toggleEdit = () => {
     localError.value = ''
   }
   isEditing.value = !isEditing.value
-}
-
-const handleError = (err: any) => {
-  const responseData = err.response?.data
-  if (responseData) {
-    if (typeof responseData === 'string') {
-      localError.value = responseData
-    } else {
-      localError.value = responseData.error 
-        || responseData.message 
-        || (Array.isArray(responseData.detail) ? 'Verifique que los datos sean correctos.' : responseData.detail)
-        || JSON.stringify(responseData)
-    }
-  } else {
-    localError.value = err.message || 'Error de conexión.'
-  }
 }
 
 const saveChanges = async () => {
@@ -169,7 +186,7 @@ const saveChanges = async () => {
     isEditing.value = false
     emit('refresh')
   } catch (err: any) {
-    handleError(err)
+    extractError(err, 'Error al guardar los cambios del material.')
   } finally {
     isSubmitting.value = false
   }
@@ -191,9 +208,31 @@ const toggleStatus = async () => {
     }
     emit('refresh')
   } catch (err: any) {
-    handleError(err)
+    extractError(err, 'Error al cambiar el estado del material.')
   } finally {
     isTogglingStatus.value = false
+  }
+}
+
+const requestUnlink = () => {
+  showUnlinkConfirm.value = true
+}
+
+const confirmUnlink = async () => {
+  if (!material.value || !props.convocatoriaId) return
+  
+  isUnlinking.value = true
+  localError.value = ''
+  
+  try {
+    await materialesService.desligarConvocatoria(material.value.id_material, props.convocatoriaId)
+    emit('refresh')
+    closeModal()
+  } catch (err: any) {
+    extractError(err, 'Error al desligar el material.')
+    showUnlinkConfirm.value = false
+  } finally {
+    isUnlinking.value = false
   }
 }
 
@@ -214,7 +253,7 @@ const deleteMaterial = async () => {
     emit('refresh')
     closeModal()
   } catch (err: any) {
-    handleError(err)
+    extractError(err, 'Error al eliminar el material.')
   } finally {
     isDeleting.value = false
   }
@@ -224,8 +263,28 @@ defineExpose({ openModal })
 </script>
 
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-100 flex items-center justify-center bg-black/50 p-4">
-    <Card class="w-full max-w-lg border-gray-200 bg-white shadow-xl">
+  <div v-if="isOpen" class="fixed inset-0 z-100 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <Card class="w-full max-w-lg border-gray-200 bg-white shadow-xl relative overflow-hidden">
+      
+      <div v-if="showUnlinkConfirm" class="absolute inset-0 z-50 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center">
+        <div class="h-16 w-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-4 shadow-sm">
+          <Unlink class="h-8 w-8" />
+        </div>
+        <h3 class="text-xl font-bold text-text-main mb-2">¿Desligar material?</h3>
+        <p class="text-sm text-text-muted mb-8 max-w-70">
+          Este material se quitará de la convocatoria actual, pero <strong>no será eliminado</strong> del repositorio general. Podrás volver a utilizarlo.
+        </p>
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <Button variant="outline" @click="showUnlinkConfirm = false" :disabled="isUnlinking" class="flex-1 w-full sm:w-32">
+            Cancelar
+          </Button>
+          <Button variant="accent" @click="confirmUnlink" :disabled="isUnlinking" class="flex-1 w-full sm:w-32 bg-orange-500 hover:bg-orange-600 text-white border-transparent">
+            <span v-if="isUnlinking" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></span>
+            Confirmar
+          </Button>
+        </div>
+      </div>
+
       <CardHeader class="border-b border-gray-100 pb-4">
         <CardTitle class="flex items-center justify-between text-base font-bold text-text-main">
           <div class="flex items-center gap-2">
@@ -312,31 +371,30 @@ defineExpose({ openModal })
           </div>
 
           <div class="flex justify-between items-center pt-4 border-t border-gray-100">
-            <div v-if="!isEditing" class="flex gap-2">
-              <Button variant="outline" @click="toggleStatus" :disabled="isTogglingStatus || isDeleting" :class="isPublic ? 'text-warning hover:bg-warning/10 hover:text-warning border-gray-200' : 'text-success hover:bg-success/10 hover:text-success border-gray-200'">
-                <span v-if="isTogglingStatus" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></span>
-                <component v-else :is="isPublic ? EyeOff : Eye" class="h-4 w-4 mr-2" />
-                {{ isPublic ? 'Ocultar Material' : 'Publicar Material' }}
-              </Button>
-              
-              <Button
-                variant="outline"
-                @click="deleteMaterial"
-                :disabled="isDeleting || isTogglingStatus"
-                class="
-                  text-red-600
-                  border-red-300
-                  hover:bg-red-50
-                  hover:border-red-500
-                  hover:text-red-700
-                  transition-colors
-                "
-              >
-                <span v-if="isDeleting" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></span>
-                <Trash2 v-else class="h-4 w-4 mr-2" />
-                Eliminar Material
-              </Button>
+            <div v-if="!isEditing" class="flex gap-2 flex-wrap">
+              <template v-if="categoryType !== 'PRINCIPAL'">
+                <Button variant="outline" @click="toggleStatus" :disabled="isTogglingStatus || isDeleting || isUnlinking" :class="isPublic ? 'text-warning hover:bg-warning/10 hover:text-warning border-gray-200' : 'text-success hover:bg-success/10 hover:text-success border-gray-200'">
+                  <span v-if="isTogglingStatus" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></span>
+                  <component v-else :is="isPublic ? EyeOff : Eye" class="h-4 w-4 mr-2" />
+                  {{ isPublic ? 'Ocultar' : 'Publicar' }}
+                </Button>
+                
+                <Button variant="outline" @click="requestUnlink" :disabled="isDeleting || isTogglingStatus || isUnlinking" class="text-orange-600 border-gray-200 hover:bg-orange-50 hover:border-orange-400 hover:text-orange-700 transition-colors">
+                  <Unlink class="h-4 w-4 mr-2" /> Desligar
+                </Button>
+
+                <Button variant="outline" @click="deleteMaterial" :disabled="isDeleting || isTogglingStatus || isUnlinking" class="text-red-600 border-gray-200 hover:bg-red-50 hover:border-red-500 hover:text-red-700 transition-colors">
+                  <span v-if="isDeleting" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></span>
+                  <Trash2 v-else class="h-4 w-4 mr-2" /> Eliminar
+                </Button>
+              </template>
+              <template v-else>
+                <div class="text-xs text-text-muted italic py-1 px-1">
+                  * Acciones restringidas para los materiales de tipo principal.
+                </div>
+              </template>
             </div>
+
             <div v-if="isEditing" class="flex gap-2 w-full justify-end">
               <Button variant="outline" @click="toggleEdit" :disabled="isSubmitting">
                 <Ban class="h-4 w-4 mr-1.5" /> Cancelar

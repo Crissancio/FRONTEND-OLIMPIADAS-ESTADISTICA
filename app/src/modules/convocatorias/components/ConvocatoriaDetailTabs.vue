@@ -31,14 +31,13 @@ onUnmounted(() => {
 })
 
 const handleTabClick = (tabKey: string) => {
-  // Se eliminó el bloqueo. Ahora la pestaña funciona de forma normal en todos los dispositivos.
   emit('update:activeTab', tabKey)
 }
 </script>
 
 <template>
   <aside 
-    class="group flex shrink-0 flex-row lg:flex-col gap-2 rounded-xl border border-gray-200 bg-white p-2.5 shadow-soft transition-all duration-300 ease-in-out w-full lg:w-[68px] lg:hover:w-64 lg:hover:scale-[1.02] lg:hover:shadow-lg overflow-x-auto lg:overflow-visible z-10 h-fit origin-top-left"
+    class="group flex shrink-0 flex-row lg:flex-col gap-2 rounded-xl border border-gray-200 bg-white p-2.5 shadow-soft transition-all duration-300 ease-in-out w-full lg:w-17 lg:hover:w-64 lg:hover:scale-[1.02] lg:hover:shadow-lg overflow-x-auto lg:overflow-visible z-10 h-fit origin-top-left"
   >
     <div v-for="tab in tabItems" :key="tab.key" class="relative group/tab flex-1 lg:flex-none">
       <button
@@ -49,7 +48,7 @@ const handleTabClick = (tabKey: string) => {
             ? 'h-11 gap-3 rounded-lg px-3 text-left text-sm whitespace-nowrap' 
             : 'flex-col justify-center gap-1.5 py-2 px-1 rounded-lg text-[10px] sm:text-xs text-center',
           activeTab === tab.key
-            ? 'bg-primary text-white font-bold shadow-md' // Nuevo estilo de tab activo
+            ? 'bg-primary text-white font-bold shadow-md'
             : 'text-text-muted hover:bg-gray-50 hover:text-text-main font-medium'
         ]"
         :title="tab.label"
@@ -73,7 +72,7 @@ const handleTabClick = (tabKey: string) => {
 
       <div 
         v-if="isDesktop && tab.key === 'categorias'"
-        class="overflow-hidden transition-all duration-500 max-h-0 group-hover/tab:max-h-[100px] opacity-0 group-hover/tab:opacity-100 pl-10 pr-2 flex flex-col gap-1 mt-1"
+        class="overflow-hidden transition-all duration-500 max-h-0 group-hover/tab:max-h-25 opacity-0 group-hover/tab:opacity-100 pl-10 pr-2 flex flex-col gap-1 mt-1"
       >
         <button
           @click.stop="emit('openCreateCategoria')"
