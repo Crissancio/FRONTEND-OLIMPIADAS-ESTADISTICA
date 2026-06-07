@@ -49,7 +49,6 @@ const previewUrl = computed(() => {
   return currentFileUrl.value
 })
 
-// Clasificador de tipos de archivo
 const fileType = computed<'image' | 'pdf' | 'doc' | 'none'>(() => {
   if (!previewUrl.value) return 'none'
   const url = previewUrl.value.toLowerCase()
@@ -110,23 +109,28 @@ const handleFileUpload = (event: Event) => {
 }
 
 const extractError = (err: any, fallbackMsg: string) => {
-  console.error('Error detallado de API:', err.response?.data || err)
-  const responseData = err.response?.data || err.data
-  
+  console.log('Error recibido:', err)
+
+  const responseData =
+    err?.response?.data ??
+    err?.data ??
+    err?.details ??
+    null
+
   if (responseData) {
-    if (typeof responseData === 'string') {
-      errorMsg.value = responseData
-    } else {
-      errorMsg.value = responseData.error 
-        || responseData.message 
-        || (Array.isArray(responseData.detail) ? JSON.stringify(responseData.detail) : responseData.detail)
-        || JSON.stringify(responseData)
-    }
-  } else {
-    errorMsg.value = err.message && !err.message.includes('status code') 
-      ? err.message 
-      : fallbackMsg
+    errorMsg.value =
+      responseData.error ||
+      responseData.message ||
+      responseData.detail ||
+      fallbackMsg
+
+    return
   }
+
+  errorMsg.value =
+    err?.message && !err.message.includes('status code')
+      ? err.message
+      : fallbackMsg
 }
 
 const saveArchivosRequeridos = async () => {
@@ -246,13 +250,13 @@ defineExpose({ openModal })
           <CardContent class="pt-5 flex-1 overflow-y-auto custom-scrollbar flex flex-col space-y-4">
             
             <transition name="fade-slide">
-              <div v-if="errorMsg" class="flex items-start gap-3 rounded-xl border border-error/30 bg-error/10 p-3 shadow-sm shrink-0">
-                <AlertCircle class="h-4 w-4 text-error shrink-0 mt-0.5" />
+              <div v-if="errorMsg" class="flex items-start gap-3 rounded-xl border border-danger/30 bg-danger/10 p-3 shadow-sm shrink-0">
+                <AlertCircle class="h-4 w-4 text-danger shrink-0 mt-0.5" />
                 <div class="flex-1 min-w-0">
-                  <h4 class="text-[11px] font-bold text-error uppercase tracking-wider">Error</h4>
-                  <p class="text-xs text-error/90 font-medium wrap-break-word whitespace-pre-wrap">{{ errorMsg }}</p>
+                  <h4 class="text-[11px] font-bold text-danger uppercase tracking-wider">Error</h4>
+                  <p class="text-xs text-danger/90 font-medium wrap-break-word whitespace-pre-wrap">{{ errorMsg }}</p>
                 </div>
-                <button @click="errorMsg = ''" class="text-error/60 hover:text-error transition-colors shrink-0">
+                <button @click="errorMsg = ''" class="text-danger/60 hover:text-danger transition-colors shrink-0">
                   <X class="h-3 w-3" />
                 </button>
               </div>
@@ -260,7 +264,7 @@ defineExpose({ openModal })
 
             <div v-if="documentModalTab === 'nuevo'" class="flex-1 flex flex-col space-y-4">
               <div>
-                <label class="block text-xs font-bold text-text-main mb-1.5">Nombre del Material <span class="text-error">*</span></label>
+                <label class="block text-xs font-bold text-text-main mb-1.5">Nombre del Material <span class="text-danger">*</span></label>
                 <input 
                   v-model="formNombre" 
                   type="text" 
@@ -281,7 +285,7 @@ defineExpose({ openModal })
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-text-main mb-1.5 uppercase tracking-wider">Archivo <span class="text-error">*</span></label>
+                <label class="block text-xs font-bold text-text-main mb-1.5 uppercase tracking-wider">Archivo <span class="text-danger">*</span></label>
                 <input 
                   type="file" 
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"

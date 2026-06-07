@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Info, CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, Hash } from 'lucide-vue-next'
+import { Info, CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, AlertCircle, X } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
@@ -24,20 +24,11 @@ const convocatoriasStore = useConvocatoriasStore()
 const currentStep = ref(1)
 const totalSteps = 3
 const isSubmitting = ref(false)
-
-const windowWidth = ref(window.innerWidth)
-const updateWidth = () => windowWidth.value = window.innerWidth
-
-onMounted(() => {
-  window.addEventListener('resize', updateWidth)
-})
+const errorMessage = ref('')
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateWidth)
-  document.body.style.overflow = '' // Limpieza por seguridad al desmontar
+  document.body.style.overflow = ''
 })
-
-const calendarColumns = computed(() => windowWidth.value >= 1024 ? 2 : 1)
 
 const form = ref({
   nombre: '',
@@ -54,6 +45,7 @@ watch(
   () => props.open,
   (open) => {
     document.body.style.overflow = open ? 'hidden' : ''
+    errorMessage.value = ''
     
     if (open) {
       currentStep.value = 1
@@ -91,24 +83,36 @@ const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDa
 const minInicioOlimpiada = computed(() => startOfToday)
 const minFinOlimpiada = computed(() => form.value.inicioOlimpiada ? form.value.inicioOlimpiada : startOfToday)
 
-const minInscripcion = computed(() => form.value.inicioOlimpiada ? form.value.inicioOlimpiada : startOfToday)
+const minInscripcion = computed(() => {
+  const limitTime = new Date(Date.now() + 10 * 60000)
+  if (form.value.inicioOlimpiada && form.value.inicioOlimpiada > limitTime) {
+    return form.value.inicioOlimpiada
+  }
+  return limitTime
+})
+
 const maxInscripcion = computed(() => form.value.finOlimpiada ? new Date(form.value.finOlimpiada.setHours(23, 59, 59)) : undefined)
 const minFinInscripcion = computed(() => form.value.inicioInscripcion ?? minInscripcion.value)
+
+const keyFinOlimpiada = computed(() => form.value.inicioOlimpiada ? form.value.inicioOlimpiada.toISOString() : 'finOli')
+const keyFinInscripcion = computed(() => form.value.inicioInscripcion ? form.value.inicioInscripcion.toISOString() : 'finIns')
 
 const timeRules = ref({
   hours: (hour: number, ctx: { date?: Date }) => {
     if (!ctx || !ctx.date) return true
+    const limit = new Date(Date.now() + 10 * 60000)
     
-    if (ctx.date.toDateString() === today.toDateString()) {
-      return hour >= today.getHours()
+    if (ctx.date.toDateString() === limit.toDateString()) {
+      return hour >= limit.getHours()
     }
     return true
   },
   minutes: (minute: number, ctx: { date?: Date, hours?: number }) => {
     if (!ctx || !ctx.date || ctx.hours === undefined) return true
+    const limit = new Date(Date.now() + 10 * 60000)
     
-    if (ctx.date.toDateString() === today.toDateString() && ctx.hours === today.getHours()) {
-      return minute >= today.getMinutes()
+    if (ctx.date.toDateString() === limit.toDateString() && ctx.hours === limit.getHours()) {
+      return minute >= limit.getMinutes()
     }
     return true
   }
@@ -119,10 +123,12 @@ watch(() => form.value.inicioOlimpiada, (val) => {
   form.value.inicioInscripcion = null
   form.value.finInscripcion = null
 })
+
 watch(() => form.value.finOlimpiada, (val) => {
   if (form.value.inicioInscripcion && val && form.value.inicioInscripcion > val) form.value.inicioInscripcion = null
   if (form.value.finInscripcion && val && form.value.finInscripcion > val) form.value.finInscripcion = null
 })
+
 watch(() => form.value.inicioInscripcion, (val) => {
   if (!val || (form.value.finInscripcion && form.value.finInscripcion < val)) form.value.finInscripcion = null
 })
@@ -138,6 +144,7 @@ const toDateInputValue = (date: Date | null): string | undefined => {
   const localDate = new Date(date.getTime() - (offset * 60 * 1000))
   return localDate.toISOString().split('T')[0]
 }
+
 const montoValue = computed(() => {
   const raw = String(form.value.montoInscripcion || '').trim()
   if (!raw) return null
@@ -145,9 +152,33 @@ const montoValue = computed(() => {
   return Number.isFinite(num) && num >= 0 ? num : null
 })
 
+const extractError = (err: any, fallbackMsg: string) => {
+  const responseData =
+    err?.response?.data ??
+    err?.data ??
+    err?.details ??
+    null
+
+  if (responseData) {
+    errorMessage.value =
+      responseData.error ||
+      responseData.message ||
+      responseData.detail ||
+      fallbackMsg
+
+    return
+  }
+
+  errorMessage.value =
+    err?.message && !err.message.includes('status code')
+      ? err.message
+      : fallbackMsg
+}
+
 const handleSubmit = async () => {
   if (!canSave.value) return
   isSubmitting.value = true
+  errorMessage.value = ''
 
   try {
     const payload: ConvocatoriaCreateDTO = {
@@ -161,15 +192,13 @@ const handleSubmit = async () => {
       monto_inscripcion: montoValue.value ?? 0
     }
 
-    console.log('Payload enviado al backend:', payload)
-
     const created = await convocatoriasService.crearConvocatoria(payload)
     await convocatoriasStore.fetchConvocatorias({ page: 1 }, false)
     
     close()
     router.push(`/admin/convocatoria/${created.data.id_convocatoria}/gestionar?nuevaConvocatoria=true`)
   } catch (error) {
-    console.error('Error al crear la convocatoria:', error)
+    extractError(error, 'No se pudo guardar la convocatoria. Revise los datos enviados.')
   } finally {
     isSubmitting.value = false
   }
@@ -177,7 +206,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div v-if="open" class="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/60 p-4">
+  <div v-if="open" class="fixed inset-0 z-100 flex items-center justify-center overflow-y-auto bg-black/60 p-4">
     <Card class="ope-calendar-theme relative flex flex-col w-full max-w-4xl max-h-[95vh] sm:max-h-[85vh] bg-white rounded-2xl shadow-2xl border-0 overflow-hidden">
       
       <div class="shrink-0 border-b border-gray-100 bg-white p-6 pb-4">
@@ -262,14 +291,14 @@ const handleSubmit = async () => {
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                   <label class="block mb-3 text-sm font-semibold text-text-main">Fecha de Inicio</label>
-                  <VDatePicker v-model="form.inicioOlimpiada" mode="date" locale="es" :first-day-of-week="2" :min-date="minInicioOlimpiada" expanded :columns="calendarColumns" />
+                  <VDatePicker v-model="form.inicioOlimpiada" mode="date" locale="es" :first-day-of-week="2" :min-date="minInicioOlimpiada" expanded :columns="1" />
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm" :class="{'opacity-50 pointer-events-none': !form.inicioOlimpiada}">
                   <label class="mb-3 text-sm font-semibold text-text-main flex justify-between items-center">
                     Fecha de Finalización
                     <span v-if="!form.inicioOlimpiada" class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Requiere inicio</span>
                   </label>
-                  <VDatePicker v-model="form.finOlimpiada" mode="date" locale="es" :first-day-of-week="2" :min-date="minFinOlimpiada" expanded :columns="calendarColumns" />
+                  <VDatePicker :key="keyFinOlimpiada" v-model="form.finOlimpiada" mode="date" locale="es" :first-day-of-week="2" :min-date="minFinOlimpiada" expanded :columns="1" />
                 </div>
               </div>
             </div>
@@ -283,19 +312,31 @@ const handleSubmit = async () => {
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                   <label class="block mb-3 text-sm font-semibold text-text-main">Apertura de Inscripciones</label>
-                  <VDatePicker v-model="form.inicioInscripcion" mode="dateTime" is24hr locale="es" :first-day-of-week="2" :min-date="minInscripcion" :max-date="maxInscripcion" :rules="timeRules" expanded :columns="calendarColumns" />
+                  <VDatePicker v-model="form.inicioInscripcion" mode="dateTime" is24hr locale="es" :first-day-of-week="2" :min-date="minInscripcion" :max-date="maxInscripcion" :rules="timeRules" expanded :columns="1" />
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm" :class="{'opacity-50 pointer-events-none': !form.inicioInscripcion}">
                   <label class="mb-3 text-sm font-semibold text-text-main flex justify-between items-center">
                     Cierre de Inscripciones
                     <span v-if="!form.inicioInscripcion" class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Requiere apertura</span>
                   </label>
-                  <VDatePicker v-model="form.finInscripcion" mode="dateTime" is24hr locale="es" :first-day-of-week="2" :min-date="minFinInscripcion" :max-date="maxInscripcion" :rules="timeRules" expanded :columns="calendarColumns" />
+                  <VDatePicker :key="keyFinInscripcion" v-model="form.finInscripcion" mode="dateTime" is24hr locale="es" :first-day-of-week="2" :min-date="minFinInscripcion" :max-date="maxInscripcion" :rules="timeRules" expanded :columns="1" />
                 </div>
               </div>
             </div>
           </transition>
         </div>
+        <transition name="slide">
+          <div v-if="errorMessage" class="flex items-start gap-3 rounded-xl border border-danger bg-danger-soft p-3 shadow-sm shrink-0 mt-6 mx-6">
+            <AlertCircle class="h-4 w-4 text-danger shrink-0 mt-0.5 " />
+            <div class="flex-1 min-w-0">
+              <h4 class="text-[11px] font-bold text-error uppercase tracking-wider text-danger">Error al guardar</h4>
+              <p class="text-xs text-error/90 font-medium wrap-break-word whitespace-pre-wrap text-danger">{{ errorMessage }}</p>
+            </div>
+            <button @click="errorMessage = ''" class="text-danger/60 hover:text-danger transition-colors shrink-0">
+              <X class="h-3 w-3 text-danger" />
+            </button>
+          </div>
+        </transition>
       </CardContent>
 
       <div class="shrink-0 p-4 sm:p-6 border-t border-gray-100 bg-white flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
