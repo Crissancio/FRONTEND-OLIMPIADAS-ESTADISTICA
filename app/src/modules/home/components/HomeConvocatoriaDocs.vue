@@ -85,7 +85,7 @@ const openDocument = () => {
               alt="Previsualización del material"
             />
           </template>
-          <div v-else class="w-full aspect-[3/4] flex items-center justify-center bg-gray-100 text-gray-400 text-sm font-medium px-4 text-center">
+          <div v-else class="w-full aspect-3/4 flex items-center justify-center bg-gray-100 text-gray-400 text-sm font-medium px-4 text-center">
             Documento no disponible
           </div>
 
