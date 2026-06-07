@@ -106,8 +106,8 @@ onUnmounted(() => {
       </div>
     </transition-group>
 
-    <div class="lg:hidden absolute inset-0 bg-gradient-to-t from-primary/95 via-primary/50 to-transparent"></div>
-    <div class="hidden lg:block absolute top-0 right-0 bottom-0 w-[55%] bg-gradient-to-l from-primary via-primary/70 to-transparent"></div>
+    <div class="lg:hidden absolute inset-0 bg-linear-to-t from-primary/95 via-primary/50 to-transparent"></div>
+    <div class="hidden lg:block absolute top-0 right-0 bottom-0 w-[55%] bg-linear-to-l from-primary via-primary/70 to-transparent"></div>
   </div>
 
   <div class="relative z-20 flex-1 flex flex-col h-full w-full">

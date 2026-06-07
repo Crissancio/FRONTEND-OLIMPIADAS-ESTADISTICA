@@ -4,6 +4,7 @@ import { Calendar as VCalendar } from 'v-calendar'
 import 'v-calendar/style.css'
 
 import type { ConvocatoriaDTO, ConvocatoriaEstadistica } from '@/modules/convocatorias/types/convocatorias.api'
+import type { MaterialPrincipalPorTipo } from '@/modules/material/types/material.api'
 import { convocatoriasService } from '@/modules/convocatorias/services/convocatorias.service'
 import { materialesService } from '@/modules/material/services/material.service'
 
@@ -18,13 +19,12 @@ const props = defineProps<{
 
 const isLoading = ref(true)
 const estadisticas = ref<ConvocatoriaEstadistica | null>(null)
-const materialesPrincipales = ref<Record<string, any>>({})
 
-// Uso de any[] para evadir colisiones de tipos estricto en la prop de VCalendar
+const materialesPrincipales = ref<MaterialPrincipalPorTipo[]>([])
+
 const calendarAttributes = computed(() => {
   const attrs: any[] = []
 
-  // 1. Día de hoy
   attrs.push({
     key: 'today',
     dates: new Date(),
@@ -32,7 +32,6 @@ const calendarAttributes = computed(() => {
     popover: { label: 'Día Actual (Hoy)', visibility: 'hover' }
   })
 
-  // 2. Puntos de inicio y fin de olimpiadas (Puntos inferiores)
   if (props.convocatoria.inicio_olimpiadas) {
     attrs.push({
       key: 'olimpiada-inicio',
@@ -51,19 +50,16 @@ const calendarAttributes = computed(() => {
     })
   }
 
-  // 3. Rango de inscripciones y Tooltips de hora exacta
   if (props.convocatoria.fecha_inicio_inscripcion && props.convocatoria.fecha_fin_inscripcion) {
     const start = new Date(props.convocatoria.fecha_inicio_inscripcion)
     const end = new Date(props.convocatoria.fecha_fin_inscripcion)
 
-    // Remarcado Rango
     attrs.push({
       key: 'inscripciones',
       highlight: { fillMode: 'solid', color: 'yellow' },
       dates: { start, end }
     })
 
-    // Hover Hora Inicio (Requiere visibility: hover para disparar el slot)
     attrs.push({
       key: 'inscripcion-hora-inicio',
       dates: start,
@@ -75,7 +71,6 @@ const calendarAttributes = computed(() => {
       }
     })
 
-    // Hover Hora Fin (Requiere visibility: hover para disparar el slot)
     attrs.push({
       key: 'inscripcion-hora-fin',
       dates: end,
@@ -105,11 +100,20 @@ async function cargarDatos() {
     const id = props.convocatoria.id_convocatoria
     const [resEstadisticas, resMateriales] = await Promise.all([
       convocatoriasService.estadisticasConvocatoria(id).catch(() => ({ data: null })),
-      materialesService.materialPrincipalConvocatoria(id).catch(() => ({ data: {} }))
+      materialesService.materialPrincipalConvocatoria(id).catch(() => ({ data: [] }))
     ])
     
     if (resEstadisticas.data) estadisticas.value = resEstadisticas.data
-    materialesPrincipales.value = resMateriales.data || {}
+    
+    // Extracción segura del Array de materiales
+    let listaMats: MaterialPrincipalPorTipo[] = []
+    if (Array.isArray(resMateriales.data)) {
+      listaMats = resMateriales.data
+    } else if (resMateriales.data && Array.isArray((resMateriales.data as any).data)) {
+      listaMats = (resMateriales.data as any).data
+    }
+    
+    materialesPrincipales.value = listaMats
 
   } catch (error) {
     console.error('Error al sincronizar:', error)
@@ -122,6 +126,7 @@ function formatTime(dateStr?: string | null) {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
 }
+
 function statusClass(status: string) {
   switch (status) {
     case 'BORRADOR': return 'bg-estado-borrador text-white border-white/20'
@@ -182,7 +187,7 @@ function statusClass(status: string) {
                 <VCalendar 
                   :attributes="calendarAttributes" 
                   :columns="calendarColumns" 
-                  class="ope-calendar-theme shadow-sm border-gray-200 !w-fit max-w-full"
+                  class="ope-calendar-theme shadow-sm border-gray-200 w-fit! max-w-full"
                 >
                   <template #day-popover="{ attributes }">
                     <div class="p-2.5 w-max max-w-xs">
@@ -235,7 +240,6 @@ function statusClass(status: string) {
   border: 1px solid #e5e7eb;
 }
 
-/* Aplicación del color exacto de Tailwind a la paleta de VCalendar */
 :deep(.vc-yellow) {
   --vc-accent-50: var(--color-accent);
   --vc-accent-100: var(--color-accent);
