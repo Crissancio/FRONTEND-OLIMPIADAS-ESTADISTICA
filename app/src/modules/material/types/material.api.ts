@@ -119,14 +119,29 @@ export interface GeneralDictResponse {
 }
 
 export type TipoMaterialPrincipal = 'AFICHE' | 'CONVOCATORIA' | 'REGLAMENTO' ;
+
 export interface MaterialPrincipalPorTipo{
   id_material: number;
   nombre_material: string;
   enlace_acceso: string;
+  tipo_material: TipoMaterialEnum;
 }
 
 export interface MaterialPrincipalResponse{
   success?: boolean;
-  data: MaterialPrincipalPorTipo;
+  data: MaterialPrincipalPorTipo[];
   message: string;
+}
+
+export interface LinkMaterialPrincipalDTO{
+    id_material: number;
+    id_convocatoria: number;
+    tipo_material: TipoMaterialPrincipal;
+}
+
+export interface LinkMaterialPrincipalResponse {
+  success: boolean;
+  id_convocatoria: number;
+  tipo_material: string;
+  material_actual: MaterialDTO;
 }

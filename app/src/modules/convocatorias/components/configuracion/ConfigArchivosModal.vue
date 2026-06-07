@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { X, Image as ImageIcon, FileText, Check, AlertCircle } from 'lucide-vue-next'
-import { customInstance } from '@/app/api/mutator'
 import { materialesService } from '@/modules/material/services/material.service'
 import type { TipoMaterialPrincipal, TipoMaterialEnum } from '@/modules/material/types/material.api'
 
@@ -71,12 +70,11 @@ const loadMaterialesExistentes = async () => {
   isLoading.value = true
   errorMsg.value = ''
   try {
-    const res = await customInstance<any>({
-      url: `/api/v1/materiales/principal/${documentModifying.value}`,
-      method: 'GET'
-    })
+    // Usamos el servicio tipado 
+    const res = await materialesService.conseguirMaterialPrincipalTipo(documentModifying.value)
     const data = res.data
-    materialesExistentes.value = Array.isArray(data) ? data : (data.items || Object.values(data))
+    // Prevenimos fallos asegurando un array compatible
+    materialesExistentes.value = Array.isArray(data) ? data : ((data as any).items || Object.values(data) || [])
   } catch (err: any) {
     extractError(err, 'No se pudieron cargar los materiales existentes.')
   } finally {
@@ -112,7 +110,6 @@ const extractError = (err: any, fallbackMsg: string) => {
         || JSON.stringify(responseData)
     }
   } else {
-    // Si Axios arroja el error genérico sin response data
     errorMsg.value = err.message && !err.message.includes('status code') 
       ? err.message 
       : fallbackMsg
@@ -130,19 +127,19 @@ const saveArchivosRequeridos = async () => {
       if (!attachedFile.value) throw new Error('Debe seleccionar un archivo válido.')
       if (!formNombre.value.trim()) throw new Error('El nombre del material es obligatorio.')
       
-      // Enviamos el payload estructurado exactamente como lo espera Pydantic y el service
+      // Llamada al método de Creación de Archivo Principal
       await materialesService.crearMaterialPrincipal({
         id_convocatoria: props.convocatoriaId,
         tipo_material: documentModifying.value as TipoMaterialEnum,
         nombre_material: formNombre.value.trim(),
-        descripcion: formDescripcion.value.trim() || undefined, // undefined si está vacío para no enviar cadenas vacías inútiles
+        descripcion: formDescripcion.value.trim() || undefined,
         file: attachedFile.value
       })
 
     } else {
       if (!selectedArchivoExistenteId.value) throw new Error('Debe seleccionar un archivo de la lista.')
       
-      // Ligar material existente utilizando el nuevo servicio y DTO
+      // Llamada al nuevo método Ligar usando el DTO
       await materialesService.ligarMaterialPrincipalConvocatoria({
         id_material: selectedArchivoExistenteId.value,
         id_convocatoria: props.convocatoriaId,

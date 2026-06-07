@@ -12,7 +12,9 @@ import type {
   TipoMaterialEnum,
   GeneralDictResponse,
   MaterialPrincipalResponse,
-  TipoMaterialPrincipal
+  TipoMaterialPrincipal,
+  LinkMaterialPrincipalDTO,
+  LinkMaterialPrincipalResponse
 } from '../types/material.api';
 
 export const materialesService = {
@@ -161,10 +163,11 @@ export const materialesService = {
       method: 'GET'
     })
   },
-  ligarMaterialPrincipalConvocatoria(idConvocatoria: number, tipoMaterial: TipoMaterialPrincipal) {
-    return customInstance<GeneralDictResponse>({
-      url: `/api/v1/materiales/principal/convocatoria/${idConvocatoria}/tipo/${tipoMaterial}`,
-      method: 'PUT'
+  ligarMaterialPrincipalConvocatoria(data: LinkMaterialPrincipalDTO) {
+    return customInstance<LinkMaterialPrincipalResponse>({
+      url: `/api/v1/materiales/principal/link`,
+      method: 'PUT',
+      data
     })
   }
 }
