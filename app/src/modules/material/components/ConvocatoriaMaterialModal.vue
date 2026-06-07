@@ -178,7 +178,7 @@ defineExpose({ openModal })
 </script>
 
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+  <div v-if="isOpen" class="fixed inset-0 z-100 flex items-center justify-center bg-black/50 p-4">
     <Card class="w-full max-w-lg border-gray-200 bg-white shadow-xl">
       <CardHeader class="border-b border-gray-100 pb-4">
         <CardTitle class="flex items-center justify-between text-base font-bold text-text-main">
@@ -297,7 +297,7 @@ defineExpose({ openModal })
           </div>
         </div>
 
-        <div v-if="localError" class="rounded-lg border border-error/20 bg-error/10 p-3 text-xs font-semibold text-error text-center break-words">
+        <div v-if="localError" class="rounded-lg border border-error/20 bg-error/10 p-3 text-xs font-semibold text-error text-center wrap-break-word">
           {{ localError }}
         </div>
 

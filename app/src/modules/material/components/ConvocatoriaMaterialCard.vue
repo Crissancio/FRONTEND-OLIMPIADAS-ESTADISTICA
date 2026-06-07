@@ -111,7 +111,7 @@ const getStateClasses = (estado: string) => {
       </div>
     </div>
 
-    <div class="border-t border-gray-200 flex p-2 gap-2 bg-gray-50/80 rounded-b-xl relative z-10 transition-colors duration-300 group-hover:bg-primary/[0.02]">
+    <div class="border-t border-gray-200 flex p-2 gap-2 bg-gray-50/80 rounded-b-xl relative z-10 transition-colors duration-300 group-hover:bg-primary/2">
       <div class="w-1/2">
         <Button 
           variant="outline" 
