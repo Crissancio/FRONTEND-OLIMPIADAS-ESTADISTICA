@@ -1,165 +1,260 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { BookOpen, Trophy } from 'lucide-vue-next'
+import { ref, computed } from 'vue'
+import { BookOpen, Trophy, AlertCircle, X } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
 import CardTitle from '@/shared/components/ui/atoms/CardTitle.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
-import type { FaseUnionDTO, ModalidadFase } from '@/modules/fases/types/fases.api'
 
-type FaseTipo = 'preparacion' | 'prueba'
-type Modalidad = 'virtual' | 'presencial' | 'semipresencial'
-
-export interface FaseFormData {
-  nombre: string
-  inicio: string
-  fin: string
-  descripcion: string
-  tipo: FaseTipo
-  modalidad: Modalidad
-  criterioAprobacion: number
-  lugarRealizacion: string
-  faseAnteriorId: string
-}
-
-export interface FaseListItem {
-  id: string
-  nombre: string
-  tipo: FaseTipo
-}
+import { fasesService } from '@/modules/fases/services/fases.service'
+import type { 
+  FaseUnionDTO, 
+  TipoFase, 
+  ModalidadFase,
+  FasePreparacionCreateDTO,
+  FasePreparacionUpdateDTO,
+  FasePruebaCreateDTO,
+  FasePruebaUpdateDTO
+} from '@/modules/fases/types/fases.api'
 
 const props = defineProps<{
-  open: boolean
-  editingFaseId: string | null
-  fases: FaseListItem[]
-  today: Date
+  categoriaId: number
+  fases: FaseUnionDTO[]
 }>()
 
 const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'save', form: FaseFormData): void
+  (e: 'refresh'): void
 }>()
 
-const form = ref<FaseFormData>({
+const isOpen = ref(false)
+const isEditing = ref(false)
+const isSubmitting = ref(false)
+const currentId = ref<number | null>(null)
+const errorMessage = ref<string | null>(null)
+const minGlobalDate = ref(new Date(Date.now() + 10 * 60000)) // +10 minutos
+
+const form = ref({
+  tipo: 'PREPARACION' as TipoFase,
   nombre: '',
-  inicio: '',
-  fin: '',
   descripcion: '',
-  tipo: 'preparacion',
-  modalidad: 'virtual',
+  modalidad: 'VIRTUAL' as ModalidadFase,
+  fecha_inicio: new Date(),
+  fecha_fin: new Date(),
+  fecha_realizacion: new Date(),
   criterioAprobacion: 51,
   lugarRealizacion: '',
-  faseAnteriorId: '',
+  faseAnteriorId: '' as number | ''
 })
 
-const parseLocalDate = (value: string) => {
-  if (!value) return null
-  if (value.includes('T')) {
-    const date = new Date(value)
-    return Number.isNaN(date.getTime()) ? null : date
+const extractError = (err: any, fallbackMsg: string) => {
+  console.log('Error recibido:', err)
+  const responseData = err?.response?.data ?? err?.data ?? err?.details ?? null
+  if (responseData) {
+    errorMessage.value = responseData.error || responseData.message || responseData.detail || fallbackMsg
+    return
   }
-  const [year, month, day] = value.split('-').map(Number)
-  if (!year || !month || !day) return null
-  return new Date(year, month - 1, day)
+  errorMessage.value = err?.message && !err.message.includes('status code') ? err.message : fallbackMsg
 }
 
-const toLocalDateValue = (date: Date | null) => {
-  if (!date) return ''
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  const seconds = String(date.getSeconds()).padStart(2, '0')
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+const initializeDates = () => {
+  const now = new Date()
+  minGlobalDate.value = new Date(now.getTime() + 10 * 60000)
+  
+  const defaultStart = new Date(now.getTime() + 15 * 60000) 
+  const defaultEnd = new Date(now.getTime() + 75 * 60000)
+  
+  return { defaultStart, defaultEnd }
 }
 
-const faseInicioDate = computed({
-  get: () => parseLocalDate(form.value.inicio),
-  set: (date: Date | null) => {
-    form.value.inicio = toLocalDateValue(date)
-    const fin = parseLocalDate(form.value.fin)
-    if (date && fin && fin < date) form.value.fin = ''
-  },
-})
-
-const faseFinDate = computed({
-  get: () => parseLocalDate(form.value.fin),
-  set: (date: Date | null) => {
-    form.value.fin = toLocalDateValue(date)
-  },
-})
-
-const minFaseFinDate = computed(() => faseInicioDate.value ?? undefined)
-
-watch(
-  () => form.value.tipo,
-  (tipo) => {
-    if (tipo === 'prueba') form.value.fin = ''
-  },
-)
-
-const reset = (data?: Partial<FaseFormData>) => {
+const openCreate = () => {
+  const { defaultStart, defaultEnd } = initializeDates()
+  
+  isEditing.value = false
+  currentId.value = null
+  errorMessage.value = null
   form.value = {
-    nombre: data?.nombre ?? '',
-    inicio: data?.inicio ?? '',
-    fin: data?.fin ?? '',
-    descripcion: data?.descripcion ?? '',
-    tipo: data?.tipo ?? 'preparacion',
-    modalidad: data?.modalidad ?? 'virtual',
-    criterioAprobacion: data?.criterioAprobacion ?? 51,
-    lugarRealizacion: data?.lugarRealizacion ?? '',
-    faseAnteriorId: data?.faseAnteriorId ?? '',
+    tipo: 'PREPARACION',
+    nombre: '',
+    descripcion: '',
+    modalidad: 'VIRTUAL',
+    fecha_inicio: defaultStart,
+    fecha_fin: defaultEnd,
+    fecha_realizacion: defaultStart,
+    criterioAprobacion: 51,
+    lugarRealizacion: '',
+    faseAnteriorId: ''
+  }
+  isOpen.value = true
+}
+
+const openEdit = (fase: FaseUnionDTO) => {
+  initializeDates()
+  isEditing.value = true
+  currentId.value = fase.id_fase
+  errorMessage.value = null
+  
+  form.value = {
+    tipo: fase.tipo_fase,
+    nombre: fase.nombre_fase,
+    descripcion: fase.descripcion || '',
+    modalidad: fase.modalidad,
+    fecha_inicio: fase.tipo_fase === 'PREPARACION' ? new Date(fase.fecha_inicio) : new Date(),
+    fecha_fin: fase.tipo_fase === 'PREPARACION' ? new Date(fase.fecha_fin) : new Date(),
+    fecha_realizacion: fase.tipo_fase === 'PRUEBA' ? new Date(fase.fecha_realizacion) : new Date(),
+    criterioAprobacion: fase.tipo_fase === 'PRUEBA' ? fase.criterio_aprobacion : 51,
+    lugarRealizacion: fase.tipo_fase === 'PRUEBA' ? (fase.lugar_realizacion || '') : '',
+    faseAnteriorId: fase.tipo_fase === 'PRUEBA' && fase.id_fase_anterior ? fase.id_fase_anterior : ''
+  }
+  isOpen.value = true
+}
+
+const close = () => {
+  isOpen.value = false
+  errorMessage.value = null
+}
+
+const fasesPruebaDisponibles = computed(() => {
+  return props.fases.filter(f => f.tipo_fase === 'PRUEBA' && f.id_fase !== currentId.value)
+})
+
+const minFechaFin = computed(() => {
+  return form.value.fecha_inicio 
+    ? new Date(form.value.fecha_inicio.getTime() + 5 * 60000) // Mínimo 5 min después del inicio
+    : minGlobalDate.value
+})
+
+const isFormValid = computed(() => {
+  if (!form.value.nombre.trim()) return false
+  
+  if (form.value.tipo === 'PREPARACION') {
+    if (!form.value.fecha_inicio || !form.value.fecha_fin) return false
+    if (form.value.fecha_fin <= form.value.fecha_inicio) return false
+  } else {
+    if (!form.value.fecha_realizacion) return false
+    if (form.value.criterioAprobacion < 0 || form.value.criterioAprobacion > 100) return false
+  }
+  return true
+})
+
+const handleSave = async () => {
+  if (!isFormValid.value) return
+  isSubmitting.value = true
+  errorMessage.value = null
+
+  try {
+    if (form.value.tipo === 'PREPARACION') {
+      if (isEditing.value && currentId.value) {
+        const payload: FasePreparacionUpdateDTO = {
+          nombre_fase: form.value.nombre,
+          descripcion: form.value.descripcion,
+          modalidad: form.value.modalidad,
+          fecha_inicio: form.value.fecha_inicio.toISOString(),
+          fecha_fin: form.value.fecha_fin.toISOString()
+        }
+        await fasesService.actualizarFasePreparacion(currentId.value, payload)
+      } else {
+        const payload: FasePreparacionCreateDTO = {
+          id_categoria_fk: props.categoriaId,
+          nombre_fase: form.value.nombre,
+          descripcion: form.value.descripcion,
+          modalidad: form.value.modalidad,
+          fecha_inicio: form.value.fecha_inicio.toISOString(),
+          fecha_fin: form.value.fecha_fin.toISOString()
+        }
+        await fasesService.crearFasePreparacion(payload)
+      }
+    } else {
+      if (isEditing.value && currentId.value) {
+        const payload: FasePruebaUpdateDTO = {
+          nombre_fase: form.value.nombre,
+          descripcion: form.value.descripcion,
+          modalidad: form.value.modalidad,
+          criterio_aprobacion: form.value.criterioAprobacion,
+          fecha_realizacion: form.value.fecha_realizacion.toISOString(),
+          lugar_realizacion: form.value.lugarRealizacion,
+          id_fase_anterior: form.value.faseAnteriorId ? Number(form.value.faseAnteriorId) : null
+        }
+        await fasesService.actualizarFasePrueba(currentId.value, payload)
+      } else {
+        const payload: FasePruebaCreateDTO = {
+          id_categoria_fk: props.categoriaId,
+          nombre_fase: form.value.nombre,
+          descripcion: form.value.descripcion,
+          modalidad: form.value.modalidad,
+          criterio_aprobacion: form.value.criterioAprobacion,
+          fecha_realizacion: form.value.fecha_realizacion.toISOString(),
+          lugar_realizacion: form.value.lugarRealizacion,
+          id_fase_anterior: form.value.faseAnteriorId ? Number(form.value.faseAnteriorId) : null
+        }
+        await fasesService.crearFasePrueba(payload)
+      }
+    }
+
+    emit('refresh')
+    close()
+  } catch (error) {
+    extractError(error, 'No se pudo guardar la fase. Verifica los datos ingresados.')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-defineExpose({ reset })
-
-const handleSave = () => {
-  if (!form.value.nombre) return
-  if (form.value.tipo === 'preparacion' && (!form.value.inicio || !form.value.fin)) return
-  if (form.value.tipo === 'prueba' && (!form.value.inicio || !form.value.criterioAprobacion)) return
-  emit('save', { ...form.value })
-}
-
-const otherFases = computed(() =>
-  props.fases.filter((f) => f.id !== props.editingFaseId),
-)
+defineExpose({ openCreate, openEdit, close })
 </script>
 
 <template>
   <div
-    v-if="open"
-    class="fixed inset-0 z-70 flex items-start justify-center overflow-y-auto bg-black/40 p-3 sm:items-center sm:p-4"
+    v-if="isOpen"
+    class="fixed inset-0 z-100 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm overflow-y-auto"
   >
-    <Card class="ope-calendar-theme my-auto w-full max-w-4xl border-gray-200 bg-white">
-      <CardHeader>
-        <CardTitle>{{ editingFaseId ? 'Editar Fase' : 'Crear Nueva Fase' }}</CardTitle>
+    <Card class="w-full max-w-3xl border-gray-200 bg-white shadow-xl animate-fade-in my-auto">
+      <CardHeader class="border-b border-gray-100 pb-4">
+        <CardTitle class="flex items-center justify-between text-base font-bold text-text-main">
+          <span>{{ isEditing ? 'Editar Fase' : 'Crear Nueva Fase' }}</span>
+          <button @click="close" class="rounded-md p-1 text-text-muted hover:bg-gray-100 transition-colors">
+            <X class="h-4 w-4" />
+          </button>
+        </CardTitle>
       </CardHeader>
-      <CardContent class="space-y-4">
-        <div class="relative rounded-xl border border-gray-200 bg-gray-50 p-1">
+
+      <CardContent class="space-y-5 pt-4">
+        
+        <transition name="slide">
+          <div v-if="errorMessage" class="flex items-start gap-3 rounded-xl border border-danger bg-danger-soft p-3 shadow-sm">
+            <AlertCircle class="h-4 w-4 text-danger shrink-0 mt-0.5 " />
+            <div class="flex-1 min-w-0">
+              <h4 class="text-[11px] font-bold uppercase tracking-wider text-danger">Error</h4>
+              <p class="text-xs font-medium whitespace-pre-wrap text-danger">{{ errorMessage }}</p>
+            </div>
+            <button @click="errorMessage = null" class="text-danger/60 hover:text-danger-hover transition-colors shrink-0">
+              <X class="h-3 w-3 text-danger" />
+            </button>
+          </div>
+        </transition>
+
+        <div class="relative rounded-xl border border-gray-200 bg-gray-50 p-1 max-w-sm mx-auto">
           <div
             class="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-lg shadow-sm transition-all duration-300 ease-out"
-            :class="form.tipo === 'preparacion' ? 'translate-x-0 bg-secondary' : 'translate-x-full bg-accent'"
+            :class="form.tipo === 'PREPARACION' ? 'translate-x-0 bg-secondary' : 'translate-x-full bg-accent'"
           />
           <div class="relative grid grid-cols-2 gap-1">
             <button
               type="button"
-              :disabled="Boolean(editingFaseId)"
-              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors duration-300 disabled:cursor-not-allowed"
-              :class="form.tipo === 'preparacion' ? 'text-white' : 'text-text-muted hover:text-primary'"
-              @click="form.tipo = 'preparacion'"
+              :disabled="isEditing"
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60"
+              :class="form.tipo === 'PREPARACION' ? 'text-white' : 'text-text-muted hover:text-primary'"
+              @click="form.tipo = 'PREPARACION'"
             >
               <BookOpen class="h-4 w-4" />
               Preparación
             </button>
             <button
               type="button"
-              :disabled="Boolean(editingFaseId)"
-              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors duration-300 disabled:cursor-not-allowed"
-              :class="form.tipo === 'prueba' ? 'text-primary' : 'text-text-muted hover:text-primary'"
-              @click="form.tipo = 'prueba'"
+              :disabled="isEditing"
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60"
+              :class="form.tipo === 'PRUEBA' ? 'text-primary' : 'text-text-muted hover:text-primary'"
+              @click="form.tipo = 'PRUEBA'"
             >
               <Trophy class="h-4 w-4" />
               Prueba
@@ -167,140 +262,141 @@ const otherFases = computed(() =>
           </div>
         </div>
 
-        <p v-if="editingFaseId" class="text-xs font-medium text-text-muted">
+        <p v-if="isEditing" class="text-center text-[11px] font-medium text-text-muted -mt-2">
           El tipo de fase no se puede cambiar al editar.
         </p>
 
         <div>
-          <label class="mb-1 block text-sm font-bold text-text-main">Nombre *</label>
+          <label class="mb-1 block text-sm font-bold text-text-main">Nombre de la Fase <span class="text-error">*</span></label>
           <input
             v-model="form.nombre"
-            class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+            placeholder="Ej: Clasificatorias Nacionales"
+            class="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
           />
         </div>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label class="mb-1 block text-sm font-bold text-text-main">Modalidad *</label>
+            <label class="mb-1 block text-sm font-bold text-text-main">Modalidad <span class="text-error">*</span></label>
             <select
               v-model="form.modalidad"
-              class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+              class="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
             >
-              <option value="virtual">Virtual</option>
-              <option value="presencial">Presencial</option>
-              <option value="semipresencial">Semipresencial</option>
+              <option value="VIRTUAL">Virtual</option>
+              <option value="PRESENCIAL">Presencial</option>
+              <option value="SEMIPRESENCIAL">Semipresencial</option>
             </select>
           </div>
 
-          <div v-if="form.tipo === 'prueba'">
-            <label class="mb-1 block text-sm font-bold text-text-main">Criterio aprobación *</label>
-            <input
-              v-model.number="form.criterioAprobacion"
-              type="number"
-              min="0"
-              max="100"
-              class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
-            />
-          </div>
+          <template v-if="form.tipo === 'PRUEBA'">
+            <div>
+              <label class="mb-1 block text-sm font-bold text-text-main">Criterio aprobación (%) <span class="text-error">*</span></label>
+              <input
+                v-model.number="form.criterioAprobacion"
+                type="number"
+                min="0"
+                max="100"
+                class="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+              />
+            </div>
+            
+            <div>
+              <label class="mb-1 block text-sm font-bold text-text-main">Fase anterior</label>
+              <select
+                v-model="form.faseAnteriorId"
+                class="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+              >
+                <option value="">Ninguna / Primera Prueba</option>
+                <option v-for="fase in fasesPruebaDisponibles" :key="fase.id_fase" :value="fase.id_fase">
+                  {{ fase.nombre_fase }}
+                </option>
+              </select>
+            </div>
 
-          <div v-if="form.tipo === 'prueba'">
-            <label class="mb-1 block text-sm font-bold text-text-main">Fase anterior</label>
-            <select
-              v-model="form.faseAnteriorId"
-              class="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
-            >
-              <option value="">Sin fase anterior</option>
-              <option v-for="fase in otherFases" :key="fase.id" :value="fase.id">
-                {{ fase.nombre }}
-              </option>
-            </select>
-          </div>
-
-          <div v-if="form.tipo === 'prueba'">
-            <label class="mb-1 block text-sm font-bold text-text-main">Lugar realización</label>
-            <input
-              v-model="form.lugarRealizacion"
-              class="h-11 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
-              placeholder="Ej: Auditorio UMSA"
-            />
-          </div>
+            <div>
+              <label class="mb-1 block text-sm font-bold text-text-main">Lugar realización</label>
+              <input
+                v-model="form.lugarRealizacion"
+                class="h-10 w-full rounded-md border border-gray-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+                placeholder="Ej: Coliseo Central / Zoom"
+              />
+            </div>
+          </template>
         </div>
 
-        <div v-if="form.tipo === 'preparacion'" class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div class="rounded-xl border border-gray-200 bg-gray-50/50 p-2 sm:p-3">
-            <label class="mb-2 block text-sm font-semibold text-text-main">Fecha inicio *</label>
+        <!-- Seccion Calendarios (Más fit y balanceada) -->
+        <div class="rounded-xl border border-gray-100 bg-gray-50/50 p-4">
+          <div v-if="form.tipo === 'PREPARACION'" class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div>
+              <label class="mb-2 block text-sm font-semibold text-text-main">Inicio de Preparación <span class="text-error">*</span></label>
+              <VDatePicker
+                v-model="form.fecha_inicio"
+                mode="dateTime"
+                is24hr
+                locale="es"
+                :first-day-of-week="2"
+                :min-date="minGlobalDate"
+                expanded
+              />
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-semibold text-text-main">Fin de Preparación <span class="text-error">*</span></label>
+              <VDatePicker
+                v-model="form.fecha_fin"
+                mode="dateTime"
+                is24hr
+                locale="es"
+                :first-day-of-week="2"
+                :min-date="minFechaFin"
+                expanded
+              />
+            </div>
+          </div>
+          
+          <div v-else class="max-w-sm mx-auto">
+            <label class="mb-2 block text-sm font-semibold text-text-main">Fecha y Hora de la Prueba <span class="text-error">*</span></label>
             <VDatePicker
-              v-model="faseInicioDate"
+              v-model="form.fecha_realizacion"
               mode="dateTime"
               is24hr
               locale="es"
               :first-day-of-week="2"
-              :min-date="today"
+              :min-date="minGlobalDate"
               expanded
             />
           </div>
-          <div
-            class="rounded-xl border border-gray-200 bg-gray-50/50 p-2 sm:p-3"
-            :class="!faseInicioDate ? 'opacity-60' : ''"
-          >
-            <label class="mb-2 block text-sm font-semibold text-text-main">Fecha fin *</label>
-            <VDatePicker
-              v-model="faseFinDate"
-              mode="dateTime"
-              is24hr
-              locale="es"
-              :first-day-of-week="2"
-              :min-date="minFaseFinDate"
-              expanded
-              :disabled="!faseInicioDate"
-            />
-            <p v-if="!faseInicioDate" class="mt-2 text-xs font-medium text-text-muted">
-              Selecciona primero la fecha de inicio.
-            </p>
-          </div>
-        </div>
-
-        <div v-else class="rounded-xl border border-gray-200 bg-gray-50/50 p-2 sm:p-3">
-          <label class="mb-2 block text-sm font-semibold text-text-main">Fecha realización *</label>
-          <VDatePicker
-            v-model="faseInicioDate"
-            mode="dateTime"
-            is24hr
-            locale="es"
-            :first-day-of-week="2"
-            :min-date="today"
-            expanded
-          />
-        </div>
-
-        <div
-          v-if="form.tipo === 'preparacion'"
-          class="rounded-xl border border-secondary/20 bg-secondary/10 p-3 text-sm font-medium text-secondary"
-        >
-          Preparación usa rango de fechas: inicio y fin.
-        </div>
-        <div
-          v-else
-          class="rounded-xl border border-accent/30 bg-accent/10 p-3 text-sm font-medium text-accent-dark"
-        >
-          Prueba usa fecha única, criterio de aprobación y datos opcionales de realización.
         </div>
 
         <div>
           <label class="mb-1 block text-sm font-bold text-text-main">Descripción</label>
           <textarea
             v-model="form.descripcion"
-            class="min-h-24 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+            placeholder="Instrucciones, temarios o detalles adicionales..."
+            class="min-h-20 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
           />
         </div>
 
-        <div class="flex justify-end gap-2">
-          <Button variant="outline" @click="emit('close')">Cancelar</Button>
-          <Button variant="accent" @click="handleSave">
-            {{ editingFaseId ? 'Guardar Cambios' : 'Crear Fase' }}
+        <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
+          <Button variant="outline" @click="close" :disabled="isSubmitting">Cancelar</Button>
+          <Button variant="accent" @click="handleSave" :disabled="!isFormValid || isSubmitting">
+            <span v-if="isSubmitting" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>
+            {{ isSubmitting ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Crear Fase') }}
           </Button>
         </div>
+
       </CardContent>
     </Card>
   </div>
 </template>
+
+<style scoped>
+.slide-enter-active,
+.slide-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+</style>
