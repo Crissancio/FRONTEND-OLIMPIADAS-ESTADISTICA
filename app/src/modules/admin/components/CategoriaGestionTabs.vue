@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { CalendarDays, Settings, Trophy, Users } from 'lucide-vue-next'
+import { CalendarDays, Settings, Users } from 'lucide-vue-next'
 
-type CategoriaTab = 'fases' | 'estudiantes' | 'resultados' | 'configuracion'
+type CategoriaTab = 'fases' | 'inscritos' | 'configuracion'
 
 const props = defineProps<{
   activeTab: CategoriaTab
@@ -14,8 +14,7 @@ const emit = defineEmits<{
 
 const tabs = [
   { key: 'fases', label: 'Fases', icon: CalendarDays },
-  { key: 'estudiantes', label: 'Estudiantes', icon: Users },
-  { key: 'resultados', label: 'Resultados', icon: Trophy },
+  { key: 'inscritos', label: 'Inscritos', icon: Users },
   { key: 'configuracion', label: 'Configuración', icon: Settings },
 ] satisfies Array<{ key: CategoriaTab; label: string; icon: Component }>
 </script>

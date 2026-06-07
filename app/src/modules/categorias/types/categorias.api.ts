@@ -11,7 +11,7 @@ export interface CategoriaDTO {
   id_categoria: number;
   id_convocatoria: number;
   nombre_categoria: string;
-  curso: number; // Mínimo 1, Máximo 6
+  curso: number;
   nivel: NivelEducativo;
   estado: EstadoEntidad;
 }

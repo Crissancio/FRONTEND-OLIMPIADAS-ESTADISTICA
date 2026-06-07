@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-type ButtonVariant = 'default' | 'accent' | 'outline' | 'ghost' | 'link' | 'primary'
+type ButtonVariant = 'default' | 'accent' | 'outline' | 'ghost' | 'link' | 'primary' | 'not_allowed'
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon'
 
 const props = withDefaults(defineProps<{
@@ -30,6 +30,8 @@ const variantClasses = computed(() => {
       return 'bg-transparent hover:bg-gray-100 text-text-muted focus-visible:ring-primary'
     case 'link':
       return 'bg-transparent text-primary hover:text-primary-dark underline-offset-4 hover:underline p-0 h-auto focus-visible:ring-primary'
+    case 'not_allowed':
+      return 'bg-gray-100 text-gray-500 hover:bg-gray-200 focus-visible:ring-gray-300'
     default:
       return ''
   }
