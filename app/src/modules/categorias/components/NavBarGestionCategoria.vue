@@ -23,14 +23,14 @@ const emit = defineEmits<{
   <header class="sticky top-0 z-20 rounded-xl bg-primary p-4 shadow-soft">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <Button variant="not_allowed" class="bg-transparent hover:bg-transparent hover:text-white" @click="emit('back')">
-          <ArrowLeft class="h-4 w-4" />
-        </Button>
         <span class="text-sm text-white font-bold">Gestión de Categoría</span>
       </div>
     </div>
 
     <div class="mt-4 flex items-center gap-3">
+      <Button variant="not_allowed" class="bg-transparent hover:bg-transparent hover:text-white " @click="emit('back')">
+        <ArrowLeft class="h-4 w-4 hover:size-8" />
+      </Button>
       <CategorySymbol :name="nombre" class="h-12 w-12 bg-gray-400 text-5xl text-white shadow-sm" />
       <div>
         <h1 class="font-heading text-2xl font-bold text-white">
