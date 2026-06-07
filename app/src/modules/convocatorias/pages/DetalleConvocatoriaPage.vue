@@ -38,6 +38,7 @@ const mapMaterial = (mat: MaterialPublicoRelacionDTO, index: number) => ({
   id: String(index),
   nombre: mat.nombre_material,
   url: mat.enlace_acceso,
+  descripcion: mat.descripcion,
   tipo: mat.tipo_material === 'VIDEO_EXTERNO' ? 'Video' : mat.tipo_material.includes('DOCUMENTO') ? 'Documento' : 'PDF',
   tamano: '', // Backend no devuelve tamaño en este DTO
 })

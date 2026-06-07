@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Calendar, Monitor, MapPin, ChevronDown, Download, Trophy, Table } from 'lucide-vue-next'
+import { Calendar, Monitor, MapPin, ChevronDown, Download, Trophy, Table, ExternalLink, FileText, Video, Link as LinkIcon, File, GraduationCap} from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 
-defineProps<{ fase: any }>()
+const props = defineProps<{ fase: any }>()
 const isExpandedMats = ref(false)
 const isExpandedResults = ref(true) // En la final, los resultados suelen estar abiertos por defecto si existen
 </script>
@@ -13,12 +13,11 @@ const isExpandedResults = ref(true) // En la final, los resultados suelen estar 
 <template>
   <Card class="relative bg-linear-to-br from-white to-orange-50/30 border border-orange-100 rounded-xl p-6 shadow-md hover:shadow-xl hover:scale-[1.02] hover:z-10 transition-all duration-300 overflow-hidden group">
     
-    <Trophy class="absolute -right-8 top-1/2 -translate-y-1/2 w-56 h-56 opacity-[0.04] text-(--color-accent) pointer-events-none group-hover:opacity-[0.08] group-hover:scale-110 transition-all duration-500" />
+    <Trophy class="absolute -right-8 top-1/2 -translate-y-1/2 w-56 h-56 opacity-[0.25] text-(--color-accent) pointer-events-none group-hover:opacity-[0.3] group-hover:scale-110 transition-all duration-500" />
     
     <CardContent class="p-0 relative z-10">
       <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4">
         <h4 class="text-2xl font-heading font-extrabold text-(--color-accent) uppercase tracking-wide flex items-center gap-2">
-          <Trophy class="w-6 h-6" />
           {{ fase.nombre }}
         </h4>
         <span class="text-sm font-semibold text-text-muted flex items-center gap-1.5">
@@ -28,10 +27,10 @@ const isExpandedResults = ref(true) // En la final, los resultados suelen estar 
       </div>
       
       <div class="flex flex-wrap gap-2 mb-4">
-        <Badge class="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full bg-(--color-accent) text-white shadow-sm">
+        <Badge variant="not_allowed" class="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full bg-(--color-accent) text-white shadow-sm">
           Prueba Final
         </Badge>
-        <Badge v-if="fase.modalidad" class="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full bg-white text-gray-600 border-gray-200 shadow-sm flex items-center gap-1">
+        <Badge v-if="fase.modalidad" variant="not_allowed" class="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full bg-white text-gray-600 border-gray-200 shadow-sm flex items-center gap-1">
           <component :is="fase.modalidad === 'Virtual' ? Monitor : MapPin" class="w-3.5 h-3.5" />
           {{ fase.modalidad }}
         </Badge>
@@ -45,11 +44,20 @@ const isExpandedResults = ref(true) // En la final, los resultados suelen estar 
           <ChevronDown class="w-4 h-4 transition-transform duration-300" :class="isExpandedMats ? 'rotate-180' : ''" />
         </button>
         
-        <div v-show="isExpandedMats" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
-           <a v-for="mat in fase.materiales" :key="mat.id" :href="mat.url" target="_blank" class="flex items-center justify-between p-3 rounded-lg border border-orange-100/50 bg-white hover:border-[var(--color-accent)] hover:shadow-md transition-all group/mat">
-             <span class="text-sm font-bold text-text-main group-hover/mat:text-(--color-accent) truncate">{{ mat.nombre }}</span>
-             <Download class="w-4 h-4 text-gray-400 group-hover/mat:text-(--color-accent) opacity-0 group-hover/mat:opacity-100" />
-           </a>
+        <div v-show="isExpandedMats" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <a v-for="mat in fase.materiales" :key="mat.id" :href="mat.url" target="_blank" class="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50/50 hover:border-(--color-secondary) hover:bg-white hover:shadow-md transition-all group/mat">
+            <div class="flex items-center gap-3 overflow-hidden">
+              <div class="w-10 h-10 rounded-lg flex shrink-0 items-center justify-center bg-white shadow-sm border border-gray-100 text-(--color-secondary)">
+                <component :is="mat.tipo === 'PDF' ? FileText : mat.tipo === 'Video' ? Video : mat.tipo === 'Documento' ? File : LinkIcon" class="w-5 h-5" />
+              </div>
+              <div class="truncate">
+                <p class="text-sm font-bold text-text-main group-hover/mat:text-(--color-secondary) transition-colors truncate">{{ mat.nombre }}</p>
+                <p class="text-xs text-text-muted">{{ mat.descripcion }}</p>
+                <p class="text-xs text-text-muted font-bold">{{ mat.tipo }}</p>
+              </div>
+            </div>
+            <ExternalLink class="w-5 h-5 text-gray-300 group-hover/mat:text-(--color-secondary) opacity-0 group-hover/mat:opacity-100 transition-all shrink-0 ml-2" />
+          </a>
         </div>
       </div>
 
