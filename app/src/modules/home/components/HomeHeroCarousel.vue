@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { ArrowRight } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import type { HomeConvocatoria } from '../types/home.types'
+import type { EstadoTemporal } from '@/modules/convocatorias/types/convocatorias.api'
 
 const props = defineProps<{
   activeConv?: HomeConvocatoria
@@ -59,7 +60,7 @@ const scrollDescriptionToEnd = () => {
   })
 }
 
-const getStatusBg = (estado?: string) => {
+const getStatusBg = (estado?: string | EstadoTemporal) => {
   const e = (estado || '').toUpperCase()
   if (e.includes('INSCRIPCION')) return 'bg-estado-inscripcion'
   if (e === 'EN CURSO') return 'bg-estado-activa'
@@ -111,7 +112,31 @@ onUnmounted(() => {
   </div>
 
   <div class="relative z-20 flex-1 flex flex-col h-full w-full">
-    <!-- Estado (solo slide 0) -->
+
+    <!-- Logo y Bloque informativo en esquina superior izquierda -->
+    <div class="absolute top-6 lg:top-8 left-6 lg:left-8 flex gap-3 lg:gap-4 z-50 pointer-events-none w-[90%] md:w-auto items-center">
+      
+      <!-- Logo Estadística -->
+      <img 
+        src="/logo-estadistica.png" 
+        alt="Logo Estadística UMSA" 
+        class="w-40 sm:w-40 lg:w-56 object-contain drop-shadow-xl transition-all duration-300 shrink-0 -ml-4 -mr-8" 
+      />
+
+      <!-- Título de bloque informativo (cuando slide != 0) -->
+      <Transition name="slide-up-fade" mode="out-in">
+        <div v-if="currentSlide !== 0" class="flex gap-3 lg:gap-4 items-stretch">
+          <div class="w-1.5 lg:w-2 rounded-full shadow-lg shrink-0" :class="getStatusBg(props.activeConv?.estado_temporal)"></div>
+          <div class="flex flex-col items-start justify-center">
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight drop-shadow-lg text-white">
+              {{ mainTitle }}
+            </h1>
+          </div>
+        </div>
+      </Transition>
+    </div>
+
+    <!-- Estado principal (solo slide 0) -->
     <div class="absolute top-[20%] lg:top-[25%] left-6 lg:left-16 h-8 flex items-center overflow-hidden z-30 pointer-events-none">
       <Transition name="expand-h">
         <div
@@ -124,21 +149,9 @@ onUnmounted(() => {
       </Transition>
     </div>
 
-    <!-- Bloque informativo en esquina superior izquierda (cuando slide != 0) -->
-    <Transition name="slide-up-fade" mode="out-in">
-      <div v-if="currentSlide !== 0" class="absolute top-6 lg:top-8 left-6 lg:left-8 flex gap-3 lg:gap-4 z-30 pointer-events-none w-[90%] md:w-auto">
-        <div class="w-1.5 lg:w-2 rounded-full shadow-lg" :class="getStatusBg(props.activeConv?.estado_temporal)"></div>
-        <div class="flex flex-col items-start justify-center">
-          <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight drop-shadow-lg text-white">
-            {{ mainTitle }}
-          </h1>
-        </div>
-      </div>
-    </Transition>
-
     <!-- Título y gestión en “primer plano” (solo slide 0) -->
     <Transition name="slide-up-fade" mode="out-in">
-      <div v-if="currentSlide === 0" class="absolute top-[calc(20%+2.5rem)] lg:top-[calc(25%+2.5rem)] left-6 lg:left-16 z-30 pointer-events-none max-w-[90%] lg:max-w-[72%]">
+      <div v-if="currentSlide === 0" class="absolute top-[calc(20%+2.5rem)] lg:top-[calc(25%+2.5rem)] left-6 lg:left-16 z-30 pointer-events-none max-w-[85%] lg:max-w-[72%]">
         <h1 class="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight drop-shadow-2xl text-white">
           {{ mainTitle }}
           <span v-if="currentGestion" class="mx-2 lg:mx-4 text-secondary/80">|</span>

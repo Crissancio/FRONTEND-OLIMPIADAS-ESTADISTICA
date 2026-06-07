@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { usePublicStore } from '@/modules/public/stores/public.store'
+import { publicService } from '@/modules/public/services/public.service'
 import type { AvisoPublicoDTO, CategoriaInicioDTO, ConvocatoriaInicioDTO } from '@/modules/public/types/public.api'
 import type { AvisoPrioridad, TipoAviso } from '@/modules/avisos/types/avisos.api'
 import type { EstadoTemporal } from '@/modules/convocatorias/types/convocatorias.api'
@@ -14,12 +14,16 @@ import HomeInstitutional from '../components/HomeInstitutional.vue'
 
 const inicioLoading = ref(false)
 const inicioError = ref<string | null>(null)
-// Ya no necesitamos aficheUrl solo, ahora es parte de la lista de materiales
 const convocatoriasData = ref<HomeConvocatoria[]>([])
 const avisosData = ref<HomeAviso[]>([])
 const hasBackendConvocatoria = ref(false)
 const inicioLoadedOk = ref(false)
-const publicStore = usePublicStore()
+
+// Estados para paginación de avisos locales
+const avisosPage = ref(1)
+const avisosLimit = 5
+const avisosTotalPages = ref(1)
+const loadingMoreAvisos = ref(false)
 
 const ESTADOS_TEMPORALES: EstadoTemporal[] = [
   'BORRADOR',
@@ -65,9 +69,6 @@ const normalizeAvisoPrioridad = (prioridad?: string | null): AvisoPrioridad => {
   return PRIORIDADES_AVISO.includes(normalized) ? normalized : 'MEDIA'
 }
 
-const avisosPage = ref(1)
-const avisosLimit = 5
-
 const formatFechas = (dto: ConvocatoriaInicioDTO): string => {
   const start = dto.inicio_olimpiadas
   const end = dto.fin_olimpiadas
@@ -86,7 +87,6 @@ const mapCategorias = (categorias: CategoriaInicioDTO[]): HomeConvocatoria['cate
   }))
 }
 
-// ACTUALIZADO: Ahora recibe materiales y mapea los nuevos campos de fechas
 const mapConvocatoria = (
   dto: ConvocatoriaInicioDTO
 ): HomeConvocatoria => {
@@ -103,12 +103,10 @@ const mapConvocatoria = (
     descripcionBreve: dto.descripcion ?? '',
     fechas: formatFechas(dto),
     categorias: mapCategorias(dto.categorias ?? []),
-    // Nuevos campos para v-calendar
     inicio_olimpiadas: dto.inicio_olimpiadas ?? null,
     fin_olimpiadas: dto.fin_olimpiadas ?? null,
     fecha_inicio_inscripcion: null,
     fecha_fin_inscripcion: null,
-    // Lista de materiales (Afiche y Convocatoria PDF)
     material_principal: materiales
   }
 }
@@ -137,17 +135,29 @@ const loadInicio = async () => {
   inicioLoading.value = true
   inicioError.value = null
   avisosPage.value = 1
+  
   try {
-    const [inicioResult] = await Promise.allSettled([
-      publicStore.fetchInicio(),
-      publicStore.fetchAvisos({ page: avisosPage.value, limit: avisosLimit }),
+    const [inicioResult, avisosResult] = await Promise.allSettled([
+      publicService.obtenerInicio(),
+      publicService.obtenerAvisos({ page: avisosPage.value, limit: avisosLimit }),
     ])
 
-    avisosData.value = publicStore.avisos.map(mapAviso)
+    // Manejar resultados de Avisos
+    if (avisosResult.status === 'fulfilled' && avisosResult.value.data) {
+      avisosData.value = avisosResult.value.data.items.map(mapAviso)
+      avisosTotalPages.value = avisosResult.value.data.meta.total_pages
+    } else {
+      avisosData.value = []
+      avisosTotalPages.value = 1
+    }
+
     inicioLoadedOk.value = true
 
-    if (inicioResult.status !== 'fulfilled') {
-      inicioError.value = toApiError(inicioResult.reason).message
+    // Manejar resultados de la Convocatoria de Inicio
+    if (inicioResult.status !== 'fulfilled' || !inicioResult.value.data) {
+      inicioError.value = inicioResult.status === 'rejected' 
+        ? toApiError(inicioResult.reason).message 
+        : 'No se encontraron datos de inicio.'
       hasBackendConvocatoria.value = false
       convocatoriasData.value = []
       setTimeout(() => {
@@ -156,14 +166,12 @@ const loadInicio = async () => {
       return
     }
 
-    const dto = inicioResult.value
-
+    const dto = inicioResult.value.data
     const conv = dto ? [mapConvocatoria(dto)] : []
 
     hasBackendConvocatoria.value = conv.length > 0
     convocatoriasData.value = conv
 
-    // Asegurar que la vista esté arriba tras cargar
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'instant' })
     }, 50)
@@ -180,10 +188,25 @@ const loadInicio = async () => {
 }
 
 const loadMoreAvisos = async () => {
-  if (publicStore.loading || !publicStore.metaAvisos?.total_pages || avisosPage.value >= publicStore.metaAvisos.total_pages) return
+  if (loadingMoreAvisos.value || avisosPage.value >= avisosTotalPages.value) return
+  
+  loadingMoreAvisos.value = true
   avisosPage.value += 1
-  await publicStore.fetchAvisos({ page: avisosPage.value, limit: avisosLimit }, true)
-  avisosData.value = publicStore.avisos.map(mapAviso)
+  
+  try {
+    const response = await publicService.obtenerAvisos({ page: avisosPage.value, limit: avisosLimit })
+    
+    if (response.data) {
+      const newAvisos = response.data.items.map(mapAviso)
+      avisosData.value = [...avisosData.value, ...newAvisos]
+      avisosTotalPages.value = response.data.meta.total_pages
+    }
+  } catch (error) {
+    console.error('No se pudieron cargar más avisos:', toApiError(error).message)
+    avisosPage.value -= 1 // Revertir el incremento de página si hubo error
+  } finally {
+    loadingMoreAvisos.value = false
+  }
 }
 
 onMounted(() => {

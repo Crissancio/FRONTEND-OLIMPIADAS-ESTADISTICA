@@ -113,7 +113,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative z-10 w-full lg:w-[350px] shrink-0 bg-primary/30 lg:bg-transparent flex flex-col py-6 lg:py-24 px-0 lg:px-6 border-t lg:border-t-0 lg:border-l border-white/10 backdrop-blur-md lg:backdrop-blur-none">
+  <div class="relative z-10 w-full lg:w-87.5 shrink-0 bg-primary/30 lg:bg-transparent flex flex-col py-6 lg:py-24 px-0 lg:px-6 border-t lg:border-t-0 lg:border-l border-white/10 backdrop-blur-md lg:backdrop-blur-none">
     
     <div class="flex items-center gap-3 mb-4 lg:mb-6 px-6 lg:px-0 shrink-0">
       <AlertCircle class="w-6 h-6 lg:w-7 lg:h-7 text-warning drop-shadow-sm" />
@@ -136,7 +136,7 @@ onUnmounted(() => {
       <div 
         v-for="(aviso, i) in props.avisosData" 
         :key="aviso.id" 
-        class="shrink-0 w-[280px] sm:w-[320px] lg:w-full snap-center transition-all duration-500 origin-center cursor-pointer py-2 lg:py-4"
+        class="shrink-0 w-70 sm:w-[320px] lg:w-full snap-center transition-all duration-500 origin-center cursor-pointer py-2 lg:py-4"
         :class="[
           focusedAviso === i ? 'lg:scale-100 lg:opacity-100 lg:z-10 lg:drop-shadow-xl' : 'lg:scale-90 lg:opacity-50 hover:lg:opacity-80'
         ]"
