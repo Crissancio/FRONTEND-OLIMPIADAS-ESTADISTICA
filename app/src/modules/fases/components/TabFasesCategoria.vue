@@ -12,13 +12,12 @@ import Button from '@/shared/components/ui/atoms/Button.vue'
 import FaseCard from '@/modules/fases/components/FaseCard.vue'
 import FaseModal from '@/modules/fases/components/FaseModal.vue'
 import FaseGestionModal from '@/modules/fases/components/FaseGestionModal.vue'
-import MaterialModal from '@/modules/material/components/MaterialModal.vue'
-import type { NuevoMaterialForm } from '@/modules/material/components/MaterialModal.vue'
+import FaseMaterialModal from '@/modules/material/components/FaseMaterialModal.vue'
+// 1. Importamos el NUEVO modal de subida de materiales
+import FaseSubirMaterialModal from '@/modules/material/components/FaseSubirMaterialModal.vue'
 
 import { fasesService } from '@/modules/fases/services/fases.service'
-import { materialesService } from '@/modules/material/services/material.service'
 import type { FaseUnionDTO } from '@/modules/fases/types/fases.api'
-import type { MaterialDTO } from '@/modules/material/types/material.api'
 
 const props = defineProps<{
   convocatoriaId: number
@@ -39,12 +38,9 @@ const errorMessage = ref('')
 // REFERENCIAS A MODALES
 const faseModalRef = ref<InstanceType<typeof FaseModal> | null>(null)
 const gestionModalRef = ref<InstanceType<typeof FaseGestionModal> | null>(null)
-const materialModalRef = ref<InstanceType<typeof MaterialModal> | null>(null)
-
-// ESTADO PARA MATERIALES
-const isMaterialModalOpen = ref(false)
-const selectedFaseId = ref<number | null>(null)
-const existingMaterials = ref<MaterialDTO[]>([])
+const materialModalRef = ref<InstanceType<typeof FaseMaterialModal> | null>(null)
+// 2. Creamos la referencia para el nuevo modal
+const subirMaterialModalRef = ref<InstanceType<typeof FaseSubirMaterialModal> | null>(null)
 
 // MANEJO DE ERRORES
 const extractError = (err: any, fallbackMsg: string) => {
@@ -83,30 +79,17 @@ const openCreateFase = () => {
   faseModalRef.value?.openCreate()
 }
 
-// 1. ADMINISTRAR -> Abre el FaseGestionModal
 const handleAdministrar = (fase: FaseUnionDTO) => {
   gestionModalRef.value?.openManage(fase)
 }
 
-// 2. MATERIALES -> Abre el MaterialModal
-const handleMateriales = async (fase: FaseUnionDTO) => {
-  selectedFaseId.value = fase.id_fase
-  materialModalRef.value?.reset()
-  
-  try {
-    const res = await materialesService.obtenerPorFase(fase.id_fase)
-    existingMaterials.value = res.data
-  } catch {
-    existingMaterials.value = []
-  }
-  
-  isMaterialModalOpen.value = true
+const handleMateriales = (fase: FaseUnionDTO) => {
+  materialModalRef.value?.open(fase.id_fase, fase.nombre_fase)
 }
 
-// 3. RESULTADOS -> Redirige a la página de resultados
 const handleResultados = (fase: FaseUnionDTO) => {
   router.push({
-    name: 'admin-fase-gestion', // Reemplaza por el nombre exacto de tu ruta
+    name: 'admin-fase-gestion', 
     params: { 
       convocatoriaId: props.convocatoriaId, 
       categoriaId: props.categoriaId, 
@@ -115,32 +98,21 @@ const handleResultados = (fase: FaseUnionDTO) => {
   })
 }
 
-// ----- GUARDADO DE MATERIALES -----
-const saveMaterialNuevo = async (form: NuevoMaterialForm) => {
-  if (!selectedFaseId.value) return
-  errorMessage.value = ''
-  try {
-    const res = await materialesService.crearMaterialExterno({
-      nombre_material: form.nombre,
-      tipo_material: form.tipo,
-      enlace_acceso: form.enlace,
-    })
-    await materialesService.ligarFase(res.data.id_material, selectedFaseId.value)
-    isMaterialModalOpen.value = false
-  } catch(err) {
-    extractError(err, 'No se pudo guardar el material.')
-  }
+// ----- MANEJADORES DE MATERIALES -----
+
+const handleAddMaterial = (faseId: number) => {
+  // 3. Abrimos el modal pasando el ID de la fase
+  subirMaterialModalRef.value?.openModal(faseId)
 }
 
-const saveMaterialExistente = async (ids: number[]) => {
-  if (!selectedFaseId.value) return
-  errorMessage.value = ''
-  try {
-    await Promise.all(ids.map((id) => materialesService.ligarFase(id, selectedFaseId.value as number)))
-    isMaterialModalOpen.value = false
-  } catch(err) {
-    extractError(err, 'No se pudo vincular el material.')
-  }
+// 4. Función para recargar la lista de materiales en el modal de listado cuando se sube uno nuevo
+const reloadMaterialesModal = () => {
+  materialModalRef.value?.refresh()
+}
+
+const handleAdminMaterial = (materialId: number) => {
+  console.log('Abrir gestión del material ID:', materialId)
+  // TODO: Aquí irá la lógica para editar/eliminar el material específico
 }
 </script>
 
@@ -213,13 +185,15 @@ const saveMaterialExistente = async (ids: number[]) => {
     @refresh="loadFases"
   />
 
-  <MaterialModal
+  <FaseMaterialModal
     ref="materialModalRef"
-    :open="isMaterialModalOpen"
-    :existing-materials="existingMaterials"
-    @close="isMaterialModalOpen = false"
-    @save-nuevo="saveMaterialNuevo"
-    @save-existentes="saveMaterialExistente"
+    @add-material="handleAddMaterial"
+    @admin-material="handleAdminMaterial"
+  />
+
+  <FaseSubirMaterialModal
+    ref="subirMaterialModalRef"
+    @refresh="reloadMaterialesModal"
   />
 </template>
 
@@ -229,7 +203,7 @@ const saveMaterialExistente = async (ids: number[]) => {
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 .slide-enter-from,
-.slide-leave-to {
+.leave-to {
   opacity: 0;
   transform: translateY(-5px);
 }

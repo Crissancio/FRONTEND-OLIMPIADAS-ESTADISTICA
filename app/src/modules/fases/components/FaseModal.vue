@@ -13,9 +13,7 @@ import type {
   TipoFase, 
   ModalidadFase,
   FasePreparacionCreateDTO,
-  FasePreparacionUpdateDTO,
-  FasePruebaCreateDTO,
-  FasePruebaUpdateDTO
+  FasePruebaCreateDTO
 } from '@/modules/fases/types/fases.api'
 
 const props = defineProps<{
@@ -28,14 +26,9 @@ const emit = defineEmits<{
 }>()
 
 const isOpen = ref(false)
-const isEditing = ref(false)
 const isSubmitting = ref(false)
-const currentId = ref<number | null>(null)
 const errorMessage = ref<string | null>(null)
 const minGlobalDate = ref(new Date(Date.now() + 10 * 60000)) // +10 minutos
-
-// Control para evitar que quiten el check si ya era final en la BD
-const isOriginalPruebaFinal = ref(false)
 
 // REFERENCIAS A LOS CALENDARIOS PARA FORZAR EL MOVIMIENTO DEL MES
 const inicioCalendarRef = ref<any>(null)
@@ -105,11 +98,7 @@ const forceCalendarsToCurrentDates = async () => {
 const openCreate = () => {
   const { defaultStart, defaultEnd } = initializeDates()
   
-  isEditing.value = false
-  currentId.value = null
-  isOriginalPruebaFinal.value = false
   errorMessage.value = null
-  
   form.value = {
     tipo: 'PREPARACION',
     nombre: '',
@@ -127,39 +116,13 @@ const openCreate = () => {
   forceCalendarsToCurrentDates()
 }
 
-const openEdit = (fase: FaseUnionDTO) => {
-  initializeDates()
-  isEditing.value = true
-  currentId.value = fase.id_fase
-  errorMessage.value = null
-  
-  const isPrueba = fase.tipo_fase === 'PRUEBA'
-  isOriginalPruebaFinal.value = isPrueba ? Boolean((fase as any).es_prueba_final) : false
-
-  form.value = {
-    tipo: fase.tipo_fase,
-    nombre: fase.nombre_fase,
-    descripcion: fase.descripcion || '',
-    modalidad: fase.modalidad,
-    fecha_inicio: fase.tipo_fase === 'PREPARACION' ? new Date(fase.fecha_inicio) : new Date(),
-    fecha_fin: fase.tipo_fase === 'PREPARACION' ? new Date(fase.fecha_fin) : new Date(),
-    fecha_realizacion: fase.tipo_fase === 'PRUEBA' ? new Date(fase.fecha_realizacion) : new Date(),
-    criterioAprobacion: fase.tipo_fase === 'PRUEBA' ? fase.criterio_aprobacion : 51,
-    lugarRealizacion: fase.tipo_fase === 'PRUEBA' ? (fase.lugar_realizacion || '') : '',
-    faseAnteriorId: fase.tipo_fase === 'PRUEBA' && fase.id_fase_anterior ? fase.id_fase_anterior : '',
-    es_prueba_final: isOriginalPruebaFinal.value
-  }
-  isOpen.value = true
-  forceCalendarsToCurrentDates()
-}
-
 const close = () => {
   isOpen.value = false
   errorMessage.value = null
 }
 
 const fasesPruebaDisponibles = computed(() => {
-  return props.fases.filter(f => f.tipo_fase === 'PRUEBA' && f.id_fase !== currentId.value)
+  return props.fases.filter(f => f.tipo_fase === 'PRUEBA')
 })
 
 const minFechaFin = computed(() => {
@@ -188,71 +151,44 @@ const handleSave = async () => {
 
   try {
     if (form.value.tipo === 'PREPARACION') {
-      if (isEditing.value && currentId.value) {
-        const payload: FasePreparacionUpdateDTO = {
-          nombre_fase: form.value.nombre,
-          descripcion: form.value.descripcion,
-          modalidad: form.value.modalidad,
-          fecha_inicio: form.value.fecha_inicio.toISOString(),
-          fecha_fin: form.value.fecha_fin.toISOString()
-        }
-        await fasesService.actualizarFasePreparacion(currentId.value, payload)
-      } else {
-        const payload: FasePreparacionCreateDTO = {
-          id_categoria_fk: props.categoriaId,
-          nombre_fase: form.value.nombre,
-          descripcion: form.value.descripcion,
-          modalidad: form.value.modalidad,
-          fecha_inicio: form.value.fecha_inicio.toISOString(),
-          fecha_fin: form.value.fecha_fin.toISOString()
-        }
-        await fasesService.crearFasePreparacion(payload)
+      const payload: FasePreparacionCreateDTO = {
+        id_categoria_fk: props.categoriaId,
+        nombre_fase: form.value.nombre,
+        descripcion: form.value.descripcion,
+        modalidad: form.value.modalidad,
+        fecha_inicio: form.value.fecha_inicio.toISOString(),
+        fecha_fin: form.value.fecha_fin.toISOString()
       }
+      await fasesService.crearFasePreparacion(payload)
     } else {
-      if (isEditing.value && currentId.value) {
-        const payload: FasePruebaUpdateDTO = {
-          nombre_fase: form.value.nombre,
-          descripcion: form.value.descripcion,
-          modalidad: form.value.modalidad,
-          criterio_aprobacion: form.value.criterioAprobacion,
-          fecha_realizacion: form.value.fecha_realizacion.toISOString(),
-          lugar_realizacion: form.value.lugarRealizacion,
-          id_fase_anterior: form.value.faseAnteriorId ? Number(form.value.faseAnteriorId) : null,
-          es_prueba_final: form.value.es_prueba_final
-        }
-        await fasesService.actualizarFasePrueba(currentId.value, payload)
-      } else {
-        const payload: FasePruebaCreateDTO = {
-          id_categoria_fk: props.categoriaId,
-          nombre_fase: form.value.nombre,
-          descripcion: form.value.descripcion,
-          modalidad: form.value.modalidad,
-          criterio_aprobacion: form.value.criterioAprobacion,
-          fecha_realizacion: form.value.fecha_realizacion.toISOString(),
-          lugar_realizacion: form.value.lugarRealizacion,
-          id_fase_anterior: form.value.faseAnteriorId ? Number(form.value.faseAnteriorId) : null,
-          es_prueba_final: form.value.es_prueba_final
-        }
-        await fasesService.crearFasePrueba(payload)
+      const payload: FasePruebaCreateDTO = {
+        id_categoria_fk: props.categoriaId,
+        nombre_fase: form.value.nombre,
+        descripcion: form.value.descripcion,
+        modalidad: form.value.modalidad,
+        criterio_aprobacion: form.value.criterioAprobacion,
+        fecha_realizacion: form.value.fecha_realizacion.toISOString(),
+        lugar_realizacion: form.value.lugarRealizacion,
+        id_fase_anterior: form.value.faseAnteriorId ? Number(form.value.faseAnteriorId) : null,
+        es_prueba_final: form.value.es_prueba_final
       }
+      await fasesService.crearFasePrueba(payload)
     }
 
     emit('refresh')
     close()
   } catch (error) {
-    extractError(error, 'No se pudo guardar la fase. Verifica los datos ingresados.')
+    extractError(error, 'No se pudo crear la fase. Verifica los datos ingresados.')
   } finally {
     isSubmitting.value = false
   }
 }
 
 const togglePruebaFinal = () => {
-  // Si ya es una prueba final que viene del backend, bloqueamos desmarcarla
-  if (isOriginalPruebaFinal.value) return
   form.value.es_prueba_final = !form.value.es_prueba_final
 }
 
-defineExpose({ openCreate, openEdit, close })
+defineExpose({ openCreate, close })
 </script>
 
 <template>
@@ -263,7 +199,7 @@ defineExpose({ openCreate, openEdit, close })
     <Card class="w-full max-w-3xl border-gray-200 bg-white shadow-xl animate-fade-in my-auto">
       <CardHeader class="border-b border-gray-100 pb-4">
         <CardTitle class="flex items-center justify-between text-base font-bold text-text-main">
-          <span>{{ isEditing ? 'Editar Fase' : 'Crear Nueva Fase' }}</span>
+          <span>Crear Nueva Fase</span>
           <button @click="close" class="rounded-md p-1 text-text-muted hover:bg-gray-100 transition-colors">
             <X class="h-4 w-4" />
           </button>
@@ -279,8 +215,7 @@ defineExpose({ openCreate, openEdit, close })
           <div class="relative grid grid-cols-2 gap-1">
             <button
               type="button"
-              :disabled="isEditing"
-              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60"
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition-colors duration-300"
               :class="form.tipo === 'PREPARACION' ? 'text-white' : 'text-text-muted hover:text-primary'"
               @click="form.tipo = 'PREPARACION'"
             >
@@ -289,8 +224,7 @@ defineExpose({ openCreate, openEdit, close })
             </button>
             <button
               type="button"
-              :disabled="isEditing"
-              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-60"
+              class="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition-colors duration-300"
               :class="form.tipo === 'PRUEBA' ? 'text-primary' : 'text-text-muted hover:text-primary'"
               @click="form.tipo = 'PRUEBA'"
             >
@@ -299,10 +233,6 @@ defineExpose({ openCreate, openEdit, close })
             </button>
           </div>
         </div>
-
-        <p v-if="isEditing" class="text-center text-[11px] font-medium text-text-muted -mt-2">
-          El tipo de fase no se puede cambiar al editar.
-        </p>
 
         <div>
           <label class="mb-1 block text-sm font-bold text-text-main">Nombre de la Fase <span class="text-error">*</span></label>
@@ -365,7 +295,6 @@ defineExpose({ openCreate, openEdit, close })
                 type="button" 
                 class="flex items-center gap-3 focus:outline-none group"
                 @click="togglePruebaFinal"
-                :class="{ 'opacity-70 cursor-not-allowed': isOriginalPruebaFinal }"
               >
                 <div 
                   class="flex items-center justify-center h-5 w-5 rounded border shadow-sm transition-colors"
@@ -440,7 +369,7 @@ defineExpose({ openCreate, openEdit, close })
           <textarea
             v-model="form.descripcion"
             placeholder="Instrucciones, temarios o detalles adicionales..."
-            class="min-h-20 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+            class="min-h-[80px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
           />
         </div>
         
@@ -461,7 +390,7 @@ defineExpose({ openCreate, openEdit, close })
           <Button variant="outline" @click="close" :disabled="isSubmitting">Cancelar</Button>
           <Button variant="accent" @click="handleSave" :disabled="!isFormValid || isSubmitting">
             <span v-if="isSubmitting" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>
-            {{ isSubmitting ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Crear Fase') }}
+            Crear Fase
           </Button>
         </div>
 
