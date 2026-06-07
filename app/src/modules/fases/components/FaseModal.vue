@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { BookOpen, Trophy, AlertCircle, X } from 'lucide-vue-next'
+import { ref, computed, watch, nextTick } from 'vue'
+import { BookOpen, Trophy, AlertCircle, X, CheckSquare, Square } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
@@ -34,6 +34,14 @@ const currentId = ref<number | null>(null)
 const errorMessage = ref<string | null>(null)
 const minGlobalDate = ref(new Date(Date.now() + 10 * 60000)) // +10 minutos
 
+// Control para evitar que quiten el check si ya era final en la BD
+const isOriginalPruebaFinal = ref(false)
+
+// REFERENCIAS A LOS CALENDARIOS PARA FORZAR EL MOVIMIENTO DEL MES
+const inicioCalendarRef = ref<any>(null)
+const finCalendarRef = ref<any>(null)
+const realizacionCalendarRef = ref<any>(null)
+
 const form = ref({
   tipo: 'PREPARACION' as TipoFase,
   nombre: '',
@@ -44,7 +52,24 @@ const form = ref({
   fecha_realizacion: new Date(),
   criterioAprobacion: 51,
   lugarRealizacion: '',
-  faseAnteriorId: '' as number | ''
+  faseAnteriorId: '' as number | '',
+  es_prueba_final: false
+})
+
+// VIGILAMOS LA FECHA DE INICIO PARA ACTUALIZAR LA FECHA FIN Y SU CALENDARIO
+watch(() => form.value.fecha_inicio, async (newInicio) => {
+  if (form.value.tipo === 'PREPARACION' && newInicio) {
+    if (!form.value.fecha_fin || form.value.fecha_fin <= newInicio) {
+      // Sumamos 1 hora por defecto a la fecha fin para mantenerla válida
+      form.value.fecha_fin = new Date(newInicio.getTime() + 60 * 60000) 
+      
+      // Esperamos a que vue actualice el DOM y forzamos al calendario a ir al mes correcto
+      await nextTick()
+      if (finCalendarRef.value) {
+        finCalendarRef.value.move(form.value.fecha_fin)
+      }
+    }
+  }
 })
 
 const extractError = (err: any, fallbackMsg: string) => {
@@ -67,12 +92,24 @@ const initializeDates = () => {
   return { defaultStart, defaultEnd }
 }
 
+const forceCalendarsToCurrentDates = async () => {
+  await nextTick()
+  if (form.value.tipo === 'PREPARACION') {
+    inicioCalendarRef.value?.move(form.value.fecha_inicio)
+    finCalendarRef.value?.move(form.value.fecha_fin)
+  } else {
+    realizacionCalendarRef.value?.move(form.value.fecha_realizacion)
+  }
+}
+
 const openCreate = () => {
   const { defaultStart, defaultEnd } = initializeDates()
   
   isEditing.value = false
   currentId.value = null
+  isOriginalPruebaFinal.value = false
   errorMessage.value = null
+  
   form.value = {
     tipo: 'PREPARACION',
     nombre: '',
@@ -83,9 +120,11 @@ const openCreate = () => {
     fecha_realizacion: defaultStart,
     criterioAprobacion: 51,
     lugarRealizacion: '',
-    faseAnteriorId: ''
+    faseAnteriorId: '',
+    es_prueba_final: false
   }
   isOpen.value = true
+  forceCalendarsToCurrentDates()
 }
 
 const openEdit = (fase: FaseUnionDTO) => {
@@ -94,6 +133,9 @@ const openEdit = (fase: FaseUnionDTO) => {
   currentId.value = fase.id_fase
   errorMessage.value = null
   
+  const isPrueba = fase.tipo_fase === 'PRUEBA'
+  isOriginalPruebaFinal.value = isPrueba ? Boolean((fase as any).es_prueba_final) : false
+
   form.value = {
     tipo: fase.tipo_fase,
     nombre: fase.nombre_fase,
@@ -104,9 +146,11 @@ const openEdit = (fase: FaseUnionDTO) => {
     fecha_realizacion: fase.tipo_fase === 'PRUEBA' ? new Date(fase.fecha_realizacion) : new Date(),
     criterioAprobacion: fase.tipo_fase === 'PRUEBA' ? fase.criterio_aprobacion : 51,
     lugarRealizacion: fase.tipo_fase === 'PRUEBA' ? (fase.lugar_realizacion || '') : '',
-    faseAnteriorId: fase.tipo_fase === 'PRUEBA' && fase.id_fase_anterior ? fase.id_fase_anterior : ''
+    faseAnteriorId: fase.tipo_fase === 'PRUEBA' && fase.id_fase_anterior ? fase.id_fase_anterior : '',
+    es_prueba_final: isOriginalPruebaFinal.value
   }
   isOpen.value = true
+  forceCalendarsToCurrentDates()
 }
 
 const close = () => {
@@ -173,7 +217,8 @@ const handleSave = async () => {
           criterio_aprobacion: form.value.criterioAprobacion,
           fecha_realizacion: form.value.fecha_realizacion.toISOString(),
           lugar_realizacion: form.value.lugarRealizacion,
-          id_fase_anterior: form.value.faseAnteriorId ? Number(form.value.faseAnteriorId) : null
+          id_fase_anterior: form.value.faseAnteriorId ? Number(form.value.faseAnteriorId) : null,
+          es_prueba_final: form.value.es_prueba_final
         }
         await fasesService.actualizarFasePrueba(currentId.value, payload)
       } else {
@@ -185,7 +230,8 @@ const handleSave = async () => {
           criterio_aprobacion: form.value.criterioAprobacion,
           fecha_realizacion: form.value.fecha_realizacion.toISOString(),
           lugar_realizacion: form.value.lugarRealizacion,
-          id_fase_anterior: form.value.faseAnteriorId ? Number(form.value.faseAnteriorId) : null
+          id_fase_anterior: form.value.faseAnteriorId ? Number(form.value.faseAnteriorId) : null,
+          es_prueba_final: form.value.es_prueba_final
         }
         await fasesService.crearFasePrueba(payload)
       }
@@ -198,6 +244,12 @@ const handleSave = async () => {
   } finally {
     isSubmitting.value = false
   }
+}
+
+const togglePruebaFinal = () => {
+  // Si ya es una prueba final que viene del backend, bloqueamos desmarcarla
+  if (isOriginalPruebaFinal.value) return
+  form.value.es_prueba_final = !form.value.es_prueba_final
 }
 
 defineExpose({ openCreate, openEdit, close })
@@ -321,48 +373,78 @@ defineExpose({ openCreate, openEdit, close })
                 placeholder="Ej: Coliseo Central / Zoom"
               />
             </div>
+
+            <div class="col-span-1 md:col-span-2 pt-2">
+              <button 
+                type="button" 
+                class="flex items-center gap-3 focus:outline-none group"
+                @click="togglePruebaFinal"
+                :class="{ 'opacity-70 cursor-not-allowed': isOriginalPruebaFinal }"
+              >
+                <div 
+                  class="flex items-center justify-center h-5 w-5 rounded border shadow-sm transition-colors"
+                  :class="form.es_prueba_final ? 'bg-primary border-primary text-white' : 'bg-white border-gray-300 text-transparent group-hover:border-primary/50'"
+                >
+                  <CheckSquare v-if="form.es_prueba_final" class="h-4 w-4" />
+                  <Square v-else class="h-4 w-4" />
+                </div>
+                <span class="text-sm font-bold text-text-main select-none transition-colors group-hover:text-primary">
+                  Es Fase Prueba Final
+                </span>
+              </button>
+
+              <transition name="slide">
+                <div v-if="form.es_prueba_final" class="mt-3 flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-3 shadow-sm">
+                  <AlertCircle class="h-5 w-5 text-orange-500 shrink-0" />
+                  <div>
+                    <p class="text-[13px] font-medium text-orange-800 leading-snug">
+                      <strong>Aviso Importante:</strong> No se puede cambiar el tipo de fase prueba final luego de ser guardada. Además, <strong>no se podrán agregar más fases de prueba</strong> para esta categoría.
+                    </p>
+                  </div>
+                </div>
+              </transition>
+            </div>
           </template>
         </div>
 
-        <!-- Seccion Calendarios (Más fit y balanceada) -->
-        <div class="rounded-xl border border-gray-100 bg-gray-50/50 p-4">
-          <div v-if="form.tipo === 'PREPARACION'" class="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div>
-              <label class="mb-2 block text-sm font-semibold text-text-main">Inicio de Preparación <span class="text-error">*</span></label>
+        <div class="rounded-xl border border-gray-100 bg-gray-50/50 p-6 flex flex-col justify-center items-center">
+          <div v-if="form.tipo === 'PREPARACION'" class="flex flex-col sm:flex-row gap-6 w-full justify-center">
+            <div class="flex flex-col items-center">
+              <label class="mb-2 block text-sm font-semibold text-text-main text-center w-full">Inicio de Preparación <span class="text-error">*</span></label>
               <VDatePicker
+                ref="inicioCalendarRef"
                 v-model="form.fecha_inicio"
                 mode="dateTime"
                 is24hr
                 locale="es"
                 :first-day-of-week="2"
                 :min-date="minGlobalDate"
-                expanded
               />
             </div>
-            <div>
-              <label class="mb-2 block text-sm font-semibold text-text-main">Fin de Preparación <span class="text-error">*</span></label>
+            <div class="flex flex-col items-center">
+              <label class="mb-2 block text-sm font-semibold text-text-main text-center w-full">Fin de Preparación <span class="text-error">*</span></label>
               <VDatePicker
+                ref="finCalendarRef"
                 v-model="form.fecha_fin"
                 mode="dateTime"
                 is24hr
                 locale="es"
                 :first-day-of-week="2"
                 :min-date="minFechaFin"
-                expanded
               />
             </div>
           </div>
           
-          <div v-else class="max-w-sm mx-auto">
-            <label class="mb-2 block text-sm font-semibold text-text-main">Fecha y Hora de la Prueba <span class="text-error">*</span></label>
+          <div v-else class="flex flex-col items-center">
+            <label class="mb-2 block text-sm font-semibold text-text-main text-center w-full">Fecha y Hora de la Prueba <span class="text-error">*</span></label>
             <VDatePicker
+              ref="realizacionCalendarRef"
               v-model="form.fecha_realizacion"
               mode="dateTime"
               is24hr
               locale="es"
               :first-day-of-week="2"
               :min-date="minGlobalDate"
-              expanded
             />
           </div>
         </div>
@@ -372,7 +454,7 @@ defineExpose({ openCreate, openEdit, close })
           <textarea
             v-model="form.descripcion"
             placeholder="Instrucciones, temarios o detalles adicionales..."
-            class="min-h-20 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+            class="min-h-[80px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
           />
         </div>
 
