@@ -14,7 +14,6 @@ const detalleConvocatoriaTo = computed(() => ({
   params: { id: props.activeConv.id }
 }))
 
-// --- LÓGICA DEL CALENDARIO ---
 const isDesktop = ref(window.innerWidth >= 1024)
 
 const updateScreenSize = () => {
@@ -27,16 +26,27 @@ onUnmounted(() => window.removeEventListener('resize', updateScreenSize))
 const calendarAttributes = computed(() => {
   const attrs = []
 
-  // Rango de Inscripciones 
+  attrs.push({
+    key: 'today',
+    highlight: {
+      color: 'green',
+      fillMode: 'outline',
+    },
+    dates: new Date(),
+    popover: { label: 'Día de consulta (Hoy)' }
+  })
+
   if (props.activeConv.fecha_inicio_inscripcion && props.activeConv.fecha_fin_inscripcion) {
     const inicioInsc = new Date(props.activeConv.fecha_inicio_inscripcion)
     const finInsc = new Date(props.activeConv.fecha_fin_inscripcion)
 
-    // Formatear las horas para que se vean limpias (ej. "14:30")
+    const startOfInicio = new Date(inicioInsc.getFullYear(), inicioInsc.getMonth(), inicioInsc.getDate())
+    const startOfFin = new Date(finInsc.getFullYear(), finInsc.getMonth(), finInsc.getDate())
+    const endOfFin = new Date(finInsc.getFullYear(), finInsc.getMonth(), finInsc.getDate(), 23, 59, 59)
+
     const horaInicio = inicioInsc.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     const horaFin = finInsc.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-    // 1. Rango principal (amarillo)
     attrs.push({
       key: 'inscripcion',
       highlight: {
@@ -44,42 +54,41 @@ const calendarAttributes = computed(() => {
         fillMode: 'light',
       },
       dates: {
-        start: inicioInsc,
-        end: finInsc
+        start: startOfInicio,
+        end: endOfFin
       },
       popover: { label: 'Periodo de Inscripciones' }
     })
 
-    // 2. Etiqueta extra solo para el día de INICIO
     attrs.push({
       key: 'inscripcion-inicio',
-      dates: inicioInsc,
+      dates: startOfInicio,
       popover: { label: `Apertura: ${horaInicio}` }
     })
 
-    // 3. Etiqueta extra solo para el día de FIN
     attrs.push({
       key: 'inscripcion-fin',
-      dates: finInsc,
+      dates: startOfFin,
       popover: { label: `Cierre: ${horaFin}` }
     })
   }
 
-  // Fechas de olimpiadas
   if (props.activeConv.inicio_olimpiadas) {
+    const inicioOlim = new Date(props.activeConv.inicio_olimpiadas)
     attrs.push({
       key: 'inicio-olim',
       dot: 'blue',
-      dates: new Date(props.activeConv.inicio_olimpiadas),
+      dates: new Date(inicioOlim.getFullYear(), inicioOlim.getMonth(), inicioOlim.getDate()),
       popover: { label: 'Inicio de Olimpiadas' }
     })
   }
 
   if (props.activeConv.fin_olimpiadas) {
+    const finOlim = new Date(props.activeConv.fin_olimpiadas)
     attrs.push({
       key: 'fin-olim',
       dot: 'red',
-      dates: new Date(props.activeConv.fin_olimpiadas),
+      dates: new Date(finOlim.getFullYear(), finOlim.getMonth(), finOlim.getDate()),
       popover: { label: 'Fin de Olimpiadas' }
     })
   }
@@ -87,8 +96,23 @@ const calendarAttributes = computed(() => {
   return attrs
 })
 
-const minCalendarDate = computed(() => props.activeConv.inicio_olimpiadas ? new Date(props.activeConv.inicio_olimpiadas) : undefined)
-const maxCalendarDate = computed(() => props.activeConv.fin_olimpiadas ? new Date(props.activeConv.fin_olimpiadas) : undefined)
+const minCalendarDate = computed(() => {
+  const dates = []
+  if (props.activeConv.fecha_inicio_inscripcion) dates.push(new Date(props.activeConv.fecha_inicio_inscripcion))
+  if (props.activeConv.inicio_olimpiadas) dates.push(new Date(props.activeConv.inicio_olimpiadas))
+  dates.push(new Date())
+  return new Date(Math.min(...dates.map(d => d.getTime())))
+})
+
+const maxCalendarDate = computed(() => {
+  const dates = []
+  if (props.activeConv.fecha_fin_inscripcion) dates.push(new Date(props.activeConv.fecha_fin_inscripcion))
+  if (props.activeConv.fin_olimpiadas) dates.push(new Date(props.activeConv.fin_olimpiadas))
+  if (dates.length > 0) {
+    return new Date(Math.max(...dates.map(d => d.getTime())))
+  }
+  return undefined
+})
 </script>
 
 <template>
@@ -104,16 +128,16 @@ const maxCalendarDate = computed(() => props.activeConv.fin_olimpiadas ? new Dat
     <div class="grid grid-cols-1 gap-8 mb-8">
       
       <div class="bg-background p-6 rounded-xl border border-gray-100 shadow-sm">
-        <div class="flex items-center gap-2 mb-6">
+        <div class="flex items-center gap-2 mb-6 justify-center sm:justify-start">
           <Users class="w-6 h-6 text-secondary" />
           <h4 class="font-semibold text-xl text-text-main">Categorías Habilitadas</h4>
         </div>
         
-        <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div class="flex justify-center gap-4">
           <div 
             v-for="cat in props.activeConv.categorias" 
             :key="cat.id_categoria" 
-            class="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-primary transition-colors text-center"
+            class="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-primary transition-colors text-center w-36 sm:w-40 xl:w-44"
           >
             <CategorySymbol :name="cat.nombre_categoria" class="h-10 w-10 mb-3 rounded-md text-xl" />
             <span class="text-sm font-semibold text-text-main">{{ cat.nombre_categoria }}</span>
@@ -154,6 +178,10 @@ const maxCalendarDate = computed(() => props.activeConv.fin_olimpiadas ? new Dat
             <span class="w-3 h-3 rounded-full bg-red-500"></span>
             Fin
           </div>
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full border-2 border-green-500"></span>
+            Hoy
+          </div>
         </div>
       </div>
 
@@ -175,9 +203,7 @@ const maxCalendarDate = computed(() => props.activeConv.fin_olimpiadas ? new Dat
 </template>
 
 <style scoped>
-/* Usamos colores sólidos para evitar la superposición visible y aplicamos los colores solicitados */
 :deep(.vc-yellow) {
-  /* Fondo del rango y los círculos (sin transparencias) */
   --vc-accent-50: var(--color-accent);
   --vc-accent-100: var(--color-accent);
   --vc-accent-200: var(--color-accent); 
@@ -186,9 +212,22 @@ const maxCalendarDate = computed(() => props.activeConv.fin_olimpiadas ? new Dat
   --vc-accent-500: var(--color-accent);
   --vc-accent-600: var(--color-accent); 
   
-  /* Color de fuente de los números */
   --vc-accent-700: var(--color-primary-dark);
   --vc-accent-800: var(--color-primary-dark);
   --vc-accent-900: var(--color-primary-dark); 
+}
+
+:deep(.vc-green) {
+  --vc-accent-50: #22c55e;
+  --vc-accent-100: #22c55e;
+  --vc-accent-200: #22c55e; 
+  --vc-accent-300: #22c55e;
+  --vc-accent-400: #22c55e;
+  --vc-accent-500: #22c55e;
+  --vc-accent-600: #22c55e; 
+  
+  --vc-accent-700: #166534;
+  --vc-accent-800: #166534;
+  --vc-accent-900: #166534; 
 }
 </style>

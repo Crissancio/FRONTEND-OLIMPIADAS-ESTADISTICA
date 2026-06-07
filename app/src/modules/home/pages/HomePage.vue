@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { publicService } from '@/modules/public/services/public.service'
-import type { AvisoPublicoDTO, CategoriaInicioDTO, ConvocatoriaInicioDTO } from '@/modules/public/types/public.api'
+import type { AvisoPublicoDTO, CategoriaInicioDTO, ConvocatoriaDetalleDTO } from '@/modules/public/types/public.api'
 import type { AvisoPrioridad, TipoAviso } from '@/modules/avisos/types/avisos.api'
 import type { EstadoTemporal } from '@/modules/convocatorias/types/convocatorias.api'
 import { toApiError } from '@/app/api/api-error'
@@ -69,7 +69,7 @@ const normalizeAvisoPrioridad = (prioridad?: string | null): AvisoPrioridad => {
   return PRIORIDADES_AVISO.includes(normalized) ? normalized : 'MEDIA'
 }
 
-const formatFechas = (dto: ConvocatoriaInicioDTO): string => {
+const formatFechas = (dto: ConvocatoriaDetalleDTO): string => {
   const start = dto.inicio_olimpiadas
   const end = dto.fin_olimpiadas
   if (start || end) {
@@ -88,7 +88,7 @@ const mapCategorias = (categorias: CategoriaInicioDTO[]): HomeConvocatoria['cate
 }
 
 const mapConvocatoria = (
-  dto: ConvocatoriaInicioDTO
+  dto: ConvocatoriaDetalleDTO
 ): HomeConvocatoria => {
   const materiales = [
     { importancia_tipo: 'AFICHE', enlace_acceso: dto.material_principal?.afiche?.enlace_acceso ?? null },
@@ -105,8 +105,8 @@ const mapConvocatoria = (
     categorias: mapCategorias(dto.categorias ?? []),
     inicio_olimpiadas: dto.inicio_olimpiadas ?? null,
     fin_olimpiadas: dto.fin_olimpiadas ?? null,
-    fecha_inicio_inscripcion: null,
-    fecha_fin_inscripcion: null,
+    fecha_inicio_inscripcion: dto.fecha_inicio_inscripcion ?? null,
+    fecha_fin_inscripcion: dto.fecha_fin_inscripcion ?? null,
     material_principal: materiales
   }
 }

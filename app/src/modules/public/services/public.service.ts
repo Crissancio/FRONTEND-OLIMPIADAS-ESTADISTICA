@@ -83,7 +83,7 @@ export const publicService = {
     });
   },
   obtenerInicio() {
-    return customInstance<BaseResponse<ConvocatoriaInicioDTO>>({
+    return customInstance<BaseResponse<ConvocatoriaDetalleDTO>>({
       url: `/api/public/v1/public/inicio`, method: 'GET'
     });
   },
