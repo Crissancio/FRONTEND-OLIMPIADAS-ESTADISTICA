@@ -52,7 +52,7 @@ const openDocument = () => {
         :class="activeTab === 'CONVOCATORIA' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'"
       >
         <FileText class="w-4 h-4" />
-        Reglamento
+        Convocatoria
       </button>
     </div>
 
