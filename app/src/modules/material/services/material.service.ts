@@ -155,10 +155,16 @@ export const materialesService = {
       method: 'GET'
     })
   },
-  materialPrincipalConvocatoria(idConvocatoria: number){
+  materialPrincipalConvocatoria(idConvocatoria: number) {
     return customInstance<MaterialPrincipalResponse>({
       url: `/api/v1/materiales/principal/convocatoria/${idConvocatoria}`,
       method: 'GET'
     })
+  },
+  ligarMaterialPrincipalConvocatoria(idConvocatoria: number, tipoMaterial: TipoMaterialPrincipal) {
+    return customInstance<GeneralDictResponse>({
+      url: `/api/v1/materiales/principal/convocatoria/${idConvocatoria}/tipo/${tipoMaterial}`,
+      method: 'PUT'
+    })
   }
-};
+}
