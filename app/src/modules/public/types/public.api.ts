@@ -132,6 +132,7 @@ export interface FasePruebaPublicaDTO {
   fecha_realizacion: string;
   lugar_realizacion?: string | null;
   criterio_aprobacion: number;
+  es_prueba_final?:boolean | false;
 }
 
 export type FasePublicaUnionDTO = FasePruebaPublicaDTO | FasePreparacionPublicaDTO;

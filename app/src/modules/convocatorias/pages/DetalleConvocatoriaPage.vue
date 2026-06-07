@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ArrowRight, AlertCircle } from 'lucide-vue-next'
+import { ArrowRight, AlertCircle, Loader2 } from 'lucide-vue-next'
 import { publicService } from '@/modules/public/services/public.service'
 import type { 
   CategoriaDetalleDTO, 
@@ -27,8 +27,10 @@ const fasesByCategoria = ref<Record<string, FasePublicaUnionDTO[]>>({})
 const materialesByFase = ref<Record<string, MaterialPublicoRelacionDTO[]>>({})
 const materialGeneralList = ref<MaterialPublicoRelacionDTO[]>([])
 
+// Utilidades de formato
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : ''
 const formatRange = (start?: string | null, end?: string | null) => [formatDate(start), formatDate(end)].filter(Boolean).join(' - ')
+
 const categoriaId = (cat: CategoriaDetalleDTO, index: number) => String(cat.id_categoria ?? `${cat.curso}-${index}`)
 const categoriaNombre = (cat: CategoriaDetalleDTO) => cat.nombre_categoria ?? `${cat.curso} ${cat.nivel}`
 
@@ -37,17 +39,17 @@ const mapMaterial = (mat: MaterialPublicoRelacionDTO, index: number) => ({
   nombre: mat.nombre_material,
   url: mat.enlace_acceso,
   tipo: mat.tipo_material === 'VIDEO_EXTERNO' ? 'Video' : mat.tipo_material.includes('DOCUMENTO') ? 'Documento' : 'PDF',
-  tamano: '',
+  tamano: '', // Backend no devuelve tamaño en este DTO
 })
 
 const mapFase = (fase: FasePublicaUnionDTO) => ({
   id: String(fase.id_fase),
   nombre: fase.nombre_fase,
-  descripcion: fase.descripcion ?? 'Sin descripcion registrada.',
+  descripcion: fase.descripcion ?? 'Sin descripción registrada.',
   tipo: fase.tipo_fase === 'PRUEBA' ? 'Prueba' : 'Preparación',
   subtipo: '',
   fechas: fase.tipo_fase === 'PRUEBA' ? formatDate(fase.fecha_realizacion) : formatRange(fase.fecha_inicio, fase.fecha_fin),
-  modalidad: fase.modalidad ? fase.modalidad.charAt(0) + fase.modalidad.slice(1).toLowerCase() : '',
+  modalidad: fase.modalidad ? fase.modalidad.charAt(0) + fase.modalidad.slice(1).toLowerCase() : 'Presencial',
   materiales: (materialesByFase.value[String(fase.id_fase)] ?? []).map((m, i) => mapMaterial(m, i)),
 })
 
@@ -60,7 +62,7 @@ const conv = computed(() => {
     nombre: dto.nombre_convocatoria,
     gestion: dto.gestion,
     estado: dto.estado_temporal,
-    descripcionBreve: dto.descripcion ?? '',
+    descripcionBreve: dto.descripcion ?? 'Sin descripción general.',
     categorias: (dto.categorias || []).map((cat, index) => {
       const id = categoriaId(cat, index)
       return {
@@ -78,6 +80,8 @@ const convocatoriaDocumentoUrl = computed(() => detalle.value?.material_principa
 const reglamentoUrl = computed(() => detalle.value?.material_principal?.reglamento?.enlace_acceso ?? null)
 const primaryVisualUrl = computed(() => aficheUrl.value ?? convocatoriaDocumentoUrl.value)
 const primaryVisualLabel = computed(() => aficheUrl.value ? 'Afiche oficial' : convocatoriaDocumentoUrl.value ? 'Convocatoria oficial' : 'Sin afiche/convocatoria')
+
+// Validación del estado para mostrar el botón de inscripción
 const showInscripcion = computed(() => conv.value?.estado === 'INSCRIPCION EN CURSO')
 
 const loadDetalle = async () => {
@@ -88,32 +92,50 @@ const loadDetalle = async () => {
   loadError.value = null
   
   try {
+    // 1. Cargar detalle principal de la convocatoria
     const resConv = await publicService.obtenerConvocatoriaDetalle(id)
     const data = resConv.data
     detalle.value = data
 
-    // Cargar material general de la convocatoria
-    const resMatGeneral = await publicService.obtenerMaterialesPorConvocatoria(id)
-    materialGeneralList.value = resMatGeneral.data
+    // 2. Cargar material general de la convocatoria
+    try {
+      const resMatGeneral = await publicService.obtenerMaterialesPorConvocatoria(id)
+      materialGeneralList.value = resMatGeneral.data
+    } catch (e) {
+      console.warn("No se pudo obtener el material general:", e)
+    }
 
-    // Cargar fases para cada categoría
+    // 3. Cargar fases para cada categoría
     const catsWithId = data.categorias?.filter((cat) => cat.id_categoria != null) || []
-    const faseEntries = await Promise.all(catsWithId.map(async (cat) => {
-      const res = await publicService.obtenerFasesPorCategoria(cat.id_categoria)
-      return [String(cat.id_categoria), res.data] as const
-    }))
-    fasesByCategoria.value = Object.fromEntries(faseEntries)
+    if (catsWithId.length > 0) {
+      const faseEntries = await Promise.all(catsWithId.map(async (cat) => {
+        try {
+          const res = await publicService.obtenerFasesPorCategoria(cat.id_categoria)
+          return [String(cat.id_categoria), res.data] as const
+        } catch {
+          return [String(cat.id_categoria), []] as const
+        }
+      }))
+      fasesByCategoria.value = Object.fromEntries(faseEntries)
 
-    // Cargar materiales para cada fase
-    const fases = faseEntries.flatMap(([, items]) => items)
-    const materialEntries = await Promise.all(fases.map(async (fase) => {
-      const res = await publicService.obtenerMaterialesPorFase(fase.id_fase)
-      return [String(fase.id_fase), res.data] as const
-    }))
-    materialesByFase.value = Object.fromEntries(materialEntries)
+      // 4. Cargar materiales para cada fase encontrada
+      const fases = faseEntries.flatMap(([, items]) => items)
+      if (fases.length > 0) {
+        const materialEntries = await Promise.all(fases.map(async (fase) => {
+          try {
+            const res = await publicService.obtenerMaterialesPorFase(fase.id_fase)
+            return [String(fase.id_fase), res.data] as const
+          } catch {
+            return [String(fase.id_fase), []] as const
+          }
+        }))
+        materialesByFase.value = Object.fromEntries(materialEntries)
+      }
+    }
 
   } catch (err: any) {
     loadError.value = err?.message || 'No se pudo cargar la convocatoria.'
+    console.error(err)
   } finally {
     isLoading.value = false
   }
@@ -127,6 +149,7 @@ onMounted(() => {
 <template>
   <div class="bg-gray-50 w-full min-h-screen">
     
+    <!-- Renderizamos el header solo cuando la data base existe -->
     <DetalleConvocatoriaHeader 
       v-if="conv"
       :convocatoria="conv"
@@ -134,11 +157,22 @@ onMounted(() => {
     />
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-20 pb-20">
-      <template v-if="!conv">
-        <div class="flex-1 flex flex-col items-center justify-center min-h-[60vh] bg-gray-50">
+      
+      <!-- Estado de Carga -->
+      <template v-if="isLoading && !conv">
+        <div class="flex-1 flex flex-col items-center justify-center min-h-[50vh] bg-gray-50">
+          <Loader2 class="w-12 h-12 text-primary animate-spin mb-4" />
+          <h2 class="text-xl font-heading font-bold text-text-main">Cargando convocatoria...</h2>
+          <p class="text-text-muted mt-2">Consultando datos oficiales del sistema.</p>
+        </div>
+      </template>
+
+      <!-- Estado de Error / No Encontrado -->
+      <template v-else-if="!conv">
+        <div class="flex-1 flex flex-col items-center justify-center min-h-[50vh] bg-gray-50">
           <AlertCircle class="w-16 h-16 text-text-muted mb-6" />
-          <h1 class="text-3xl font-heading font-bold text-text-main mb-4">{{ isLoading ? 'Cargando convocatoria' : 'Convocatoria no encontrada' }}</h1>
-          <p class="text-lg text-text-muted mb-8 max-w-md text-center">{{ isLoading ? 'Consultando datos oficiales.' : 'La convocatoria que buscas no existe o ha sido eliminada del sistema.' }}</p>
+          <h1 class="text-3xl font-heading font-bold text-text-main mb-4">Convocatoria no encontrada</h1>
+          <p class="text-lg text-text-muted mb-8 max-w-md text-center">La convocatoria que buscas no existe o ha sido eliminada del sistema.</p>
           <Button 
             as="router-link"
             to="/convocatorias"
@@ -151,6 +185,7 @@ onMounted(() => {
         </div>
       </template>
 
+      <!-- Contenido Principal -->
       <template v-else>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
@@ -175,6 +210,7 @@ onMounted(() => {
           
         </div>
       </template>
+      
     </div>
   </div>
 </template>
