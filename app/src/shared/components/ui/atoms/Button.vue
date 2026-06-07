@@ -31,7 +31,7 @@ const variantClasses = computed(() => {
     case 'link':
       return 'bg-transparent text-primary hover:text-primary-dark underline-offset-4 hover:underline p-0 h-auto focus-visible:ring-primary'
     case 'not_allowed':
-      return 'bg-gray-100 text-gray-500 hover:bg-gray-200 focus-visible:ring-gray-300'
+      return ''
     default:
       return ''
   }
@@ -50,11 +50,16 @@ const sizeClasses = computed(() => {
   }
 })
 
-const classes = computed(() => [baseClasses, variantClasses.value, sizeClasses.value])
+const classes = computed(() => [
+  baseClasses,
+   variantClasses.value, 
+   sizeClasses.value,
+
+])
 </script>
 
 <template>
-  <component :is="as" :class="classes" :disabled="disabled">
+  <component :is="as" :class="[classes, $attrs.class]" :disabled="disabled">
     <slot />
   </component>
 </template>

@@ -137,7 +137,32 @@
 
   --color-danger-text: #DC2626;
   --color-danger-text-hover: #B91C1C;
-}
+
+  --color-preparacion: #00B0D8;
+  --color-prueba: #113264;
+  --color-prueba-final: #F5A623;
+  /*borrador*/
+  --color-borrador: #D97706;
+  --color-borrador-text: #B45309;
+  --color-borrador-border: #FCD34D;
+
+  --color-borrador-soft: #FFFBEB;
+  --color-borrador-soft-hover: #FEF3C7;
+  /*lista*/
+  --color-lista: #16A34A;
+  --color-lista-text: #15803D;
+  --color-lista-border: #86EFAC;
+
+  --color-lista-soft: #F0FDF4;
+  --color-lista-soft-hover: #DCFCE7;
+  /*eliminada*/
+  --color-eliminada: #EF4444;
+  --color-eliminada-text: #DC2626;
+  --color-eliminada-border: #FCA5A5;
+
+  --color-eliminada-soft: #FEF2F2;
+  --color-eliminada-soft-hover: #FEE2E2;
+  }
 
 @import "./styles/theme.css";
 

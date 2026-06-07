@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { CalendarDays, Plus, AlertCircle, X } from 'lucide-vue-next'
+
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
@@ -8,42 +10,18 @@ import CardTitle from '@/shared/components/ui/atoms/CardTitle.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 
 import FaseCard from '@/modules/fases/components/FaseCard.vue'
-import DeleteFaseModal from '@/modules/fases/components/DeleteFaseModal.vue'
 import FaseModal from '@/modules/fases/components/FaseModal.vue'
+import FaseGestionModal from '@/modules/fases/components/FaseGestionModal.vue'
 import MaterialModal from '@/modules/material/components/MaterialModal.vue'
 import type { NuevoMaterialForm } from '@/modules/material/components/MaterialModal.vue'
 
 import { fasesService } from '@/modules/fases/services/fases.service'
 import { materialesService } from '@/modules/material/services/material.service'
-import type { FaseUnionDTO, FasePreparacionDTO, FasePruebaDTO, ModalidadFase } from '@/modules/fases/types/fases.api'
-import type { MaterialDTO, TipoMaterialEnum } from '@/modules/material/types/material.api'
-
-type FaseTipo = 'preparacion' | 'prueba'
-type Modalidad = 'virtual' | 'presencial' | 'semipresencial'
-type MaterialTipo = TipoMaterialEnum
-
-export interface MaterialItem {
-  id: string
-  nombre: string
-  tipo: MaterialTipo
-  idMaterial?: number
-}
-
-export interface FaseItem {
-  id: string
-  nombre: string
-  inicio: string
-  fin: string
-  descripcion: string
-  tipo: FaseTipo
-  modalidad: Modalidad
-  criterioAprobacion: number | null
-  lugarRealizacion: string
-  faseAnteriorId: string
-  materiales: MaterialItem[]
-}
+import type { FaseUnionDTO } from '@/modules/fases/types/fases.api'
+import type { MaterialDTO } from '@/modules/material/types/material.api'
 
 const props = defineProps<{
+  convocatoriaId: number
   categoriaId: number
 }>()
 
@@ -51,22 +29,24 @@ const emit = defineEmits<{
   (e: 'error', msg: string): void
 }>()
 
-const fasesRaw = ref<FaseUnionDTO[]>([])
-const fases = ref<FaseItem[]>([])
+const router = useRouter()
+
+// ESTADO
+const fases = ref<FaseUnionDTO[]>([])
 const isLoadingFases = ref(false)
 const errorMessage = ref('')
 
-const showDeleteModal = ref(false)
-const isDeletingFase = ref(false)
-const faseToDelete = ref<string | null>(null)
-
+// REFERENCIAS A MODALES
 const faseModalRef = ref<InstanceType<typeof FaseModal> | null>(null)
+const gestionModalRef = ref<InstanceType<typeof FaseGestionModal> | null>(null)
 const materialModalRef = ref<InstanceType<typeof MaterialModal> | null>(null)
 
+// ESTADO PARA MATERIALES
 const isMaterialModalOpen = ref(false)
-const selectedFaseId = ref<string>('')
+const selectedFaseId = ref<number | null>(null)
 const existingMaterials = ref<MaterialDTO[]>([])
 
+// MANEJO DE ERRORES
 const extractError = (err: any, fallbackMsg: string) => {
   console.log('Error recibido:', err)
   const responseData = err?.response?.data ?? err?.data ?? err?.details ?? null
@@ -77,55 +57,19 @@ const extractError = (err: any, fallbackMsg: string) => {
   errorMessage.value = err?.message && !err.message.includes('status code') ? err.message : fallbackMsg
 }
 
-const formatUIDate = (dateStr?: string | null) => {
-  if (!dateStr) return 'Sin fecha'
-  try {
-    const d = new Date(dateStr)
-    return d.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })
-  } catch {
-    return dateStr.slice(0, 16)
-  }
-}
-
-const fromModalidad = (value: string): Modalidad => value.toLowerCase() as Modalidad
-
-const toFaseItem = (item: FaseUnionDTO): FaseItem => {
-  const isPrueba = item.tipo_fase === 'PRUEBA'
-  const prueba = isPrueba ? (item as FasePruebaDTO) : null
-  const prep = !isPrueba ? (item as FasePreparacionDTO) : null
-  return {
-    id: String(item.id_fase),
-    nombre: item.nombre_fase,
-    inicio: formatUIDate(isPrueba ? prueba!.fecha_realizacion : prep!.fecha_inicio),
-    fin: formatUIDate(isPrueba ? prueba!.fecha_realizacion : prep!.fecha_fin),
-    descripcion: item.descripcion ?? '',
-    tipo: isPrueba ? 'prueba' : 'preparacion',
-    modalidad: fromModalidad(item.modalidad),
-    criterioAprobacion: prueba?.criterio_aprobacion ?? null,
-    lugarRealizacion: prueba?.lugar_realizacion ?? '',
-    faseAnteriorId: prueba?.id_fase_anterior ? String(prueba.id_fase_anterior) : '',
-    materiales: [],
-  }
-}
-
+// CARGA DE DATOS
 const loadFases = async () => {
   if (!Number.isFinite(props.categoriaId)) return
   isLoadingFases.value = true
   errorMessage.value = ''
+  
   try {
     const res = await fasesService.listarFasesPorCategoria(props.categoriaId, { page: 1, limit: 100 })
-    fasesRaw.value = res.data.items || []
-    
-    const oldMaterialsMap = new Map(fases.value.map(f => [f.id, f.materiales]))
-    fases.value = fasesRaw.value.map(dto => {
-      const item = toFaseItem(dto)
-      item.materiales = oldMaterialsMap.get(item.id) || []
-      return item
-    })
+    fases.value = res.data.items || []
   } catch (err: any) {
-    fasesRaw.value = []
     fases.value = []
-    extractError(err, 'No se pudieron cargar las fases.')
+    extractError(err, 'No se pudieron cargar las fases de esta categoría.')
+    emit('error', errorMessage.value)
   } finally {
     isLoadingFases.value = false
   }
@@ -133,53 +77,45 @@ const loadFases = async () => {
 
 watch(() => props.categoriaId, loadFases, { immediate: true })
 
-const getFaseAnteriorNombre = (faseAnteriorId: string) => {
-  return fases.value.find(f => f.id === faseAnteriorId)?.nombre || 'Ninguna'
+// ----- MANEJADORES DE LA TARJETA (FaseCard) -----
+
+const openCreateFase = () => {
+  faseModalRef.value?.openCreate()
 }
 
-// ----- Acciones de Fase -----
-const openCreateFase = () => faseModalRef.value?.openCreate()
-
-const openEditFase = (fase: FaseItem) => {
-  const raw = fasesRaw.value.find(f => String(f.id_fase) === fase.id)
-  if (raw) faseModalRef.value?.openEdit(raw)
+// 1. ADMINISTRAR -> Abre el FaseGestionModal
+const handleAdministrar = (fase: FaseUnionDTO) => {
+  gestionModalRef.value?.openManage(fase)
 }
 
-const requestDeleteFase = (id: string) => {
-  faseToDelete.value = id
-  showDeleteModal.value = true
-}
-
-const confirmDeleteFase = async () => {
-  if (!faseToDelete.value) return
-  isDeletingFase.value = true
-  errorMessage.value = ''
+// 2. MATERIALES -> Abre el MaterialModal
+const handleMateriales = async (fase: FaseUnionDTO) => {
+  selectedFaseId.value = fase.id_fase
+  materialModalRef.value?.reset()
   
   try {
-    await fasesService.eliminarFaseFisica(Number(faseToDelete.value))
-    await loadFases()
-    showDeleteModal.value = false
-  } catch(err) {
-    extractError(err, 'No se pudo eliminar la fase.')
-  } finally {
-    isDeletingFase.value = false
-    faseToDelete.value = null
-  }
-}
-
-// ----- Acciones de Materiales -----
-const openMaterialModal = async (faseId: string) => {
-  selectedFaseId.value = faseId
-  materialModalRef.value?.reset()
-  try {
-    const res = await materialesService.obtenerPorFase(Number(faseId))
+    const res = await materialesService.obtenerPorFase(fase.id_fase)
     existingMaterials.value = res.data
   } catch {
     existingMaterials.value = []
   }
+  
   isMaterialModalOpen.value = true
 }
 
+// 3. RESULTADOS -> Redirige a la página de resultados
+const handleResultados = (fase: FaseUnionDTO) => {
+  router.push({
+    name: 'admin-fase-gestion', // Reemplaza por el nombre exacto de tu ruta
+    params: { 
+      convocatoriaId: props.convocatoriaId, 
+      categoriaId: props.categoriaId, 
+      faseId: fase.id_fase 
+    }
+  })
+}
+
+// ----- GUARDADO DE MATERIALES -----
 const saveMaterialNuevo = async (form: NuevoMaterialForm) => {
   if (!selectedFaseId.value) return
   errorMessage.value = ''
@@ -189,16 +125,7 @@ const saveMaterialNuevo = async (form: NuevoMaterialForm) => {
       tipo_material: form.tipo,
       enlace_acceso: form.enlace,
     })
-    await materialesService.ligarFase(res.data.id_material, Number(selectedFaseId.value))
-    const fase = fases.value.find((item) => item.id === selectedFaseId.value)
-    if (fase) {
-      fase.materiales.push({
-        id: `mat-${res.data.id_material}`,
-        nombre: res.data.nombre_material,
-        tipo: res.data.tipo_material as MaterialTipo,
-        idMaterial: res.data.id_material,
-      })
-    }
+    await materialesService.ligarFase(res.data.id_material, selectedFaseId.value)
     isMaterialModalOpen.value = false
   } catch(err) {
     extractError(err, 'No se pudo guardar el material.')
@@ -209,33 +136,10 @@ const saveMaterialExistente = async (ids: number[]) => {
   if (!selectedFaseId.value) return
   errorMessage.value = ''
   try {
-    await Promise.all(ids.map((id) => materialesService.ligarFase(id, Number(selectedFaseId.value))))
-    const fase = fases.value.find((item) => item.id === selectedFaseId.value)
-    if (fase) {
-      const toAdd = existingMaterials.value
-        .filter((m) => ids.includes(m.id_material))
-        .map((m) => ({
-          id: `mat-${m.id_material}`,
-          nombre: m.nombre_material,
-          tipo: m.tipo_material as MaterialTipo,
-          idMaterial: m.id_material,
-        }))
-      fase.materiales.push(...toAdd)
-    }
+    await Promise.all(ids.map((id) => materialesService.ligarFase(id, selectedFaseId.value as number)))
     isMaterialModalOpen.value = false
   } catch(err) {
     extractError(err, 'No se pudo vincular el material.')
-  }
-}
-
-const removeMaterial = async (faseId: string, materialId: string, idMaterial?: number) => {
-  errorMessage.value = ''
-  try {
-    if (idMaterial) await materialesService.desligarFase(idMaterial, Number(faseId))
-    const fase = fases.value.find((item) => item.id === faseId)
-    if (fase) fase.materiales = fase.materiales.filter((item) => item.id !== materialId)
-  } catch(err) {
-    extractError(err, 'No se pudo eliminar el material.')
   }
 }
 </script>
@@ -248,7 +152,7 @@ const removeMaterial = async (faseId: string, materialId: string, idMaterial?: n
           <CardTitle class="flex items-center gap-2 text-text-main">
             <CalendarDays class="h-5 w-5 text-accent" />Fases de la Categoría
           </CardTitle>
-          <p class="mt-1 text-sm text-text-muted">Administra el cronograma y los materiales asignados.</p>
+          <p class="mt-1 text-sm text-text-muted">Visualiza el cronograma de evaluación y preparación.</p>
         </div>
         <Button variant="accent" class="flex items-center gap-2 shadow-sm" @click="openCreateFase">
           <Plus class="h-4 w-4" />Nueva Fase
@@ -271,7 +175,7 @@ const removeMaterial = async (faseId: string, materialId: string, idMaterial?: n
       </transition>
 
       <div v-if="isLoadingFases" class="rounded-xl border border-gray-200 bg-gray-50 p-6 text-center text-sm font-medium text-text-muted animate-pulse">
-        Cargando fases...
+        Cargando cronograma de fases...
       </div>
       
       <div v-else-if="fases.length === 0" class="rounded-xl border-2 border-dashed border-gray-300 p-10 text-center flex flex-col items-center justify-center">
@@ -282,32 +186,30 @@ const removeMaterial = async (faseId: string, materialId: string, idMaterial?: n
         <p class="text-xs text-text-muted mt-1 max-w-xs">No se ha creado el cronograma de evaluación ni preparación para esta categoría aún.</p>
       </div>
 
-      <div class="space-y-4">
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
         <FaseCard
           v-for="fase in fases"
-          :key="fase.id"
+          :key="fase.id_fase"
           :fase="fase"
-          :fase-anterior-nombre="getFaseAnteriorNombre(fase.faseAnteriorId)"
-          @edit="openEditFase"
-          @delete="requestDeleteFase"
-          @add-material="openMaterialModal"
-          @remove-material="removeMaterial"
+          @administrar="handleAdministrar"
+          @materiales="handleMateriales"
+          @resultados="handleResultados"
         />
       </div>
     </CardContent>
-
-    <DeleteFaseModal 
-      :show="showDeleteModal" 
-      :is-deleting="isDeletingFase"
-      @cancel="showDeleteModal = false"
-      @confirm="confirmDeleteFase"
-    />
   </Card>
 
   <FaseModal
     ref="faseModalRef"
     :categoria-id="categoriaId"
-    :fases="fasesRaw"
+    :fases="fases"
+    @refresh="loadFases"
+  />
+
+  <FaseGestionModal
+    ref="gestionModalRef"
+    :categoria-id="categoriaId"
+    :fases="fases"
     @refresh="loadFases"
   />
 

@@ -23,6 +23,12 @@ export const adminRoutes: RouteRecordRaw[] = [
     component: () => import('@/modules/categorias/pages/AdminCategoriaGestionPage.vue'),
     meta: { title: 'Admin - Gestion Categoria' }
   },
+    {
+    path: '/admin/convocatoria/:convocatoriaId/categoria/:categoriaId/fase/:faseId/resultados',
+    name: 'admin-fase-gestion',
+    component: () => import('@/modules/resultados/pages/FaseResultadosPage.vue'),
+    meta: { title: 'Admin - Gestion Fase' }
+  },
   {
     path: '/admin',
     component: () => import('@/layouts/AdminLayout.vue'),

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 type CardContentProps = {
-  class?: string
+  class?: string | string[] | Record<string, boolean>
 }
 
 const props = defineProps<CardContentProps>()
