@@ -15,7 +15,6 @@ import type {
   FasePublicaUnionDTO,
   AvisoPublicoDTO,
   ConvocatoriaIdDTO,
-  ConvocatoriaInicioDTO,
   ConvocatoriaDetalleDTO,
   ConvocatoriaListPublicDTO,
   CategoriaDetalleDTO,
