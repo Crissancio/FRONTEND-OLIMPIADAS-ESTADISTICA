@@ -1,14 +1,15 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { 
-  Lightbulb, Compass, Users, 
-  BookOpen, Star
+  Lightbulb, Compass, Star, 
+  GraduationCap, Briefcase, Handshake 
 } from 'lucide-vue-next'
+import AcercaHeader from '@/modules/acerca/components/AcercaHeader.vue'
 import MemberCard from '@/modules/acerca/components/MemberCard.vue'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
-import { usePublicStore } from '@/modules/public/stores/public.store'
-import type { ColaboradorResponseDTO, TipoColaborador } from '@/modules/public/types/public.api'
+import { publicService } from '@/modules/public/services/public.service'
+import type { PublicColaboradorResponseDTO, TipoColaborador } from '@/modules/public/types/public.api'
 
 type TabType = 'personal' | 'admin' | 'colab'
 type MemberItem = {
@@ -16,20 +17,25 @@ type MemberItem = {
   role: string
   bio: string
   email: string
+  perfil: string
 }
+
 const activeTab = ref<TabType>('personal')
-const publicStore = usePublicStore()
-const personalApi = ref<Record<TabType, MemberItem[]>>({
-  personal: [],
-  admin: [],
-  colab: [],
-})
 const isLoading = ref(false)
 const loadedTabs = ref<Record<TabType, boolean>>({
   personal: false,
   admin: false,
   colab: false,
 })
+
+const personalApi = ref<Record<TabType, MemberItem[]>>({
+  personal: [],
+  admin: [],
+  colab: [],
+})
+
+const tabsOrder: TabType[] = ['personal', 'admin', 'colab']
+let autoSwitchTimer: ReturnType<typeof setInterval> | null = null
 
 const tabTipo: Record<TabType, TipoColaborador> = {
   personal: 'PERSONAL ACADEMICO',
@@ -38,29 +44,52 @@ const tabTipo: Record<TabType, TipoColaborador> = {
 }
 
 const tabLabel: Record<TabType, string> = {
-  personal: 'personal academico',
+  personal: 'personal académico',
   admin: 'personal administrativo',
   colab: 'colaboradores',
 }
 
-const mapColaborador = (item: ColaboradorResponseDTO) => ({
+const mapColaborador = (item: PublicColaboradorResponseDTO): MemberItem => ({
   name: [item.nombres, item.paterno, item.materno].filter(Boolean).join(' '),
   role: item.rol,
-  bio: item.presentacion ?? 'Miembro del comite organizador de las Olimpiadas de Estadistica.',
+  bio: item.presentacion ?? 'Miembro del comité organizador de las Olimpiadas de Estadística.',
   email: item.correo,
+  perfil: item.perfil?? ''
 })
 
 const loadPersonal = async (tab: TabType) => {
   isLoading.value = true
   try {
-    const data = await publicStore.loadPersonal(tabTipo[tab])
-    personalApi.value[tab] = data.map(mapColaborador)
+    const res = await publicService.obtenerColaboradores({ tipo: tabTipo[tab] })
+    if (res && res.data && res.data.items) {
+      personalApi.value[tab] = res.data.items.map(mapColaborador)
+    } else {
+      personalApi.value[tab] = []
+    }
   } catch {
     personalApi.value[tab] = []
   } finally {
     loadedTabs.value[tab] = true
     isLoading.value = false
   }
+}
+
+const startAutoSwitch = () => {
+  stopAutoSwitch()
+  autoSwitchTimer = setInterval(() => {
+    const currentIndex = tabsOrder.indexOf(activeTab.value)
+    const nextIndex = (currentIndex + 1) % tabsOrder.length
+    activeTab.value = tabsOrder[nextIndex]
+  }, 30000)
+}
+
+const stopAutoSwitch = () => {
+  if (autoSwitchTimer) clearInterval(autoSwitchTimer)
+}
+
+const handleTabClick = (tab: TabType) => {
+  activeTab.value = tab
+  startAutoSwitch() 
 }
 
 const activeData = computed(() => {
@@ -73,26 +102,22 @@ watch(activeTab, (tab) => {
 
 onMounted(() => {
   void loadPersonal(activeTab.value)
+  startAutoSwitch()
+})
+
+onUnmounted(() => {
+  stopAutoSwitch()
 })
 </script>
 
 <template>
   <div class="w-full bg-gray-50 min-h-screen">
-    <!-- Hero Section -->
-    <div class="bg-primary text-white pt-16 pb-12 relative overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-br from-slate-900/40 to-transparent" />
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-        <BookOpen class="w-16 h-16 mx-auto mb-6 opacity-90" />
-        <h1 class="text-4xl md:text-5xl font-heading font-black mb-4">Acerca de las Olimpiadas</h1>
-        <p class="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto font-medium">
-          Conoce más sobre nuestro propósito, impacto y el equipo detrás de la competencia académica más importante de nuestra facultad.
-        </p>
-      </div>
-    </div>
+    
+    <AcercaHeader />
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-20 pb-20 space-y-16">
       
-      <!-- IntroducciÃ³n -->
+      <!-- Introducción -->
       <Card class="rounded-2xl shadow-sm border-gray-100">
         <CardContent class="p-8 md:p-12">
           <h2 class="text-3xl font-heading font-bold text-text-main mb-6 border-b border-gray-100 pb-4">Introducción</h2>
@@ -107,9 +132,9 @@ onMounted(() => {
         </CardContent>
       </Card>
 
-      <!-- MisiÃ³n y VisiÃ³n -->
+      <!-- Misión y Visión -->
       <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card class="bg-gradient-to-br from-blue-50 to-white rounded-2xl border-blue-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+        <Card class="bg-linear-to-br from-blue-50 to-white rounded-2xl border-blue-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
           <CardContent class="p-8">
             <div class="absolute top-0 right-0 p-6 opacity-5">
               <Lightbulb class="w-32 h-32" />
@@ -126,7 +151,7 @@ onMounted(() => {
           </CardContent>
         </Card>
 
-        <Card class="bg-gradient-to-br from-amber-50 to-white rounded-2xl border-warning/20 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+        <Card class="bg-linear-to-br from-amber-50 to-white rounded-2xl border-warning/20 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
           <CardContent class="p-8">
             <div class="absolute top-0 right-0 p-6 opacity-5">
               <Compass class="w-32 h-32" />
@@ -144,7 +169,7 @@ onMounted(() => {
         </Card>
       </section>
 
-      <!-- ComitÃ© Organizador -->
+      <!-- Comité Organizador -->
       <section>
         <div class="text-center mb-10">
           <h2 class="text-3xl font-heading font-bold text-text-main mb-4 flex items-center justify-center gap-3">
@@ -157,28 +182,36 @@ onMounted(() => {
         </div>
 
         <Card class="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
-          <!-- Tabs -->
-          <div class="flex flex-col sm:flex-row border-b border-gray-200 bg-gray-50/50">
+          <!-- Tabs Responsivas con Iconos Únicos -->
+          <div class="flex border-b border-gray-200 bg-gray-50/50">
             <button
-              @click="activeTab = 'personal'"
-              :class="`flex-1 py-4 px-6 font-heading font-bold text-center transition-colors border-b-2 flex items-center justify-center gap-2 ${activeTab === 'personal' ? 'border-primary text-primary bg-white' : 'border-transparent text-text-muted hover:text-text-main hover:bg-gray-100'}`"
+              @click="handleTabClick('personal')"
+              :class="`py-4 px-4 sm:px-6 font-heading font-bold text-center transition-all border-b-2 flex items-center justify-center gap-2 flex-1 sm:flex-initial min-w-16 ${activeTab === 'personal' ? 'border-primary text-primary bg-white flex-auto' : 'border-transparent text-text-muted hover:text-text-main hover:bg-gray-100'}`"
             >
-              <Users class="w-5 h-5" />
-              Personal AcadÃ©mico
+              <GraduationCap class="w-5 h-5 shrink-0" />
+              <span :class="['text-sm transition-opacity duration-300', activeTab === 'personal' ? 'block' : 'hidden md:block']">
+                Personal Académico
+              </span>
             </button>
+            
             <button
-              @click="activeTab = 'admin'"
-              :class="`flex-1 py-4 px-6 font-heading font-bold text-center transition-colors border-b-2 flex items-center justify-center gap-2 ${activeTab === 'admin' ? 'border-primary text-primary bg-white' : 'border-transparent text-text-muted hover:text-text-main hover:bg-gray-100'}`"
+              @click="handleTabClick('admin')"
+              :class="`py-4 px-4 sm:px-6 font-heading font-bold text-center transition-all border-b-2 flex items-center justify-center gap-2 flex-1 sm:flex-initial min-w-16 ${activeTab === 'admin' ? 'border-primary text-primary bg-white flex-auto' : 'border-transparent text-text-muted hover:text-text-main hover:bg-gray-100'}`"
             >
-              <Users class="w-5 h-5" />
-              Administrativo
+              <Briefcase class="w-5 h-5 shrink-0" />
+              <span :class="['text-sm transition-opacity duration-300', activeTab === 'admin' ? 'block' : 'hidden md:block']">
+                Administrativo
+              </span>
             </button>
+            
             <button
-              @click="activeTab = 'colab'"
-              :class="`flex-1 py-4 px-6 font-heading font-bold text-center transition-colors border-b-2 flex items-center justify-center gap-2 ${activeTab === 'colab' ? 'border-primary text-primary bg-white' : 'border-transparent text-text-muted hover:text-text-main hover:bg-gray-100'}`"
+              @click="handleTabClick('colab')"
+              :class="`py-4 px-4 sm:px-6 font-heading font-bold text-center transition-all border-b-2 flex items-center justify-center gap-2 flex-1 sm:flex-initial min-w-16 ${activeTab === 'colab' ? 'border-primary text-primary bg-white flex-auto' : 'border-transparent text-text-muted hover:text-text-main hover:bg-gray-100'}`"
             >
-              <Users class="w-5 h-5" />
-              Colaboradores
+              <Handshake class="w-5 h-5 shrink-0" />
+              <span :class="['text-sm transition-opacity duration-300', activeTab === 'colab' ? 'block' : 'hidden md:block']">
+                Colaboradores
+              </span>
             </button>
           </div>
 
@@ -188,7 +221,7 @@ onMounted(() => {
               Cargando {{ tabLabel[activeTab] }}...
             </div>
             <div v-else-if="loadedTabs[activeTab] && activeData.length === 0" class="rounded-xl border-2 border-dashed border-gray-300 bg-white p-10 text-center">
-              <Users class="mx-auto mb-3 h-10 w-10 text-gray-300" />
+              <component :is="activeTab === 'personal' ? GraduationCap : activeTab === 'admin' ? Briefcase : Handshake" class="mx-auto mb-3 h-10 w-10 text-gray-300" />
               <p class="font-bold text-text-main">Sin {{ tabLabel[activeTab] }} agregado</p>
             </div>
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -199,6 +232,7 @@ onMounted(() => {
                 :role="member.role"
                 :bio="member.bio"
                 :email="member.email"
+                :perfil="member.perfil"
               />
             </div>
           </CardContent>
@@ -208,4 +242,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-

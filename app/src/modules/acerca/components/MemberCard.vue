@@ -10,6 +10,7 @@ defineProps<{
   role: string
   bio: string
   email: string
+  perfil?: string | null // Coincide exactamente con el campo 'perfil' del DTO
 }>()
 
 const isExpanded = ref(false)
@@ -19,9 +20,18 @@ const isExpanded = ref(false)
   <Card class="rounded-xl shadow-sm border-gray-100 overflow-hidden transition-all hover:shadow-md">
     <CardContent class="p-6">
       <div class="flex items-center gap-4 mb-4">
-        <div class="w-14 h-14 bg-info/10 rounded-full flex items-center justify-center text-primary shrink-0">
-          <User class="w-6 h-6" />
+        
+        <!-- Contenedor del Avatar / Imagen de Perfil -->
+        <div class="w-24 h-24 bg-info/10 rounded-full flex items-center justify-center text-primary shrink-0 overflow-hidden">
+          <img 
+            v-if="perfil" 
+            :src="perfil" 
+            :alt="`Foto de ${name}`" 
+            class="w-full h-full object-cover"
+          />
+          <User v-else class="w-6 h-6" />
         </div>
+
         <div>
           <h4 class="font-heading font-bold text-text-main text-lg leading-tight">{{ name }}</h4>
           <p class="text-sm font-medium text-primary">{{ role }}</p>
