@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import {
-  X, Edit, Save, XCircle, Trash2, Send, Play, Ban, AlertTriangle,
+  X, Edit, Save, XCircle, Trash2, Send, Ban, AlertTriangle,
   Loader2, Link, Users
 } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
@@ -20,7 +20,7 @@ const emit = defineEmits<{
 const isEditing = ref(false)
 const isSaving = ref(false)
 const isActuando = ref(false)
-const showConfirm = ref<'eliminar' | 'cancelar' | 'enviar' | null>(null)
+const showConfirm = ref<'eliminar' | 'cancelar' | 'programar' | null>(null)
 
 const form = ref({ nombre: '', asunto: '', contenido_mensaje: '', contenido_secundario: '', fecha_programada: '', enlaces: [] as EnlaceDTO[] })
 
@@ -126,9 +126,8 @@ const estadoBadgeClass: Record<EstadoCampania, string> = {
 }
 
 const canEdit = (e: EstadoCampania) => e === 'BORRADOR' || e === 'PROGRAMADA'
-const canSend = (e: EstadoCampania) => e === 'BORRADOR' || e === 'PROGRAMADA'
-const canCancel = (e: EstadoCampania) => e === 'PROGRAMADA' || e === 'EN_PROCESO'
-const canRetry = (e: EstadoCampania) => e === 'FALLIDA' || e === 'CANCELADA'
+const canProgram = (e: EstadoCampania) => e === 'BORRADOR'
+const canCancel = (e: EstadoCampania) => e !== 'CANCELADA' && e !== 'FINALIZADA'
 
 const inputClass = 'h-10 w-full rounded-lg border border-gray-300 px-3 text-sm transition-colors focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:bg-gray-50 disabled:text-text-muted'
 const textareaClass = 'min-h-20 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm transition-colors focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 disabled:bg-gray-50 disabled:text-text-muted'
@@ -163,22 +162,22 @@ const textareaClass = 'min-h-20 w-full rounded-lg border border-gray-300 px-3 py
             <div class="flex items-center gap-2">
               <AlertTriangle class="h-5 w-5 text-warning" />
               <p class="text-sm font-bold text-text-main">
-                {{ showConfirm === 'eliminar' ? '¿Eliminar campaña?' : showConfirm === 'cancelar' ? '¿Cancelar campaña?' : '¿Enviar ahora?' }}
+                {{ showConfirm === 'eliminar' ? '¿Eliminar campaña?' : showConfirm === 'cancelar' ? '¿Cancelar campaña?' : '¿Programar campaña?' }}
               </p>
             </div>
             <p class="text-sm text-text-muted">
-              {{ showConfirm === 'eliminar' ? 'Esta acción es permanente e irreversible.' : showConfirm === 'cancelar' ? 'Se detendrá el proceso de envío.' : 'Se enviará inmediatamente a todos los destinatarios.' }}
+              {{ showConfirm === 'eliminar' ? 'Esta acción es permanente e irreversible.' : showConfirm === 'cancelar' ? 'Se detendrá el proceso de envío de forma definitiva.' : 'La campaña cambiará al estado programada para su posterior distribución.' }}
             </p>
             <div class="flex gap-2">
               <Button variant="outline" size="sm" :disabled="isActuando" @click="showConfirm = null">Cancelar</Button>
               <Button
                 size="sm"
-                :class="showConfirm === 'enviar' ? 'bg-primary text-white hover:bg-primary-dark' : 'bg-error text-white hover:bg-error/90'"
+                :class="showConfirm === 'programar' ? 'bg-primary text-white hover:bg-primary-dark' : 'bg-error text-white hover:bg-error/90'"
                 :disabled="isActuando"
-                @click="showConfirm === 'eliminar' ? eliminar() : showConfirm === 'cancelar' ? cambiarEstado('CANCELADA') : cambiarEstado('EN_PROCESO')"
+                @click="showConfirm === 'eliminar' ? eliminar() : showConfirm === 'cancelar' ? cambiarEstado('CANCELADA') : cambiarEstado('PROGRAMADA')"
               >
                 <Loader2 v-if="isActuando" class="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                {{ showConfirm === 'eliminar' ? 'Sí, eliminar' : showConfirm === 'cancelar' ? 'Sí, cancelar' : 'Sí, enviar' }}
+                {{ showConfirm === 'eliminar' ? 'Sí, eliminar' : showConfirm === 'cancelar' ? 'Sí, cancelar' : 'Sí, programar' }}
               </Button>
             </div>
           </div>
@@ -195,20 +194,12 @@ const textareaClass = 'min-h-20 w-full rounded-lg border border-gray-300 px-3 py
                 <Edit class="h-3.5 w-3.5" />Editar
               </Button>
               <Button
-                v-if="canSend(campania.estado)"
+                v-if="canProgram(campania.estado)"
                 size="sm"
                 class="flex items-center gap-1.5 bg-primary text-white hover:bg-primary-dark text-xs"
-                @click="showConfirm = 'enviar'"
+                @click="showConfirm = 'programar'"
               >
-                <Send class="h-3.5 w-3.5" />Enviar ahora
-              </Button>
-              <Button
-                v-if="canRetry(campania.estado)"
-                size="sm"
-                class="flex items-center gap-1.5 bg-secondary text-white hover:bg-secondary-dark text-xs"
-                @click="cambiarEstado('EN_PROCESO')"
-              >
-                <Play class="h-3.5 w-3.5" />Reintentar
+                <Send class="h-3.5 w-3.5" />Programar envío
               </Button>
               <Button
                 v-if="canCancel(campania.estado)"

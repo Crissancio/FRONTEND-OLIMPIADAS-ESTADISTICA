@@ -19,11 +19,11 @@ const today = new Date()
 
 const tipos = ['CONVOCATORIA', 'INSCRIPCION', 'EXAMEN', 'RESULTADO', 'LOGISTICA', 'MANTENIMIENTO', 'SOPORTE', 'RECLAMO', 'CRONOGRAMA', 'MATERIAL', 'CEREMONIA', 'CAPACITACION', 'GENERAL']
 
-const getFutureDateString = () => {
+// Ahora devuelve un objeto Date nativo en lugar de un string formateado
+const getFutureDate = () => {
   const d = new Date()
   d.setMinutes(d.getMinutes() + 10)
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`
+  return d
 }
 
 const form = reactive({
@@ -31,7 +31,7 @@ const form = reactive({
   descripcion: '',
   tipo: '',
   prioridad: 'MEDIA',
-  fecha_publicacion: ''
+  fecha_publicacion: getFutureDate() as Date // Tipado explícito como Date
 })
 
 watch(() => props.isOpen, (newVal) => {
@@ -44,7 +44,8 @@ watch(() => props.isOpen, (newVal) => {
         descripcion: props.aviso.descripcion,
         tipo: props.aviso.tipo,
         prioridad: props.aviso.prioridad,
-        fecha_publicacion: props.aviso.fecha_publicacion || getFutureDateString()
+        // Convertimos el string ISO que viene del backend a un objeto Date nativo
+        fecha_publicacion: props.aviso.fecha_publicacion ? new Date(props.aviso.fecha_publicacion) : getFutureDate()
       })
     } else {
       isEditing.value = true
@@ -53,7 +54,7 @@ watch(() => props.isOpen, (newVal) => {
         descripcion: '', 
         tipo: '', 
         prioridad: 'MEDIA', 
-        fecha_publicacion: getFutureDateString() 
+        fecha_publicacion: getFutureDate() 
       })
     }
   }
@@ -63,13 +64,26 @@ const isViewMode = computed(() => !!props.aviso && !isEditing.value)
 
 const handleSubmit = () => {
   if (!form.titulo || !form.descripcion || !form.tipo || !form.fecha_publicacion) return
-  emit('save', { isNew: !props.aviso, data: { ...form, estado: props.aviso ? props.aviso.estado : 'BORRADOR' } })
+  
+  // Aseguramos que la fecha sea un objeto Date y lo convertimos a ISOString (añade el sufijo 'Z' automáticamente)
+  const dateObj = form.fecha_publicacion instanceof Date ? form.fecha_publicacion : new Date(form.fecha_publicacion)
+  const fechaIso = dateObj.toISOString() // Ejemplo resultado: "2026-06-08T12:34:56.000Z"
+
+  emit('save', { 
+    isNew: !props.aviso, 
+    data: { 
+      ...form, 
+      fecha_publicacion: fechaIso, // Se envía limpio en formato Z IsoString
+      estado: props.aviso ? props.aviso.estado : 'BORRADOR' 
+    } 
+  })
 }
 
-const formatFecha = (fechaStr: string) => {
-  if (!fechaStr) return ''
-  const date = new Date(fechaStr)
-  if (isNaN(date.getTime())) return fechaStr
+// Soporta tanto objetos Date (modo edición) como strings ISO (modo vista inicial) para la visualización del usuario
+const formatFecha = (fecha: any) => {
+  if (!fecha) return ''
+  const date = fecha instanceof Date ? fecha : new Date(fecha)
+  if (isNaN(date.getTime())) return String(fecha)
   return new Intl.DateTimeFormat('es-ES', {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
@@ -188,7 +202,7 @@ const getPrioridadColor = (prioridad: string) => {
 
                     <div>
                       <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Fecha de Publicación *</label>
-                      <DatePicker v-model.string="form.fecha_publicacion" mode="dateTime" is24hr :min-date="today" :masks="{ modelValue: 'YYYY-MM-DD HH:mm:ss', input: 'DD/MM/YYYY HH:mm' }">
+                      <DatePicker v-model="form.fecha_publicacion" mode="dateTime" is24hr :min-date="today">
                         <template #default="{ inputValue, inputEvents }">
                           <div class="relative">
                             <input :value="inputValue" v-on="inputEvents" readonly class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 cursor-pointer focus:ring-2 focus:ring-(--color-primary) transition-all" />
