@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { Mail, Phone, ArrowLeft, Send, ChevronDown, GraduationCap, AlertCircle, CheckCircle} from 'lucide-vue-next'
+import { Mail, Phone, ArrowLeft, Send, ChevronDown, GraduationCap, AlertCircle, CheckCircle } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import ColegioBuscador from './ColegioBuscador.vue'
+import InscripcionModalContacto from '@/modules/contacto/components/InscripcionModalContacto.vue'
 import { usePublicStore } from '@/modules/public/stores/public.store'
+import { publicService } from '@/modules/public/services/public.service'
 import VueTurnstile from 'vue-turnstile'
+import type { CategoriaDetalleDTO } from '@/modules/public/types/public.api'
 
 const props = defineProps<{
   estudianteInicial: any,
@@ -16,16 +19,14 @@ const publicStore = usePublicStore()
 
 const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY
 
-const categoriasDisponibles = computed(() => publicStore.inicio?.categorias || [])
+const categoriasDisponibles = ref<CategoriaDetalleDTO[] | null>(null)
 
 const formData = ref({
   carnet_identidad: props.estudianteInicial?.carnet_identidad || props.datosVerificados?.carnet_identidad || '',
   fecha_nacimiento: props.estudianteInicial?.fecha_nacimiento || props.datosVerificados?.fecha_nacimiento || '',
-  
   nombres: props.estudianteInicial?.nombres || '',
   apellidos: props.estudianteInicial?.paterno || '',
   materno: props.estudianteInicial?.materno || '',
-  
   correo: props.estudianteInicial?.correo || '',
   telefono: props.estudianteInicial?.telefono || '',
   rude: props.estudianteInicial?.rude || '',
@@ -36,14 +37,13 @@ const formData = ref({
 
 const aceptaTerminos = ref(false)
 const isCategoryDropdownOpen = ref(false)
+const isModalContactoOpen = ref(false)
 const categoryRef = ref<HTMLElement | null>(null)
 const username_hp = ref('')
 const cf_turnstile_response = ref('')
 
-// --- LÓGICA DE V-CALENDAR ---
 const fechaNacimientoVCalendar = ref<Date | null>(null)
 
-// Sincronizar VCalendar -> formData
 watch(fechaNacimientoVCalendar, (newDate) => {
   if (newDate) {
     const year = newDate.getFullYear()
@@ -55,19 +55,9 @@ watch(fechaNacimientoVCalendar, (newDate) => {
   }
 })
 
-// Determinar si los datos clave fueron verificados en el paso 1
 const esDatoVerificado = computed(() => !!props.datosVerificados?.carnet_identidad && !!props.datosVerificados?.fecha_nacimiento)
-// ----------------------------
 
-const categoriaSeleccionada = computed(() => {
-  const encontrada = categoriasDisponibles.value.find(
-    cat => Number(cat.curso) === Number(formData.value.curso) && 
-           String(cat.nivel).toUpperCase() === String(formData.value.nivel).toUpperCase()
-  )
-  return encontrada || null
-})
-
-const selectCategoria = (curso: number, nivel: string) => {
+const selectCursoNivel = (curso: number, nivel: string) => {
   formData.value.curso = curso
   formData.value.nivel = nivel
   isCategoryDropdownOpen.value = false
@@ -79,34 +69,49 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-onMounted(() => {
+const cargarCategorias = async () => {
+  let idConvocatoria = publicStore.convocatoriaInicio?.id_convocatoria
+
+  if (!idConvocatoria) {
+    try {
+      const inicioResponse = await publicService.obtenerInicio()
+      idConvocatoria = inicioResponse.data?.id_convocatoria
+    } catch (error) {
+      return
+    }
+  }
+
+  if (!idConvocatoria) return
+
+  try {
+    const response = await publicService.obtenerCategoriasPorConvocatoria(idConvocatoria)
+    categoriasDisponibles.value = response.data || []
+  } catch (error) {
+    console.error('Error al cargar la lista de categorías:', error)
+  }
+}
+
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   
-  // Inicializar VCalendar si hay fecha verificada
   if (props.datosVerificados?.fecha_nacimiento) {
     const [year, month, day] = props.datosVerificados.fecha_nacimiento.split('-').map(Number)
     fechaNacimientoVCalendar.value = new Date(year, month - 1, day)
   }
+
+  await cargarCategorias()
 })
+
 onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 const onSubmit = () => {
-  const idCat = categoriaSeleccionada.value?.id_categoria;
-
-  if (!idCat) {
-    alert("Error: No se pudo determinar el ID de la categoría para el curso y nivel seleccionados.");
-    console.error("Objeto categoría actual:", categoriaSeleccionada.value);
-    return;
-  }
-  
   if (!cf_turnstile_response.value) {
     alert('Por favor, completa la verificación de seguridad.')
     return
   }
 
   emit('submit', { 
-    ...formData.value, 
-    id_categoria: Number(idCat),
+    ...formData.value,
     username_hp: username_hp.value,
     cf_turnstile_response: cf_turnstile_response.value
   })
@@ -130,13 +135,13 @@ const onSubmit = () => {
       <p class="text-sm text-green-700 mb-4 ml-8">Actualiza los campos que creas necesarios para esta nueva gestión.</p>
       
       <div class="ml-8 p-3 bg-white/60 border border-green-300 rounded-lg text-green-800 font-medium flex items-start gap-3">
-        <AlertCircle class="w-5 h-5 flex-shrink-0 mt-0.5" />
-        <p class="text-sm">Por favor, presta especial atención en actualizar tu <b>Categoría / Curso</b> para asegurar que te inscribas en el nivel correcto.</p>
+        <AlertCircle class="w-5 h-5 shrink-0 mt-0.5" />
+        <p class="text-sm">Por favor, presta especial atención en actualizar tu <b>Curso y Nivel</b> para asegurar que te inscribas correctamente.</p>
       </div>
     </div>
 
     <div v-else class="p-5 rounded-xl bg-yellow-50 border-2 border-yellow-300 shadow-sm flex items-start gap-3">
-      <AlertCircle class="w-7 h-7 text-yellow-600 mt-0.5 flex-shrink-0" />
+      <AlertCircle class="w-7 h-7 text-yellow-600 mt-0.5 shrink-0" />
       <div>
         <h3 class="font-bold text-lg text-yellow-800 mb-1">¡Bienvenido, nuevo estudiante!</h3>
         <p class="text-sm text-yellow-700">
@@ -199,8 +204,14 @@ const onSubmit = () => {
           <label class="block text-sm font-semibold mb-1.5 text-text-main">Apellido Materno (Opcional)</label>
           <input v-model="formData.materno" type="text" class="input-base" />
         </div>
-        <div class="form-group"><label class="block text-sm font-semibold mb-1.5 text-text-main"><Mail class="w-4 h-4 inline mr-1 text-secondary" /> Correo Electrónico</label><input v-model="formData.correo" type="email" class="input-base" required /></div>
-        <div class="form-group"><label class="block text-sm font-semibold mb-1.5 text-text-main"><Phone class="w-4 h-4 inline mr-1 text-secondary" /> Teléfono / Celular</label><input v-model="formData.telefono" type="tel" class="input-base" required /></div>
+        <div class="form-group">
+          <label class="block text-sm font-semibold mb-1.5 text-text-main"><Mail class="w-4 h-4 inline mr-1 text-secondary" /> Correo Electrónico</label>
+          <input v-model="formData.correo" type="email" class="input-base" required />
+        </div>
+        <div class="form-group">
+          <label class="block text-sm font-semibold mb-1.5 text-text-main"><Phone class="w-4 h-4 inline mr-1 text-secondary" /> Teléfono / Celular</label>
+          <input v-model="formData.telefono" type="tel" class="input-base" required />
+        </div>
       </div>
     </section>
 
@@ -208,25 +219,31 @@ const onSubmit = () => {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div class="form-group relative" ref="categoryRef">
           <label class="block text-sm font-semibold mb-1.5 text-text-main">
-            <GraduationCap class="w-4 h-4 inline mr-1 text-secondary" /> Año de Curso / Categoría
+            <GraduationCap class="w-4 h-4 inline mr-1 text-secondary" /> Curso y Nivel
           </label>
           <div @click="isCategoryDropdownOpen = !isCategoryDropdownOpen" class="input-base bg-gray-50 flex items-center justify-between cursor-pointer select-none">
-            <div v-if="categoriaSeleccionada">
-              <span class="font-bold text-text-main">{{ categoriaSeleccionada.nombre_categoria }}</span>
-              <span class="text-xs text-gray-400 font-medium ml-2">- {{ categoriaSeleccionada.curso }}º de {{ categoriaSeleccionada.nivel }}</span>
+            <div v-if="formData.curso && formData.nivel">
+              <span class="font-bold text-text-main">{{ formData.curso }}º de {{ formData.nivel }}</span>
             </div>
-            <span v-else class="text-gray-400">Selecciona tu curso...</span>
+            <span v-else class="text-gray-400">Selecciona tu curso y nivel...</span>
             <ChevronDown class="w-4 h-4 text-gray-400" />
           </div>
           <ul v-if="isCategoryDropdownOpen" class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto py-1">
-            <li v-for="cat in categoriasDisponibles" :key="cat.id_categoria" @click="selectCategoria(cat.curso, cat.nivel)" class="px-4 py-2.5 hover:bg-gray-50 cursor-pointer flex items-baseline gap-1.5 text-sm">
-              <span class="font-bold text-text-main">{{ cat.nombre_categoria }}</span>
-              <span class="text-xs text-gray-400 font-medium">- {{ cat.curso }}º de {{ cat.nivel }}</span>
+            <li v-for="(cat, index) in categoriasDisponibles" :key="index" @click="selectCursoNivel(Number(cat.curso), cat.nivel)" class="px-4 py-2.5 hover:bg-gray-50 cursor-pointer flex items-baseline gap-1.5 text-sm">
+              <span class="font-bold text-text-main">{{ cat.curso }}º de {{ cat.nivel }}</span>
             </li>
           </ul>
         </div>
-        <div class="form-group"><label class="block text-sm font-semibold mb-1.5 text-text-main">Código RUDE (Opcional)</label><input v-model="formData.rude" type="text" class="input-base" /></div>
-        <div class="md:col-span-2 pt-4 border-t border-gray-100"><ColegioBuscador v-model="formData.id_colegio" /></div>
+        <div class="form-group">
+          <label class="block text-sm font-semibold mb-1.5 text-text-main">Código RUDE (Opcional)</label>
+          <input v-model="formData.rude" type="text" class="input-base" />
+        </div>
+        <div class="md:col-span-2 pt-4 border-t border-gray-100 flex flex-col items-end">
+          <ColegioBuscador v-model="formData.id_colegio" />
+          <button type="button" @click="isModalContactoOpen = true" class="text-sm font-bold text-primary hover:text-primary-dark underline mt-2 flex items-center gap-1 transition-colors">
+            <AlertCircle class="w-4 h-4" /> ¿No encuentras tu colegio?
+          </button>
+        </div>
       </div>
     </section>
 
@@ -241,7 +258,7 @@ const onSubmit = () => {
       </label>
     </section>
 
-    <div class="absolute opacity-0 -z-10 w-0 h-0 overflow-hidden" aria-hidden="true">
+    <div class="absolute opacity-0 -z-10 w-0 h-0 overflow-hidden pointer-events-none" aria-hidden="true">
       <label for="username_hp_form">Leave blank</label>
       <input id="username_hp_form" v-model="username_hp" type="text" tabindex="-1" autocomplete="off" />
     </div>
@@ -249,9 +266,11 @@ const onSubmit = () => {
     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6">
       <vue-turnstile :site-key="siteKey" v-model="cf_turnstile_response" />
       
-      <Button type="submit" variant="accent" size="lg" :disabled="!aceptaTerminos || !formData.id_colegio || !formData.curso || !categoriaSeleccionada || !cf_turnstile_response" class="px-8 py-3 rounded-lg font-bold text-lg shadow-soft flex items-center gap-2">
+      <Button type="submit" variant="accent" size="lg" :disabled="!aceptaTerminos || !formData.id_colegio || !formData.curso || !formData.nivel || !cf_turnstile_response" class="px-8 py-3 rounded-lg font-bold text-lg shadow-soft flex items-center gap-2">
         Enviar inscripción <Send class="w-5 h-5" />
       </Button>
     </div>
+
+    <InscripcionModalContacto :is-open="isModalContactoOpen" @close="isModalContactoOpen = false" />
   </form>
 </template>

@@ -3,6 +3,13 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Loader2 } from 'lucide-vue-next'
 import { usePublicStore } from '@/modules/public/stores/public.store'
+import { inscripcionesService } from '../services/inscripcion.service'
+import { publicService } from '@/modules/public/services/public.service'
+import type { 
+  EstudianteBusquedaDTO, 
+  EstudianteFormularioDTO, 
+  InscripcionFormularioRequestDTO 
+} from '../types/inscripcion.api'
 import { useInscripcionStore } from '../stores/inscripcion.store'
 
 import Card from '@/shared/components/ui/molecules/Card.vue'
@@ -18,14 +25,17 @@ const router = useRouter()
 const publicStore = usePublicStore()
 const inscripcionStore = useInscripcionStore()
 
-const convocatoriaActiva = computed(() => publicStore.convocatoriaInicio)
-const isLoadingProceso = computed(() => inscripcionStore.isLoadingProceso)
+const convocatoriaLocal = ref<any>(null)
+const isFetchingConvocatoria = ref(false)
+const isLoadingProceso = ref(false)
+
+const convocatoriaActiva = computed(() => publicStore.convocatoriaInicio || convocatoriaLocal.value)
 
 const pasoActual = ref<'verificacion' | 'formulario' | 'exito' | 'error'>('verificacion')
 const errorMessage = ref<string | null>(null)
 const datosVerificados = ref<{ carnet_identidad: string; fecha_nacimiento: string } | null>(null)
-const estudianteData = ref<any>(null)
-const formularioTemporal = ref<any>(null)
+const estudianteData = ref<EstudianteBusquedaDTO | null>(null)
+const formularioTemporal = ref<EstudianteFormularioDTO | null>(null)
 
 const datosEstudianteParaCarnet = computed(() => {
   return {
@@ -44,20 +54,34 @@ const handleBeforeUnload = (e: BeforeUnloadEvent) => {
   }
 }
 
-onMounted(() => {
-  if (!convocatoriaActiva.value) {
-    router.push('/')
-    return
-  }
+onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
+
+  if (!publicStore.convocatoriaInicio) {
+    isFetchingConvocatoria.value = true
+    try {
+      const response = await publicService.obtenerInicio()
+      if (response.data) {
+        convocatoriaLocal.value = response.data
+      } else {
+        router.push('/')
+      }
+    } catch (error) {
+      router.push('/')
+    } finally {
+      isFetchingConvocatoria.value = false
+    }
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
+  inscripcionStore.clearColegios()
 })
 
 const handleVerificacion = async (payload: { carnet_identidad: string; fecha_nacimiento: Date; username_hp: string; cf_turnstile_response: string }) => {
   errorMessage.value = null
+  isLoadingProceso.value = true
 
   const d = payload.fecha_nacimiento
   const year = d.getFullYear()
@@ -66,8 +90,7 @@ const handleVerificacion = async (payload: { carnet_identidad: string; fecha_nac
   const fechaString = `${year}-${month}-${day}`
 
   try {
-    // Aquí enviamos el objeto completo con los tokens de seguridad
-    const response = await inscripcionStore.verificarEstudiante({
+    const response = await inscripcionesService.verificarEstudiante({
       carnet_identidad: payload.carnet_identidad,
       fecha_nacimiento: fechaString,
       username_hp: payload.username_hp,
@@ -75,22 +98,7 @@ const handleVerificacion = async (payload: { carnet_identidad: string; fecha_nac
     })
     
     datosVerificados.value = { carnet_identidad: payload.carnet_identidad, fecha_nacimiento: fechaString }
-
-    let estudiante = null
-
-    if (response?.data?.id_estudiante) {
-      estudiante = response.data
-    } else if (response?.data?.data?.id_estudiante) {
-      estudiante = response.data.data
-    } else if (response?.id_estudiante) {
-      estudiante = response
-    }
-
-    if (estudiante) {
-      estudianteData.value = estudiante
-    } else {
-      estudianteData.value = null
-    }
+    estudianteData.value = response.data || null
     pasoActual.value = 'formulario'
 
   } catch (err: any) {
@@ -101,47 +109,51 @@ const handleVerificacion = async (payload: { carnet_identidad: string; fecha_nac
     } else {
       errorMessage.value = 'No se pudo completar la verificación en este momento. Inténtelo de nuevo.'
     }
+  } finally {
+    isLoadingProceso.value = false
   }
 }
 
 const handleInscripcion = async (formData: any) => {
   if (!datosVerificados.value || !convocatoriaActiva.value) return
+  
   errorMessage.value = null
-
-  if (!formData.id_categoria) {
-    errorMessage.value = "Error: El formulario no cuenta con un ID de categoría válido."
-    return
-  }
+  
   if (!formData.id_colegio) {
     errorMessage.value = "Por favor, seleccione un colegio válido."
     return
   }
+  if (!formData.curso || !formData.nivel) {
+    errorMessage.value = "Error: El formulario no cuenta con un curso y nivel válido."
+    return
+  }
 
-  const payload = {
+  const estudiantePayload: EstudianteFormularioDTO = {
+    nombres: String(formData.nombres).trim(),
+    paterno: String(formData.apellidos).trim(), 
+    materno: formData.materno ? String(formData.materno).trim() : null,
+    carnet_identidad: String(formData.carnet_identidad).trim(),
+    fecha_nacimiento: String(formData.fecha_nacimiento), 
+    curso: Number(formData.curso),
+    nivel: String(formData.nivel).toUpperCase() as 'PRIMARIA' | 'SECUNDARIA',
+    rude: formData.rude ? String(formData.rude).trim() : null,
+    telefono: formData.telefono ? String(formData.telefono).replace(/\D/g, '') : null,
+    correo: formData.correo ? String(formData.correo).trim() : null
+  }
+
+  const payload: InscripcionFormularioRequestDTO = {
     id_convocatoria: Number(convocatoriaActiva.value.id_convocatoria),
-    id_categoria: Number(formData.id_categoria),
     id_colegio: Number(formData.id_colegio),
-    estudiante: {
-      nombres: String(formData.nombres).trim(),
-      paterno: String(formData.apellidos).trim(), 
-      materno: formData.materno ? String(formData.materno).trim() : null,
-      carnet_identidad: String(formData.carnet_identidad).trim(),
-      fecha_nacimiento: String(formData.fecha_nacimiento), 
-      curso: Number(formData.curso),
-      nivel: String(formData.nivel).toUpperCase(),
-      rude: formData.rude ? String(formData.rude).trim() : null,
-      telefono: formData.telefono ? Number(String(formData.telefono).replace(/\D/g, '')) : null,
-      correo: formData.correo ? String(formData.correo).trim() : null
-    },
-    // Añadimos los tokens de seguridad en la raíz del payload
+    estudiante: estudiantePayload,
     username_hp: formData.username_hp,
     cf_turnstile_response: formData.cf_turnstile_response
   }
 
-  formularioTemporal.value = payload.estudiante
+  formularioTemporal.value = estudiantePayload
+  isLoadingProceso.value = true
 
   try {
-    await inscripcionStore.enviarInscripcion(payload)
+    await inscripcionesService.registrarPorFormulario(payload)
     pasoActual.value = 'exito'
   } catch (err: any) {
     pasoActual.value = 'error' 
@@ -156,6 +168,8 @@ const handleInscripcion = async (formData: any) => {
     } else {
       errorMessage.value = 'Ocurrió un error inesperado. Por favor, intente más tarde.'
     }
+  } finally {
+    isLoadingProceso.value = false
   }
 }
 
@@ -182,8 +196,13 @@ const volverAlDetalle = () => {
   <div class="bg-background min-h-screen py-12 w-full">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <Card v-if="convocatoriaActiva" class="rounded-xl shadow-soft border-gray-200 overflow-hidden bg-white relative">
-        <div v-if="isLoadingProceso" class="absolute inset-0 bg-white/70 z-50 flex flex-col items-center justify-center gap-3 transition-all">
+      <div v-if="!convocatoriaActiva || isFetchingConvocatoria" class="flex flex-col items-center justify-center py-20 gap-3">
+        <Loader2 class="w-10 h-10 text-primary animate-spin" />
+        <p class="text-text-muted font-medium">Cargando convocatoria...</p>
+      </div>
+
+      <Card v-else class="rounded-xl shadow-soft border-gray-200 overflow-hidden bg-white relative">
+        <div v-if="isLoadingProceso" class="absolute inset-0 bg-white/70 z-50 flex flex-col items-center justify-center gap-3 transition-all backdrop-blur-sm">
           <Loader2 class="w-12 h-12 text-primary animate-spin" />
           <p class="text-sm font-semibold text-primary-dark">Procesando información con el servidor...</p>
         </div>
@@ -193,7 +212,7 @@ const volverAlDetalle = () => {
           :titulo="convocatoriaActiva.nombre_convocatoria || 'Olimpiada Paceña de Estadística'" 
         />
 
-        <CardContent :class="`relative min-h-[400px] ${(pasoActual === 'verificacion' || pasoActual === 'formulario') ? 'p-6 sm:p-10 pt-4 sm:pt-6' : 'p-8 sm:p-10'}`">
+        <CardContent :class="`relative min-h-100 ${(pasoActual === 'verificacion' || pasoActual === 'formulario') ? 'p-6 sm:p-10 pt-4 sm:pt-6' : 'p-8 sm:p-10'}`">
           <transition name="slide-fade" mode="out-in">
             
             <VerificacionPaso 
@@ -227,3 +246,17 @@ const volverAlDetalle = () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+.slide-fade-leave-active {
+  transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1);
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateX(20px);
+  opacity: 0;
+}
+</style>

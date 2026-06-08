@@ -17,7 +17,7 @@ const searchQuery = ref('')
 const isOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 
-// Conectar con la data real de Pinia
+// Conectar con la data real de Pinia (que ya tiene los Types inferidos)
 const colegios = computed(() => inscripcionStore.colegios)
 const isLoading = computed(() => inscripcionStore.isLoadingColegios)
 
@@ -53,11 +53,13 @@ const handleClickOutside = (event: MouseEvent) => {
 
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
-  // Disparar la descarga asíncrona de los 600 colegios al montar el componente
+  // Disparar la descarga asíncrona de los colegios al montar el componente
   await inscripcionStore.loadColegios()
 })
 
-onUnmounted(() => document.removeEventListener('click', handleClickOutside))
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <template>
