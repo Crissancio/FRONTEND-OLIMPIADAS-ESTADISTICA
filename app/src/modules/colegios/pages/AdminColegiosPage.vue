@@ -33,7 +33,6 @@ const selectedColegioId = ref<number | null>(null)
 
 const cargarColegios = async (page: number, resetList = false) => {
   if (isLoading.value) return
-  console.log("🔥 ESTA ES LA VERSION NUEVA DEL ARCHIVO 🔥");
   isLoading.value = true
   try {
     const params: ColegioFilters = {
