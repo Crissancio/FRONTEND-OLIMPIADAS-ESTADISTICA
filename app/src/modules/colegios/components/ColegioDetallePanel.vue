@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { X, MapPin, Building2, Clock, Map, Hash, Info } from 'lucide-vue-next'
-import { useColegiosStore } from '../stores/colegio.store'
+import { colegiosService } from '../services/colegios.service'
+import type { ColegioDetailDTO } from '../types/colegios.api'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 import DirectorCardAdmin from '../../directores/components/DirectorCardAdmin.vue'
@@ -16,16 +17,32 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const colegiosStore = useColegiosStore()
+// Estados locales reactivos independientes del store
+const isLoading = ref(false)
+const colegioActual = ref<ColegioDetailDTO | null>(null)
 
+// Monitoreo del ciclo de apertura para la llamada directa al service
 watch(() => props.isOpen, async (newVal) => {
   if (newVal && props.colegioId) {
-    await colegiosStore.fetchColegioById(props.colegioId)
+    isLoading.value = true
+    colegioActual.value = null // Limpieza preventiva para evitar parpadeos con datos anteriores
+    
+    try {
+      const response = await colegiosService.obtenerColegioPorId(props.colegioId)
+      if (response && response.data) {
+        colegioActual.value = response.data
+      }
+    } catch (error) {
+      console.error('Error al recuperar los detalles de la institución educativa:', error)
+    } finally {
+      isLoading.value = false
+    }
   }
 })
 
 const estadoClass = (estado: string) => {
   const map: Record<string, string> = {
+    'ACTIVO': 'bg-success/10 text-success border-success/20',
     'REVISADO': 'bg-estado-revisado-soft text-estado-revisado border-estado-revisado/20',
     'RECHAZADO': 'bg-estado-rechazado-soft text-estado-rechazado border-estado-rechazado/20',
     'PENDIENTE': 'bg-estado-pendiente-soft text-estado-pendiente border-estado-pendiente/20',
@@ -79,26 +96,26 @@ const estadoClass = (estado: string) => {
                   </div>
 
                   <div class="relative flex-1 px-4 py-6 sm:px-6">
-                    <div v-if="colegiosStore.isLoading" class="flex h-full items-center justify-center">
+                    <div v-if="isLoading" class="flex h-full items-center justify-center">
                       <div class="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
                     </div>
                     
-                    <div v-else-if="colegiosStore.colegioActual" class="flex flex-col lg:flex-row gap-8 h-full">
+                    <div v-else-if="colegioActual" class="flex flex-col lg:flex-row gap-8 h-full">
                       
                       <div class="flex-1 border-r-0 lg:border-r border-gray-200 pr-0 lg:pr-6">
                         <div class="flex items-center justify-between mb-6">
                           <h3 class="font-bold text-lg text-text-main">Información Institucional</h3>
-                          <Badge variant="outline" :class="`border px-2.5 py-1 ${estadoClass(colegiosStore.colegioActual.estado)}`">
-                            {{ colegiosStore.colegioActual.estado }}
+                          <Badge variant="outline" :class="`border px-2.5 py-1 ${estadoClass(colegioActual.estado)}`">
+                            {{ colegioActual.estado }}
                           </Badge>
                         </div>
                         
                         <div class="space-y-6">
                           <div>
-                            <h4 class="text-2xl font-bold text-text-main mb-1">{{ colegiosStore.colegioActual.nombre }}</h4>
+                            <h4 class="text-2xl font-bold text-text-main mb-1">{{ colegioActual.nombre }}</h4>
                             <div class="flex items-center gap-2 text-text-muted">
                               <Hash class="h-4 w-4" />
-                              <span>Código SIE: {{ colegiosStore.colegioActual.codigo }}</span>
+                              <span>Código SIE: {{ colegioActual.codigo }}</span>
                             </div>
                           </div>
 
@@ -108,14 +125,14 @@ const estadoClass = (estado: string) => {
                                 <Building2 class="h-4 w-4" />
                                 <span>Tipo de Institución</span>
                               </div>
-                              <p class="font-medium text-text-main">{{ colegiosStore.colegioActual.tipo }}</p>
+                              <p class="font-medium text-text-main">{{ colegioActual.tipo }}</p>
                             </div>
                             <div class="space-y-1">
                               <div class="flex items-center gap-2 text-text-muted text-sm">
                                 <Clock class="h-4 w-4" />
                                 <span>Turno</span>
                               </div>
-                              <p class="font-medium text-text-main">{{ colegiosStore.colegioActual.turno }}</p>
+                              <p class="font-medium text-text-main">{{ colegioActual.turno }}</p>
                             </div>
                           </div>
 
@@ -128,33 +145,33 @@ const estadoClass = (estado: string) => {
                                   <Map class="h-4 w-4" />
                                   <span>Departamento</span>
                                 </div>
-                                <p class="font-medium text-text-main">{{ colegiosStore.colegioActual.departamento }}</p>
+                                <p class="font-medium text-text-main">{{ colegioActual.departamento }}</p>
                               </div>
                               <div class="space-y-1">
                                 <div class="flex items-center gap-2 text-text-muted text-sm">
                                   <MapPin class="h-4 w-4" />
                                   <span>Municipio</span>
                                 </div>
-                                <p class="font-medium text-text-main">{{ colegiosStore.colegioActual.municipio }}</p>
+                                <p class="font-medium text-text-main">{{ colegioActual.municipio }}</p>
                               </div>
                               <div class="sm:col-span-2 space-y-1">
                                 <div class="flex items-center gap-2 text-text-muted text-sm">
                                   <Info class="h-4 w-4" />
                                   <span>Calle / Zona</span>
                                 </div>
-                                <p class="font-medium text-text-main">{{ colegiosStore.colegioActual.calle || 'No especificada' }}</p>
+                                <p class="font-medium text-text-main">{{ colegioActual.calle || 'No especificada' }}</p>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      <div class="w-full lg:w-96 flex-shrink-0">
+                      <div class="w-full lg:w-96 shrink-0">
                         <h3 class="font-bold text-lg text-text-main mb-6">Directores Asignados</h3>
                         
-                        <div v-if="colegiosStore.colegioActual.directores?.length > 0" class="space-y-3">
+                        <div v-if="colegioActual.directores && colegioActual.directores.length > 0" class="space-y-3">
                           <DirectorCardAdmin 
-                            v-for="director in colegiosStore.colegioActual.directores" 
+                            v-for="director in colegioActual.directores" 
                             :key="director.id_director" 
                             :director="director" 
                             :show-actions="false"

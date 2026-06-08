@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { X, UploadCloud, CheckCircle2, AlertCircle, Download, FileText, Database } from 'lucide-vue-next'
 import { useColegiosStore } from '../stores/colegio.store'
+import { colegiosService } from '../services/colegios.service'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import type { CSVUploadResponseDTO, CSVImportDBResponseDTO } from '../types/colegios.api'
 
@@ -10,13 +11,13 @@ const props = defineProps<{ isOpen: boolean }>()
 const emit = defineEmits<{ (e: 'close'): void, (e: 'imported'): void }>()
 
 const colegiosStore = useColegiosStore()
+
 const currentStep = ref(1)
 const selectedFile = ref<File | null>(null)
 const isProcessing = ref(false)
 
-// Variables para manejo de errores
 const globalError = ref<string | null>(null)
-const csvFormatError = ref(false) // Nueva variable para errores críticos 500/Estructurales
+const csvFormatError = ref(false) 
 
 const selectedDepartamento = ref('LA PAZ') 
 
@@ -43,22 +44,32 @@ const validateFile = async () => {
   if (!selectedFile.value || !selectedDepartamento.value) return
   isProcessing.value = true
   globalError.value = null
-  csvFormatError.value = false // Reiniciamos el estado del error
+  csvFormatError.value = false 
 
   try {
-    const result = await colegiosStore.uploadCsv(selectedDepartamento.value, selectedFile.value)
-    validationData.value = result 
-    currentStep.value = 2
+    const response = await colegiosService.subirCsvColegios({
+      departamento: selectedDepartamento.value,
+      file: selectedFile.value
+    })
+    
+    if (response && response.data) {
+      validationData.value = response.data
+      currentStep.value = 2
+    } else {
+      throw new Error('No se recibió la estructura de validación esperada.')
+    }
   } catch (err: any) {
-    // Detectamos si es un error 500, de red, o un error fatal de procesamiento
-    const isServerError = err.response?.status === 500 || 
-                          err.message?.toLowerCase().includes('network') || 
-                          err.message?.includes('500');
+    const status = err.response?.status
+    const message = err.response?.data?.message || err.response?.data?.error || err.message || ''
+
+    const isServerError = status === 500 || 
+                          message.toLowerCase().includes('network') || 
+                          message.includes('500')
 
     if (isServerError) {
-      csvFormatError.value = true;
+      csvFormatError.value = true
     } else {
-      globalError.value = err.message || 'Error en el formato o lectura del archivo.';
+      globalError.value = message || 'Error en el formato o lectura del archivo.'
     }
   } finally {
     isProcessing.value = false
@@ -71,12 +82,20 @@ const executeDatabaseImport = async () => {
   globalError.value = null
 
   try {
-    const result = await colegiosStore.importCSV(validationData.value.validos)
-    dbResultData.value = result
-    currentStep.value = 3
-    emit('imported')
+    const response = await colegiosService.importarColegiosCsv(validationData.value.validos)
+    
+    if (response && response.data) {
+      dbResultData.value = response.data
+      currentStep.value = 3
+      
+      colegiosStore.listaAcumulada = []
+      
+      emit('imported')
+    } else {
+      throw new Error('La base de datos no retornó el reporte de inserciones.')
+    }
   } catch (err: any) {
-    globalError.value = err.message || 'Error al intentar insertar los registros en la base de datos.'
+    globalError.value = err.response?.data?.message || err.response?.data?.error || err.message || 'Error al intentar insertar los registros en la base de datos.'
   } finally {
     isProcessing.value = false
   }
@@ -85,7 +104,7 @@ const executeDatabaseImport = async () => {
 const downloadErrorCSV = async () => {
   if (!validationData.value?.csv_errores_url) return
   try {
-    const blob = await colegiosStore.downloadCSVErrors(validationData.value.csv_errores_url)
+    const blob = await colegiosService.descargarCsvError(validationData.value.csv_errores_url)
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -93,7 +112,8 @@ const downloadErrorCSV = async () => {
     a.click()
     window.URL.revokeObjectURL(url)
   } catch (error) {
-    console.error('Error al descargar el CSV de errores', error)
+    console.error('Error al descargar el CSV de errores:', error)
+    globalError.value = 'No se pudo descargar el archivo de inconsistencias.'
   }
 }
 
@@ -119,7 +139,7 @@ const closeWizard = () => {
   validationData.value = null
   dbResultData.value = null
   globalError.value = null
-  csvFormatError.value = false // Limpiamos al cerrar
+  csvFormatError.value = false 
   emit('close')
 }
 </script>

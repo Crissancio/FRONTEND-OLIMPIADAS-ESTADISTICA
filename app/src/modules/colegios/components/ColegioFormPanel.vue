@@ -3,8 +3,9 @@ import { ref, watch } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { X, Save, Edit2, Trash2, Power, PowerOff } from 'lucide-vue-next'
 import { useColegiosStore } from '../stores/colegio.store'
+import { colegiosService } from '../services/colegios.service'
 import Button from '@/shared/components/ui/atoms/Button.vue'
-import type { ColegioCreateDTO, ColegioUpdateDTO } from '../types/colegios.api'
+import type { ColegioCreateDTO, ColegioUpdateDTO, TipoColegio, TurnoColegio } from '../types/colegios.api'
 
 const props = defineProps<{
   isOpen: boolean
@@ -35,16 +36,23 @@ watch(() => props.isOpen, async (newVal) => {
   if (newVal) {
     isEditing.value = !props.colegioId
     if (props.colegioId) {
-      const colegio = await colegiosStore.fetchColegioById(props.colegioId)
-      formData.value = {
-        codigo: colegio.codigo.toString(),
-        nombre: colegio.nombre,
-        tipo: colegio.tipo,
-        turno: colegio.turno,
-        departamento: colegio.departamento,
-        municipio: colegio.municipio,
-        calle: colegio.calle || '',
-        estado: colegio.estado
+      try {
+        const response = await colegiosService.obtenerColegioPorId(props.colegioId)
+        if (response.data) {
+          const colegio = response.data
+          formData.value = {
+            codigo: colegio.codigo.toString(),
+            nombre: colegio.nombre,
+            tipo: colegio.tipo,
+            turno: colegio.turno,
+            departamento: colegio.departamento,
+            municipio: colegio.municipio,
+            calle: colegio.calle || '',
+            estado: colegio.estado
+          }
+        }
+      } catch (error) {
+        console.error('Error al recuperar los datos del colegio:', error)
       }
     } else {
       formData.value = {
@@ -64,26 +72,27 @@ watch(() => props.isOpen, async (newVal) => {
 const handleSubmit = async () => {
   isSubmitting.value = true
   try {
-    // Ya no tipamos esto estrictamente como UpdateDTO para que sea compatible con ambos
     const payload = {
       codigo: Number(formData.value.codigo),
       nombre: formData.value.nombre,
-      tipo: formData.value.tipo,
-      turno: formData.value.turno,
+      tipo: formData.value.tipo as TipoColegio,
+      turno: formData.value.turno as TurnoColegio,
       departamento: formData.value.departamento,
       municipio: formData.value.municipio,
       calle: formData.value.calle || null
     }
+
     if (props.colegioId) {
-      await colegiosStore.updateColegio(props.colegioId, payload as ColegioUpdateDTO)
+      await colegiosService.actualizarColegio(props.colegioId, payload as ColegioUpdateDTO)
     } else {
-      await colegiosStore.createColegio(payload as ColegioCreateDTO)
+      await colegiosService.crearColegio(payload as ColegioCreateDTO)
     }
     
+    colegiosStore.listaAcumulada = []
     emit('saved')
     emit('close')
   } catch (error) {
-    console.error(error)
+    console.error('Error al guardar el colegio:', error)
   } finally {
     isSubmitting.value = false
   }
@@ -94,15 +103,15 @@ const toggleEstado = async () => {
 
   try {
     if (formData.value.estado === 'INACTIVO') {
-      await colegiosStore.enableColegio(props.colegioId)
+      await colegiosService.altaLogicaColegio(props.colegioId)
       formData.value.estado = 'ACTIVO'
-    } 
-    else {
-      await colegiosStore.disableColegio(props.colegioId)
+    } else {
+      await colegiosService.bajaLogicaColegio(props.colegioId)
       formData.value.estado = 'INACTIVO'
     }
-    emit('saved')
     
+    colegiosStore.listaAcumulada = []
+    emit('saved')
   } catch (error) {
     console.error('Error al cambiar el estado del colegio:', error)
   }
@@ -114,11 +123,13 @@ const eliminarColegio = async () => {
   if (!confirmacion) return
 
   try {
-    await colegiosStore.deleteColegio(props.colegioId) 
+    await colegiosService.eliminarColegio(props.colegioId) 
+    
+    colegiosStore.listaAcumulada = []
     emit('saved')
     emit('close')
   } catch (error) {
-    console.error(error)
+    console.error('Error al eliminar el colegio:', error)
   }
 }
 </script>
@@ -223,7 +234,7 @@ const eliminarColegio = async () => {
                     </div>
                   </div>
 
-                  <div v-if="isEditing" class="flex flex-shrink-0 justify-end gap-3 px-4 py-4 border-t border-gray-200 bg-gray-50">
+                  <div v-if="isEditing" class="flex shrink-0 justify-end gap-3 px-4 py-4 border-t border-gray-200 bg-gray-50">
                     <Button variant="outline" type="button" @click="colegioId ? isEditing = false : emit('close')" :disabled="isSubmitting" class="text-text-main border-gray-300 hover:bg-gray-100">
                       Cancelar
                     </Button>

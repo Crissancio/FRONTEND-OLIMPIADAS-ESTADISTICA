@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Plus, UploadCloud } from 'lucide-vue-next'
 import { useColegiosStore } from '../../colegios/stores/colegio.store'
+import { colegiosService } from '../../colegios/services/colegios.service'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
@@ -11,12 +12,12 @@ import ColegioDetallePanel from '../../colegios/components/ColegioDetallePanel.v
 import ColegioFormPanel from '../../colegios/components/ColegioFormPanel.vue'
 import ColegioDirectoresPanel from '../../colegios/components/ColegioDirectoresPanel.vue'
 import ColegioImportWizardPanel from '../../colegios/components/ColegioImportWizardPanel.vue'
-import type { ColegioResponseDTO, ColegioFilters } from '../../colegios/types/colegios.api'
+import type {  ColegioFilters } from '../../colegios/types/colegios.api'
 
 const colegiosStore = useColegiosStore()
 
-const listaAcumulada = ref<ColegioResponseDTO[]>([])
-const currentFilters = ref<ColegioFilters>({})
+// Lógica de estados locales para el control del flujo del componente
+const isLoading = ref(false)
 const currentPage = ref(1)
 const hasMoreData = ref(true)
 
@@ -29,26 +30,43 @@ const isDirectoresPanelOpen = ref(false)
 const isImportWizardOpen = ref(false)
 const selectedColegioId = ref<number | null>(null)
 
+
 const cargarColegios = async (page: number, resetList = false) => {
-  if (colegiosStore.isLoading) return
+  if (isLoading.value) return
 
-  await colegiosStore.fetchColegios(page, 10, currentFilters.value)
-  
-  if (resetList) {
-    listaAcumulada.value = colegiosStore.colegios
-  } else {
-    listaAcumulada.value = [...listaAcumulada.value, ...colegiosStore.colegios]
-  }
+  isLoading.value = true
+  try {
+    const params: ColegioFilters = {
+      ...colegiosStore.currentFilters,
+      page,
+      limit: 10
+    }
 
-  if (colegiosStore.meta && page >= colegiosStore.meta.total_pages) {
+    const response = await colegiosService.listarColegios(params)
+    const items = response.data?.items || []
+    const meta = response.data?.meta
+
+    if (resetList) {
+      colegiosStore.listaAcumulada = items
+    } else {
+      colegiosStore.listaAcumulada = [...colegiosStore.listaAcumulada, ...items]
+    }
+
+    if (meta && page >= meta.total_pages) {
+      hasMoreData.value = false
+    } else {
+      hasMoreData.value = true
+    }
+  } catch (error) {
+    console.error('Error al cargar el directorio de colegios:', error)
     hasMoreData.value = false
-  } else {
-    hasMoreData.value = true
+  } finally {
+    isLoading.value = false
   }
 }
 
 const onFiltrosCambian = async (filtros: ColegioFilters) => {
-  currentFilters.value = filtros
+  colegiosStore.currentFilters = filtros
   currentPage.value = 1
   hasMoreData.value = true
   await cargarColegios(1, true)
@@ -63,7 +81,7 @@ const recargarTrasGuardar = async () => {
 const setupIntersectionObserver = () => {
   observer = new IntersectionObserver((entries) => {
     const target = entries[0]
-    if (target.isIntersecting && hasMoreData.value && !colegiosStore.isLoading) {
+    if (target.isIntersecting && hasMoreData.value && !isLoading.value) {
       currentPage.value++
       cargarColegios(currentPage.value)
     }
@@ -77,7 +95,11 @@ const setupIntersectionObserver = () => {
 }
 
 onMounted(async () => {
-  await cargarColegios(1, true)
+  if (colegiosStore.listaAcumulada.length > 0) {
+    currentPage.value = Math.ceil(colegiosStore.listaAcumulada.length / 10)
+  } else {
+    await cargarColegios(1, true)
+  }
   setupIntersectionObserver()
 })
 
@@ -140,18 +162,18 @@ const cerrarAdminDirectores = () => {
         <ColegiosFiltros @filter-change="onFiltrosCambian" />
         
         <ColegiosTabla 
-          :colegios="listaAcumulada"
+          :colegios="colegiosStore.listaAcumulada"
           @ver-detalles="abrirDetalles"
           @admin-colegio="abrirFormulario"
           @admin-directores="abrirAdminDirectores"
         />
 
         <div ref="scrollSentinel" class="w-full py-6 flex justify-center items-center">
-          <div v-if="colegiosStore.isLoading" class="flex flex-col items-center gap-2">
+          <div v-if="isLoading" class="flex flex-col items-center gap-2">
             <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             <span class="text-sm text-text-muted">Cargando colegios...</span>
           </div>
-          <span v-else-if="!hasMoreData && listaAcumulada.length > 0" class="text-sm text-text-muted">
+          <span v-else-if="!hasMoreData && colegiosStore.listaAcumulada.length > 0" class="text-sm text-text-muted">
             Has llegado al final de la lista.
           </span>
         </div>
