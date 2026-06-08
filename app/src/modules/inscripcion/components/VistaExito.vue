@@ -14,7 +14,7 @@
         <span class="text-white font-bold tracking-widest text-sm">CREDENCIAL POSTULANTE</span>
         <span class="text-blue-200 text-xs">OPE UMSA</span>
       </div>
-      <div class="p-6 bg-gradient-to-b from-white to-gray-50">
+      <div class="p-6 bg-linear-to-b from-white to-gray-50">
         <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Nombre Completo</p>
         <p class="text-xl font-bold text-gray-800 uppercase">{{ estudiante.nombres }} {{ estudiante.apellidos }}</p>
 
@@ -33,7 +33,7 @@
 
     <div class="w-full max-w-md bg-amber-50 border-l-4 border-amber-500 p-5 rounded-r-lg shadow-sm">
       <div class="flex items-start">
-        <AlertTriangle class="w-6 h-6 text-amber-600 mr-3 flex-shrink-0 mt-0.5" />
+        <AlertTriangle class="w-6 h-6 text-amber-600 mr-3 shrink-0 mt-0.5" />
         <div>
           <h3 class="text-amber-800 font-bold text-lg mb-1">Aviso Académico Obligatorio</h3>
           <p class="text-amber-700 text-sm leading-relaxed">
