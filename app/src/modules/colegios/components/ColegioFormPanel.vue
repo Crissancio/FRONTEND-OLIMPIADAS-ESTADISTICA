@@ -164,11 +164,11 @@ const eliminarColegio = async () => {
                   <div class="relative flex-1 px-4 py-6 sm:px-6 space-y-6">
                     <div v-if="colegioId" class="flex flex-wrap gap-2 pb-4 border-b border-gray-100">
                       
-                      <Button v-if="!isEditing" type="button" variant="outline" size="sm" class="flex items-center gap-1.5 border-secondary/50 text-secondary-dark hover:bg-secondary/10" @click="isEditing = true">
+                      <Button v-if="!isEditing" type="button" variant="not_allowed" size="sm" class="flex items-center gap-1.5 border-secondary/50 text-secondary-dark hover:bg-secondary/10" @click="isEditing = true">
                         <Edit2 class="h-3.5 w-3.5" /> Modificar Datos
                       </Button>
                       
-                      <Button type="button" :variant="formData.estado === 'INACTIVO' ? 'primary' : 'outline'" size="sm" 
+                      <Button type="button" :variant="formData.estado === 'INACTIVO' ? 'primary' : 'not_allowed'" size="sm" 
                               :class="[
                                 'flex items-center gap-1.5 transition-colors',
                                 formData.estado === 'INACTIVO' ? 'bg-estado-activa hover:bg-estado-activa/90 text-white border-transparent' : 'border-estado-inactivo/50 text-estado-inactivo hover:bg-estado-inactivo-soft'
@@ -178,7 +178,7 @@ const eliminarColegio = async () => {
                         {{ formData.estado === 'INACTIVO' ? 'Activar Colegio' : 'Desactivar Colegio' }}
                       </Button>
                       
-                      <Button type="button" variant="outline" size="sm" class="flex items-center gap-1.5 text-estado-rechazado border-estado-rechazado/30 hover:bg-estado-rechazado-soft" @click="eliminarColegio">
+                      <Button type="button" variant="not_allowed" size="sm" class="flex items-center gap-1.5 text-estado-rechazado border-estado-rechazado/30 hover:bg-estado-rechazado-soft" @click="eliminarColegio">
                         <Trash2 class="h-3.5 w-3.5" /> Eliminar Permanente
                       </Button>
                     </div>

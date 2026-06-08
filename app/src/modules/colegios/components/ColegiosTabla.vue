@@ -52,7 +52,7 @@ const estadoClass = (estado: string) => {
             <p class="text-xs text-text-muted">{{ col.turno }}</p>
           </td>
           <td class="px-6 py-4">
-            <Badge variant="outline" :class="`border px-2.5 py-1 ${estadoClass(col.estado)}`">
+            <Badge variant="not_allowed" :class="`border px-2.5 py-1 ${estadoClass(col.estado)}`">
               {{ col.estado }}
             </Badge>
           </td>

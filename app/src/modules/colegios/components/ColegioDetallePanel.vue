@@ -105,7 +105,7 @@ const estadoClass = (estado: string) => {
                       <div class="flex-1 border-r-0 lg:border-r border-gray-200 pr-0 lg:pr-6">
                         <div class="flex items-center justify-between mb-6">
                           <h3 class="font-bold text-lg text-text-main">Información Institucional</h3>
-                          <Badge variant="outline" :class="`border px-2.5 py-1 ${estadoClass(colegioActual.estado)}`">
+                          <Badge variant="not_allowed" :class="`border px-2.5 py-1 ${estadoClass(colegioActual.estado)}`">
                             {{ colegioActual.estado }}
                           </Badge>
                         </div>
