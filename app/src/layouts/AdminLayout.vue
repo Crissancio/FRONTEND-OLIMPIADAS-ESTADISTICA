@@ -167,11 +167,6 @@ onMounted(async () => {
         </div>
       
         <div class="flex items-center gap-4 sm:gap-6">
-          <button class="relative text-text-muted hover:text-primary transition-colors">
-            <Bell class="w-5 h-5" />
-            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 border-2 border-white bg-accent rounded-full"></span>
-          </button>
-        
           <button class="flex items-center gap-3 rounded-lg border border-transparent py-1.5 pl-4 pr-2 text-left transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" @click="isProfileDrawerOpen = true">
             <div class="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
               {{ adminInitials }}

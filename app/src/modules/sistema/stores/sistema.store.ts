@@ -1,172 +1,56 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { sistemaService } from '../services/sistema.service';
-import type { 
-  AdminDashboardDTO, 
-  AuditoriaDTO, 
-  ActividadSistemaDTO, 
-  ActividadRecienteDTO, 
-  EventoProximoDTO,
-  AuditoriaFilters,
-  ExportarAuditoriaCsvParams,
-  BasePaginationParams
-} from '../types/sistema.api';
-import type { PaginationMeta } from '@/shared/types/api.types';
-import type { ApiError } from '@/app/api/api-error';
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import type { ActividadRecienteDTO, EventoProximoDTO } from '../types/sistema.api'
+import type { PaginationMeta } from '@/shared/types/api.types'
 
 export const useSistemaStore = defineStore('sistema', () => {
-  // ==============================
-  // ESTADOS GENERALES
-  // ==============================
-  const loading = ref<boolean>(false);
-  const error = ref<ApiError | null>(null);
+  const actividadesRecientes = ref<ActividadRecienteDTO[]>([])
+  const eventosProximos = ref<EventoProximoDTO[]>([])
 
-  // ==============================
-  // ESTADOS DE DATOS
-  // ==============================
-  const dashboard = ref<AdminDashboardDTO | null>(null);
+  const metaActividadReciente = ref<PaginationMeta>({
+    page: 1, limit: 10, total: 0, total_pages: 1
+  })
   
-  const auditorias = ref<AuditoriaDTO[]>([]);
-  const metaAuditoria = ref<PaginationMeta | null>(null);
+  const metaEventosProximos = ref<PaginationMeta>({
+    page: 1, limit: 10, total: 0, total_pages: 1
+  })
 
-  const actividadesSistema = ref<ActividadSistemaDTO[]>([]);
-  const metaActividades = ref<PaginationMeta | null>(null);
-
-  const actividadesRecientes = ref<ActividadRecienteDTO[]>([]);
-  const metaActividadReciente = ref<PaginationMeta | null>(null);
-
-  const eventosProximos = ref<EventoProximoDTO[]>([]);
-  const metaEventosProximos = ref<PaginationMeta | null>(null);
-
-  // ==============================
-  // ACCIONES
-  // ==============================
-  async function fetchDashboard() {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await sistemaService.obtenerDashboardAdmin();
-      dashboard.value = response.data;
-    } catch (err) {
-      error.value = err as ApiError;
-    } finally {
-      loading.value = false;
-    }
+  const setActividades = (items: ActividadRecienteDTO[], meta: PaginationMeta) => {
+    actividadesRecientes.value = items
+    metaActividadReciente.value = meta
   }
 
-  async function fetchAuditoria(params?: AuditoriaFilters) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await sistemaService.listarAuditoria(params);
-      auditorias.value = response.data.items;
-      metaAuditoria.value = response.data.meta;
-    } catch (err) {
-      error.value = err as ApiError;
-    } finally {
-      loading.value = false;
-    }
+  const appendActividades = (items: ActividadRecienteDTO[], meta: PaginationMeta) => {
+    actividadesRecientes.value.push(...items)
+    metaActividadReciente.value = meta
   }
 
-  async function downloadAuditoriaCsv(params: ExportarAuditoriaCsvParams) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const blob = await sistemaService.exportarAuditoriaCsv(params);
-      
-      // Lógica de navegador para forzar la descarga del Blob
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `auditoria_${params.fecha_start}_${params.fecha_end}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-    } catch (err) {
-      error.value = err as ApiError;
-      throw err;
-    } finally {
-      loading.value = false;
-    }
+  const setEventos = (items: EventoProximoDTO[], meta: PaginationMeta) => {
+    eventosProximos.value = items
+    metaEventosProximos.value = meta
   }
 
-  async function fetchActividadesSistema(params?: BasePaginationParams) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await sistemaService.listarActividades(params);
-      actividadesSistema.value = response.data.items;
-      metaActividades.value = response.data.meta;
-    } catch (err) {
-      error.value = err as ApiError;
-    } finally {
-      loading.value = false;
-    }
+  const appendEventos = (items: EventoProximoDTO[], meta: PaginationMeta) => {
+    eventosProximos.value.push(...items)
+    metaEventosProximos.value = meta
   }
 
-async function fetchActividadesRecientes(params?: BasePaginationParams) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await sistemaService.obtenerActividadReciente(params);
-      
-      // SI LA PÁGINA ES MAYOR A 1, ACUMULAMOS LOS REGISTROS; SI NO, REEMPLAZAMOS
-      if (params?.page && params.page > 1) {
-        actividadesRecientes.value = [...actividadesRecientes.value, ...response.data.items];
-      } else {
-        actividadesRecientes.value = response.data.items;
-      }
-      
-      metaActividadReciente.value = response.data.meta;
-    } catch (err) {
-      error.value = err as ApiError;
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  async function fetchEventosProximos(params?: BasePaginationParams) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await sistemaService.obtenerEventosProximos(params);
-      
-      // SI LA PÁGINA ES MAYOR A 1, ACUMULAMOS LOS REGISTROS; SI NO, REEMPLAZAMOS
-      if (params?.page && params.page > 1) {
-        eventosProximos.value = [...eventosProximos.value, ...response.data.items];
-      } else {
-        eventosProximos.value = response.data.items;
-      }
-      
-      metaEventosProximos.value = response.data.meta;
-    } catch (err) {
-      error.value = err as ApiError;
-    } finally {
-      loading.value = false;
-    }
+  const clearStore = () => {
+    actividadesRecientes.value = []
+    eventosProximos.value = []
+    metaActividadReciente.value = { page: 1, limit: 10, total: 0, total_pages: 1 }
+    metaEventosProximos.value = { page: 1, limit: 10, total: 0, total_pages: 1 }
   }
 
   return {
-    // States
-    loading,
-    error,
-    dashboard,
-    auditorias,
-    metaAuditoria,
-    actividadesSistema,
-    metaActividades,
     actividadesRecientes,
-    metaActividadReciente,
     eventosProximos,
+    metaActividadReciente,
     metaEventosProximos,
-    // Actions
-    fetchDashboard,
-    fetchAuditoria,
-    downloadAuditoriaCsv,
-    fetchActividadesSistema,
-    fetchActividadesRecientes,
-    fetchEventosProximos
-  };
-});
+    setActividades,
+    appendActividades,
+    setEventos,
+    appendEventos,
+    clearStore
+  }
+})
