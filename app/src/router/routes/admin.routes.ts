@@ -98,6 +98,12 @@ export const adminRoutes: RouteRecordRaw[] = [
         name: 'admin-campanias',
         component: () => import('@/modules/campanias/pages/AdminCampaniasPage.vue'),
         meta: { title: 'Admin - Campañas' }
+      },
+      {
+        path: 'email-logs',
+        name: 'admin-email-logs',
+        component: () => import('@/modules/email_logs/pages/AdminEmailLogsPage.vue'),
+        meta: { title: 'Admin - Email Logs' }
       }
     ]
   }

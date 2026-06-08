@@ -395,7 +395,137 @@
   --color-actividad-email-border: #C4B5FD;
   --color-actividad-email-soft: #F5F3FF;
 
+  /* EstadoCampania
 
+
+BORRADOR */
+--color-campania-borrador: #D97706;
+--color-campania-borrador-text: #B45309;
+--color-campania-borrador-border: #FCD34D;
+--color-campania-borrador-soft: #FFFBEB;
+--color-campania-borrador-soft-hover: #FEF3C7;
+
+
+/* PROGRAMADA
+
+Todavía no inicia. */
+
+--color-campania-programada: #0284C7;
+--color-campania-programada-text: #0369A1;
+--color-campania-programada-border: #7DD3FC;
+--color-campania-programada-soft: #F0F9FF;
+--color-campania-programada-soft-hover: #E0F2FE;
+
+/* EN_PROCESO
+
+Campaña ejecutándose. */
+
+--color-campania-proceso: #7C3AED;
+--color-campania-proceso-text: #6D28D9;
+--color-campania-proceso-border: #C4B5FD;
+--color-campania-proceso-soft: #F5F3FF;
+--color-campania-proceso-soft-hover: #EDE9FE;
+
+
+/* FINALIZADA
+
+Terminó correctamente. */
+
+--color-campania-finalizada: #16A34A;
+--color-campania-finalizada-text: #15803D;
+--color-campania-finalizada-border: #86EFAC;
+--color-campania-finalizada-soft: #F0FDF4;
+--color-campania-finalizada-soft-hover: #DCFCE7;
+
+/* CANCELADA
+
+Cancelada manualmente. */
+
+--color-campania-cancelada: #64748B;
+--color-campania-cancelada-text: #475569;
+--color-campania-cancelada-border: #CBD5E1;
+--color-campania-cancelada-soft: #F8FAFC;
+--color-campania-cancelada-soft-hover: #F1F5F9;
+
+
+/* FALLIDA
+
+Error técnico. */
+
+--color-campania-fallida: #EF4444;
+--color-campania-fallida-text: #DC2626;
+--color-campania-fallida-border: #FCA5A5;
+--color-campania-fallida-soft: #FEF2F2;
+--color-campania-fallida-soft-hover: #FEE2E2;
+
+/* EstadoEmail */
+
+
+/* PENDIENTE */
+--color-email-pendiente: #D97706;
+--color-email-pendiente-text: #B45309;
+--color-email-pendiente-border: #FCD34D;
+--color-email-pendiente-soft: #FFFBEB;
+--color-email-pendiente-soft-hover: #FEF3C7;
+
+/* EN_PROCESO */
+--color-email-proceso: #0284C7;
+--color-email-proceso-text: #0369A1;
+--color-email-proceso-border: #7DD3FC;
+--color-email-proceso-soft: #F0F9FF;
+--color-email-proceso-soft-hover: #E0F2FE;
+
+/* ENVIADO */
+--color-email-enviado: #16A34A;
+--color-email-enviado-text: #15803D;
+--color-email-enviado-border: #86EFAC;
+--color-email-enviado-soft: #F0FDF4;
+--color-email-enviado-soft-hover: #DCFCE7;
+
+
+/* FALLIDO */
+--color-email-fallido: #EF4444;
+--color-email-fallido-text: #DC2626;
+--color-email-fallido-border: #FCA5A5;
+--color-email-fallido-soft: #FEF2F2;
+--color-email-fallido-soft-hover: #FEE2E2;
+
+/* MASIVO_INSCRIPCION
+
+Relacionado a la Olimpiada. */
+
+--color-tipo-email-inscripcion: #0284C7;
+--color-tipo-email-inscripcion-text: #0369A1;
+--color-tipo-email-inscripcion-border: #7DD3FC;
+--color-tipo-email-inscripcion-soft: #F0F9FF;
+
+/* RESPUESTA_CONTACTO
+
+Comunicación directa. */
+
+--color-tipo-email-contacto: #7C3AED;
+--color-tipo-email-contacto-text: #6D28D9;
+--color-tipo-email-contacto-border: #C4B5FD;
+--color-tipo-email-contacto-soft: #F5F3FF;
+
+/* MAIL_INDIVIDUAL
+
+Persona específica. */
+
+--color-tipo-email-individual: #0F766E;
+--color-tipo-email-individual-text: #115E59;
+--color-tipo-email-individual-border: #99F6E4;
+--color-tipo-email-individual-soft: #F0FDFA;
+
+
+/* NOTIFICACION
+
+Informativo. */
+
+--color-tipo-email-notificacion: #EA580C;
+--color-tipo-email-notificacion-text: #C2410C;
+--color-tipo-email-notificacion-border: #FDBA74;
+--color-tipo-email-notificacion-soft: #FFF7ED;
 }
 
 @import "./styles/theme.css";

@@ -16,7 +16,9 @@ import {
   BarChart4, 
   LogOut,
   Menu,
-  X
+  X,
+  Send,
+  Inbox
 } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import AdminProfileDrawer from '@/modules/auth/components/AdminProfileDrawer.vue'
@@ -29,16 +31,18 @@ const isSidebarOpen = ref(false)
 const isProfileDrawerOpen = ref(false)
 const logoOpeSrc = `${import.meta.env.BASE_URL}logo-ope.svg`
 const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Convocatorias', href: '/admin/convocatorias', icon: FileText },
-  { name: 'Material', href: '/admin/material', icon: BookOpen },
-  { name: 'Colegios', href: '/admin/colegios', icon: Building2 },
-  { name: 'Estudiantes', href: '/admin/estudiantes', icon: Users },
-  { name: 'Avisos', href: '/admin/avisos', icon: Bell },
-  { name: 'Contactos', href: '/admin/contactos', icon: Mail },
-  { name: 'Colaboradores', href: '/admin/colaboradores', icon: UsersRound },
-  { name: 'Administradores', href: '/admin/administradores', icon: Shield },
-  { name: 'Auditoría', href: '/admin/auditoria', icon: BarChart4 },
+  { name: 'Dashboard',       href: '/admin',                  icon: LayoutDashboard },
+  { name: 'Convocatorias',   href: '/admin/convocatorias',    icon: FileText },
+  { name: 'Material',        href: '/admin/material',         icon: BookOpen },
+  { name: 'Colegios',        href: '/admin/colegios',         icon: Building2 },
+  { name: 'Estudiantes',     href: '/admin/estudiantes',      icon: Users },
+  { name: 'Avisos',          href: '/admin/avisos',           icon: Bell },
+  { name: 'Contactos',       href: '/admin/contactos',        icon: Mail },
+  { name: 'Campañas',        href: '/admin/campanias',        icon: Send },
+  { name: 'Email Logs',      href: '/admin/email-logs',       icon: Inbox },
+  { name: 'Colaboradores',   href: '/admin/colaboradores',    icon: UsersRound },
+  { name: 'Administradores', href: '/admin/administradores',  icon: Shield },
+  { name: 'Auditoría',       href: '/admin/auditoria',        icon: BarChart4 },
 ]
 
 const adminInitials = computed(() => {
