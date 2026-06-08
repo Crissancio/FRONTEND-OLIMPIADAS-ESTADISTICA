@@ -193,7 +193,7 @@ const saveMaterial = async () => {
         </CardTitle>
       </CardHeader>
 
-      <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-[450px]">
+      <div class="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-112.5">
         <div class="shrink-0 bg-gray-50 border-b sm:border-b-0 sm:border-r border-gray-200 flex flex-col p-4 items-center justify-center w-full sm:w-64">
           <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3 w-full text-center">Vista Previa</p>
           <div class="w-56 h-72 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex items-center justify-center relative shrink-0">

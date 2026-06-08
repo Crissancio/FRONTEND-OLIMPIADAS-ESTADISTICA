@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted} from 'vue'
 import {
   Plus, Search, Filter, Edit, ExternalLink, Loader2,
   FileQuestion, BookOpenCheck, Calculator, Megaphone,
@@ -174,7 +174,7 @@ const onMaterialSaved = () => {
       </Button>
     </div>
 
-    <Card class="overflow-hidden border-gray-200 shadow-soft bg-white flex flex-col h-[calc(100vh-140px)] min-h-[500px]">
+    <Card class="overflow-hidden border-gray-200 shadow-soft bg-white flex flex-col h-[calc(100vh-140px)] min-h-125">
       <CardContent class="p-0 flex flex-col h-full">
         <div class="flex flex-col items-center gap-4 border-b border-gray-200 bg-gray-50/50 p-4 sm:flex-row shrink-0">
           <div class="relative w-full sm:w-80">

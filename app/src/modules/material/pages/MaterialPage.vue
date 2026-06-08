@@ -110,9 +110,9 @@ onUnmounted(() => observer?.disconnect())
         <CardContent class="p-0 flex flex-col md:flex-row gap-4 items-center">
           <div class="relative flex-1 w-full">
             <Search class="h-5 w-5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-            <input v-model="searchTerm" type="text" class="w-full pl-10 pr-3 py-3 border-gray-300 rounded-xl bg-white focus-visible:ring-primary sm:text-sm h-[50px]" placeholder="Buscar material..." />
+            <input v-model="searchTerm" type="text" class="w-full pl-10 pr-3 py-3 border-gray-300 rounded-xl bg-white focus-visible:ring-primary sm:text-sm h-12.5" placeholder="Buscar material..." />
           </div>
-          <div class="relative w-full sm:w-56 bg-white border border-gray-300 rounded-xl overflow-hidden h-[50px] flex items-center pl-3">
+          <div class="relative w-full sm:w-56 bg-white border border-gray-300 rounded-xl overflow-hidden h-12.5 flex items-center pl-3">
             <Filter class="h-4 w-4 text-text-muted shrink-0 z-10" />
             <select v-model="tipoFiltro" class="border-0 bg-transparent shadow-none focus:ring-0 h-full w-full pl-2">
               <option v-for="t in tiposDisponibles" :key="t" :value="t">{{ t }}</option>
