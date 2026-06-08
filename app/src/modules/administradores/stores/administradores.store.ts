@@ -1,146 +1,58 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { administradoresService } from '../services/administradores.service';
-import type { 
-  AdministradorDTO, 
-  AdministradorFilters, 
-  AdministradorCreateDTO, 
-  AdministradorUpdateDTO,
-  PaginationMeta
-} from '../types/administradores.api';
-import type { ApiError } from '@/app/api/api-error';
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import type { AdministradorDTO } from '../types/administradores.api'
+import type { PaginationMeta } from '@/shared/types/api.types'
 
-export const useAdministradoresStore = defineStore('administradores', () => {
-  // Estado
-  const administradores = ref<AdministradorDTO[]>([]);
-  const currentAdministrador = ref<AdministradorDTO | null>(null);
-  const loading = ref<boolean>(false);
-  const error = ref<ApiError | null>(null);
+export const useAdministradorStore = defineStore('administradores', () => {
+  const administradores = ref<AdministradorDTO[]>([])
   const meta = ref<PaginationMeta>({
     page: 1,
-    limit: 10,
+    limit: 20,
     total: 0,
-    total_pages: 0
-  });
+    total_pages: 1
+  })
 
-  // Acciones
-  async function fetchAdministradores(filters?: AdministradorFilters) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await administradoresService.listarAdministradores(filters);
-      administradores.value = response.data.items;
-      meta.value = response.data.meta;
-    } catch (err) {
-      error.value = err as ApiError;
-    } finally {
-      loading.value = false;
+  const setAdministradores = (items: AdministradorDTO[]) => {
+    administradores.value = items
+  }
+
+  const appendAdministradores = (items: AdministradorDTO[]) => {
+    administradores.value.push(...items)
+  }
+
+  const updateAdministrador = (admin: AdministradorDTO) => {
+    const index = administradores.value.findIndex(a => a.id_administrador === admin.id_administrador)
+    if (index !== -1) {
+      administradores.value[index] = admin
     }
   }
 
-  async function fetchAdministradorById(id: number) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await administradoresService.obtenerAdministradorPorId(id);
-      currentAdministrador.value = response.data;
-    } catch (err) {
-      error.value = err as ApiError;
-    } finally {
-      loading.value = false;
-    }
+  const removeAdministrador = (id: number) => {
+    administradores.value = administradores.value.filter(a => a.id_administrador !== id)
   }
 
-  async function createAdministrador(data: AdministradorCreateDTO) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await administradoresService.crearAdministrador(data);
-      administradores.value.unshift(response.data);
-      return response.data;
-    } catch (err) {
-      error.value = err as ApiError;
-      throw err;
-    } finally {
-      loading.value = false;
-    }
+  const setMeta = (newMeta: PaginationMeta) => {
+    meta.value = newMeta
   }
 
-  async function updateAdministrador(id: number, data: AdministradorUpdateDTO) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await administradoresService.actualizarAdministrador(id, data);
-      
-      // Actualizar en la lista local
-      const index = administradores.value.findIndex(a => a.id_administrador === id);
-      if (index !== -1) {
-        administradores.value[index] = { ...administradores.value[index], ...response.data };
-      }
-      
-      if (currentAdministrador.value?.id_administrador === id) {
-        currentAdministrador.value = response.data;
-      }
-      return response.data;
-    } catch (err) {
-      error.value = err as ApiError;
-      throw err;
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  async function toggleBajaLogica(id: number, darDeBaja: boolean) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = darDeBaja 
-        ? await administradoresService.bajaLogicaAdministrador(id)
-        : await administradoresService.altaLogicaAdministrador(id);
-        
-      // Actualizar estado en la lista local
-      const index = administradores.value.findIndex(a => a.id_administrador === id);
-      if (index !== -1) {
-        administradores.value[index] = response.data;
-      }
-      
-      return response.data;
-    } catch (err) {
-      error.value = err as ApiError;
-      throw err;
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  async function removeAdministrador(id: number) {
-    loading.value = true;
-    error.value = null;
-    try {
-      await administradoresService.eliminarAdministrador(id);
-      administradores.value = administradores.value.filter(a => a.id_administrador !== id);
-      if (currentAdministrador.value?.id_administrador === id) {
-        currentAdministrador.value = null;
-      }
-    } catch (err) {
-      error.value = err as ApiError;
-      throw err;
-    } finally {
-      loading.value = false;
+  const clearStore = () => {
+    administradores.value = []
+    meta.value = {
+      page: 1,
+      limit: 20,
+      total: 0,
+      total_pages: 1
     }
   }
 
   return {
     administradores,
-    currentAdministrador,
-    loading,
-    error,
     meta,
-    fetchAdministradores,
-    fetchAdministradorById,
-    createAdministrador,
+    setAdministradores,
+    appendAdministradores,
     updateAdministrador,
-    toggleBajaLogica,
-    removeAdministrador
-  };
-});
+    removeAdministrador,
+    setMeta,
+    clearStore
+  }
+})
