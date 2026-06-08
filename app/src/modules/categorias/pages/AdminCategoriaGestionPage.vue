@@ -124,6 +124,9 @@ const onChildError = (msg: string) => {
         <TabInscritosCategoria
           v-if="activeTab === 'inscritos'"
           :categoria-id="numericCategoriaId"
+          :convocatoria-id="Number(convocatoriaId)"
+          :curso-cat="Number(categoria.curso)"
+          :nivel-cat="categoria.grado"
           @error="onChildError"
         />
 

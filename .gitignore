@@ -35,7 +35,7 @@ app/*.local
 diseño_pagina_figma
 diseño_pagina_figma/*
 
-*.ps1
+/*.ps1
 
 proyecto-descripcion
 proyecto-descripcion/*
