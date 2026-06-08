@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { X, Lock, Edit2, ShieldAlert, Trash2, Save, Power, Loader2, Building, User } from 'lucide-vue-next'
+import { X, Lock, Edit2, Save, Power, Loader2, Building, User } from 'lucide-vue-next'
 import { estudiantesService } from '../services/estudiantes.service'
 import { useInscripcionStore } from '@/modules/inscripcion/stores/inscripcion.store'
 import type { EstudianteDTO, EstudianteUpdateDTO } from '../types/estudiantes.api'
@@ -156,21 +156,6 @@ const handleStatusToggle = async () => {
     isLoadingAction.value = false
   }
 }
-
-const handlePermanentDelete = async () => {
-  if (!props.studentId || isLoadingAction.value) return
-  isLoadingAction.value = true
-  try {
-    emit('deleted')
-    emit('close')
-  } catch (err) {
-    errorMessage.value = 'No se pudo proceder con la remoción definitiva.'
-  } finally {
-    isLoadingAction.value = false
-    showDeleteConfirm.value = false
-  }
-}
-
 const hideColegioDropdown = () => {
   window.setTimeout(() => {
     showColegioDropdown.value = false

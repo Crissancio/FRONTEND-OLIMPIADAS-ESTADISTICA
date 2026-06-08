@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { Eye, Edit, UserX, CheckSquare, Square, Loader2 } from 'lucide-vue-next'
+import { Edit, CheckSquare, Square, Loader2 } from 'lucide-vue-next'
 import type { EstudianteDTO } from '@/modules/estudiantes/types/estudiantes.api'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
