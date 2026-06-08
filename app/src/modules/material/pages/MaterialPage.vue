@@ -136,8 +136,12 @@ onUnmounted(() => {
 
 <template>
   <div class="w-full bg-gray-50 min-h-screen pb-20">
-    <div class="bg-primary text-white pt-12 pb-12 relative overflow-hidden">
+    <div class="bg-primary-dark text-white pt-12 pb-12 relative overflow-hidden">
       <div class="absolute inset-0 bg-linear-to-br from-slate-900/40 to-transparent" />
+          <div 
+      class="absolute inset-0 opacity-15 z-0" 
+      style="background-image: url('data:image/svg+xml,%3Csvg width=\'120\' height=\'120\' viewBox=\'0 0 120 120\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\' font-family=\'serif\' font-size=\'24\' font-style=\'italic\' font-weight=\'bold\'%3E%3Ctext x=\'20\' y=\'30\'%3EΣ%3C/text%3E%3Ctext x=\'70\' y=\'45\'%3Eμ%3C/text%3E%3Ctext x=\'40\' y=\'80\'%3Eσ%3C/text%3E%3Ctext x=\'95\' y=\'90\'%3Eπ%3C/text%3E%3Ctext x=\'15\' y=\'105\'%3EΔ%3C/text%3E%3Ctext x=\'60\' y=\'115\'%3E∫%3C/text%3E%3Ctext x=\'100\' y=\'25\'%3Eα%3C/text%3E%3C/g%3E%3C/svg%3E'); background-size: 120px 120px;"
+    />
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
         <BookOpen class="w-16 h-16 mx-auto mb-6 opacity-90" />
         <h1 class="text-4xl md:text-5xl font-heading font-black mb-4">Material Académico</h1>
@@ -147,9 +151,9 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-20">
-      <Card class="rounded-2xl shadow-sm border-gray-200 p-6 mb-10 bg-white">
-        <CardContent class="p-0 flex flex-col lg:flex-row gap-4 items-center">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-30">
+      <Card class="rounded-2xl shadow-sm border-gray-200 p-6 mb-10 bg-white overflow-visible!">
+        <CardContent class="p-0 flex flex-col lg:flex-row gap-4 items-center overflow-visible!">
           <div class="relative flex-1 w-full">
             <Search class="h-5 w-5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
@@ -160,7 +164,7 @@ onUnmounted(() => {
             />
           </div>
           
-          <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto shrink-0">
+          <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto shrink-0 overflow-visible!">
             <div class="relative w-full sm:w-60 bg-white border border-gray-300 rounded-xl overflow-hidden h-12.5 flex items-center pl-3">
               <Filter class="h-4 w-4 text-text-muted shrink-0 z-10" />
               <select v-model="tipoFiltro" class="border-0 bg-transparent shadow-none focus:ring-0 h-full w-full pl-2 text-sm text-text-main cursor-pointer">
@@ -185,7 +189,7 @@ onUnmounted(() => {
                 />
               </button>
               
-              <div v-if="showDatePicker" class="absolute right-0 mt-2 z-50 bg-white shadow-xl rounded-xl p-2 border border-gray-200">
+              <div v-if="showDatePicker" class="absolute right-0 top-full mt-2 z-50 bg-white shadow-2xl rounded-xl p-2 border border-gray-200 min-w-70">
                 <VDatePicker 
                   v-model.range="dateRange" 
                   :columns="1" 
@@ -202,7 +206,7 @@ onUnmounted(() => {
         {{ materialStore.error }}
       </div>
 
-      <div v-else-if="materialStore.items.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div v-else-if="materialStore.items.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 relative z-10">
         <Card 
           v-for="(mat, idx) in materialStore.items" 
           :key="`material-${idx}`" 
