@@ -214,36 +214,7 @@
   --color-material-externo-border: #FDBA74;
   --color-material-externo-soft: #FFF7ED;
 
-}
-
-@import "./styles/theme.css";
-
-.ope-calendar-theme {
-  --vc-accent-50: #f3f6fb;
-  --vc-accent-100: #dfe8f4;
-  --vc-accent-200: #c2d1e7;
-  --vc-accent-300: #99b2d5;
-  --vc-accent-400: #6689bd;
-  --vc-accent-500: #315a94;
-  --vc-accent-600: #113264;
-  --vc-accent-700: #0f2b56;
-  --vc-accent-800: #0c2448;
-  --vc-accent-900: #0A1E3C;
-  --vc-hover-bg: rgba(17, 50, 100, 0.1);
-  --vc-focus-ring: 0 0 0 2px rgba(17, 50, 100, 0.28);
-  --vc-header-arrow-color: #113264;
-  --vc-header-arrow-hover-bg: rgba(17, 50, 100, 0.1);
-  --vc-header-title-color: #1E293B;
-  --vc-weekday-color: #113264;
-  --vc-nav-item-active-bg: #113264;
-  --vc-nav-item-current-color: #113264;
-  --vc-time-month-color: #113264;
-  --vc-time-day-color: #113264;
-  --vc-time-select-group-icon-color: #113264;
-  --vc-select-hover-bg: rgba(17, 50, 100, 0.1);
-  --vc-day-content-hover-bg: rgba(17, 50, 100, 0.1);
-  --vc-day-content-disabled-color: rgba(17, 50, 100, 0.38);
-
+  
   /*PENDIENTE*/
   --color-contacto-pendiente: #D97706;
   --color-contacto-pendiente-text: #B45309;
@@ -291,6 +262,169 @@
   --color-email-fallido-border: #FCA5A5;
   --color-email-fallido-soft: #FEF2F2;
   --color-email-fallido-soft-hover: #FEE2E2;
+
+  /*TipoAccion*/
+  /*CREAR*/
+
+  /*Acción positiva*/
+
+  --color-audit-crear: #16A34A;
+  --color-audit-crear-text: #15803D;
+  --color-audit-crear-border: #86EFAC;
+  --color-audit-crear-soft: #F0FDF4;
+  --color-audit-crear-soft-hover: #DCFCE7;
+
+  /*ACTUALIZAR*/
+
+  /*Modificación*/
+
+  --color-audit-actualizar: #0284C7;
+  --color-audit-actualizar-text: #0369A1;
+  --color-audit-actualizar-border: #7DD3FC;
+  --color-audit-actualizar-soft: #F0F9FF;
+  --color-audit-actualizar-soft-hover: #E0F2FE;
+
+
+  /*ELIMINAR*/
+
+  /*Acción destructiva.*/
+
+  --color-audit-eliminar: #EF4444;
+  --color-audit-eliminar-text: #DC2626;
+  --color-audit-eliminar-border: #FCA5A5;
+  --color-audit-eliminar-soft: #FEF2F2;
+  --color-audit-eliminar-soft-hover: #FEE2E2;
+
+  /* Visible al público. */
+
+  --color-audit-publicar: #16A34A;
+  --color-audit-publicar-text: #15803D;
+  --color-audit-publicar-border: #86EFAC;
+  --color-audit-publicar-soft: #F0FDF4;
+  --color-audit-publicar-soft-hover: #DCFCE7;
+
+  /* OCULTAR */
+
+  --color-audit-ocultar: #64748B;
+  --color-audit-ocultar-text: #475569;
+  --color-audit-ocultar-border: #CBD5E1;
+  --color-audit-ocultar-soft: #F8FAFC;
+  --color-audit-ocultar-soft-hover: #F1F5F9;
+
+  /* REPROGRAMAR */
+
+  /* Cambio temporal. */
+
+  --color-audit-reprogramar: #D97706;
+  --color-audit-reprogramar-text: #B45309;
+  --color-audit-reprogramar-border: #FCD34D;
+  --color-audit-reprogramar-soft: #FFFBEB;
+  --color-audit-reprogramar-soft-hover: #FEF3C7;
+
+  /* RESPONDER */
+
+  /* Comunicación atendida. */
+
+  --color-audit-responder: #7C3AED;
+  --color-audit-responder-text: #6D28D9;
+  --color-audit-responder-border: #C4B5FD;
+  --color-audit-responder-soft: #F5F3FF;
+  --color-audit-responder-soft-hover: #EDE9FE;
+
+  /* LOGIN_FALLIDO */
+
+  /* Evento de seguridad. */
+
+  --color-audit-login-fallido: #DC2626;
+  --color-audit-login-fallido-text: #B91C1C;
+  --color-audit-login-fallido-border: #FCA5A5;
+  --color-audit-login-fallido-soft: #FEF2F2;
+  --color-audit-login-fallido-soft-hover: #FEE2E2;
+
+
+  /* TipoModulo */
+
+  /* Académico
+  CONVOCATORIA
+  INSCRIPCION
+  RESULTADO
+  CATEGORIA
+  FASE_PRUEBA
+  FASE_PREPARACION
+  MATERIAL */
+  --color-modulo-academico: #0284C7;
+  --color-modulo-academico-text: #0369A1;
+  --color-modulo-academico-border: #7DD3FC;
+  --color-modulo-academico-soft: #F0F9FF;
+  /* Personas
+  ESTUDIANTE
+  DIRECTOR
+  COLEGIO
+  COLABORADOR
+  ADMINISTRADOR */
+  --color-modulo-persona: #0F766E;
+  --color-modulo-persona-text: #115E59;
+  --color-modulo-persona-border: #99F6E4;
+  --color-modulo-persona-soft: #F0FDFA;
+  /* Comunicación
+  AVISO
+  CONTACTO
+  CAMPANIA
+  EMAIL_LOG */
+  --color-modulo-comunicacion: #7C3AED;
+  --color-modulo-comunicacion-text: #6D28D9;
+  --color-modulo-comunicacion-border: #C4B5FD;
+  --color-modulo-comunicacion-soft: #F5F3FF;
+  /* Seguridad
+  AUTH */
+  --color-modulo-auth: #64748B;
+  --color-modulo-auth-text: #475569;
+  --color-modulo-auth-border: #CBD5E1;
+  --color-modulo-auth-soft: #F8FAFC;
+  /* TipoActividad
+  INSCRIPCION */
+  --color-actividad-inscripcion: #0284C7;
+  --color-actividad-inscripcion-text: #0369A1;
+  --color-actividad-inscripcion-border: #7DD3FC;
+  --color-actividad-inscripcion-soft: #F0F9FF;
+
+
+  /* EMAIL */
+  --color-actividad-email: #7C3AED;
+  --color-actividad-email-text: #6D28D9;
+  --color-actividad-email-border: #C4B5FD;
+  --color-actividad-email-soft: #F5F3FF;
+
+
+}
+
+@import "./styles/theme.css";
+
+.ope-calendar-theme {
+  --vc-accent-50: #f3f6fb;
+  --vc-accent-100: #dfe8f4;
+  --vc-accent-200: #c2d1e7;
+  --vc-accent-300: #99b2d5;
+  --vc-accent-400: #6689bd;
+  --vc-accent-500: #315a94;
+  --vc-accent-600: #113264;
+  --vc-accent-700: #0f2b56;
+  --vc-accent-800: #0c2448;
+  --vc-accent-900: #0A1E3C;
+  --vc-hover-bg: rgba(17, 50, 100, 0.1);
+  --vc-focus-ring: 0 0 0 2px rgba(17, 50, 100, 0.28);
+  --vc-header-arrow-color: #113264;
+  --vc-header-arrow-hover-bg: rgba(17, 50, 100, 0.1);
+  --vc-header-title-color: #1E293B;
+  --vc-weekday-color: #113264;
+  --vc-nav-item-active-bg: #113264;
+  --vc-nav-item-current-color: #113264;
+  --vc-time-month-color: #113264;
+  --vc-time-day-color: #113264;
+  --vc-time-select-group-icon-color: #113264;
+  --vc-select-hover-bg: rgba(17, 50, 100, 0.1);
+  --vc-day-content-hover-bg: rgba(17, 50, 100, 0.1);
+  --vc-day-content-disabled-color: rgba(17, 50, 100, 0.38);
 }
 
 .ope-calendar-theme .vc-container {
