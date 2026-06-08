@@ -22,27 +22,19 @@ let searchTimeout: ReturnType<typeof setTimeout>
 watch(localFilters, (newVals) => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
-    
-    // Capturamos la búsqueda general
-    const searchVal = newVals.busqueda?.trim() || undefined
+    const searchVal = newVals.busqueda?.trim() || null
 
-    // Mapeamos a la interfaz estricta del backend
     const activeFilters = {
       titulo: searchVal,
-      descripcion: searchVal, // Pasamos el mismo parámetro a descripción
-      tipo: newVals.tipo || undefined,
-      prioridad: newVals.prioridad || undefined,
-      estado: newVals.estado || undefined,
-      fecha_publicacion: newVals.fecha_publicacion || undefined,
-      fecha_creacion: newVals.fecha_creacion || undefined
+      descripcion: searchVal,
+      tipo: newVals.tipo || null,
+      prioridad: newVals.prioridad || null,
+      estado: newVals.estado || null,
+      fecha_publicacion: newVals.fecha_publicacion || null,
+      fecha_creacion: newVals.fecha_creacion || null
     }
 
-    // Limpiamos las propiedades undefined para no enviar basura en la URL
-    const cleanedFilters = Object.fromEntries(
-      Object.entries(activeFilters).filter(([_, v]) => v !== undefined && v !== '')
-    )
-    
-    emit('filter', cleanedFilters)
+    emit('filter', activeFilters)
   }, 300)
 }, { deep: true })
 </script>
@@ -58,7 +50,7 @@ watch(localFilters, (newVals) => {
           v-model="localFilters.busqueda" 
           type="text" 
           placeholder="Ej: Mantenimiento programado..." 
-          class="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all"
+          class="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-(--color-primary) focus:border-transparent transition-all"
         />
         <button 
           v-if="localFilters.busqueda" 
@@ -72,7 +64,7 @@ watch(localFilters, (newVals) => {
 
     <div>
       <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Tipo</label>
-      <select v-model="localFilters.tipo" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-[var(--color-primary)]">
+      <select v-model="localFilters.tipo" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-(--color-primary)">
         <option value="">TODOS</option>
         <option v-for="t in tipos" :key="t" :value="t">{{ t }}</option>
       </select>
@@ -81,13 +73,13 @@ watch(localFilters, (newVals) => {
     <div>
       <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Prioridad / Estado</label>
       <div class="flex gap-2">
-        <select v-model="localFilters.prioridad" class="w-1/2 px-2 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-[var(--color-primary)]">
+        <select v-model="localFilters.prioridad" class="w-1/2 px-2 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-(--color-primary)">
           <option value="">PRIO.</option>
           <option value="ALTA">Alta</option>
           <option value="MEDIA">Media</option>
           <option value="BAJA">Baja</option>
         </select>
-        <select v-model="localFilters.estado" class="w-1/2 px-2 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-[var(--color-primary)]">
+        <select v-model="localFilters.estado" class="w-1/2 px-2 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-(--color-primary)">
           <option value="">EST.</option>
           <option value="BORRADOR">Borrador</option>
           <option value="PUBLICADO">Público</option>
@@ -106,7 +98,7 @@ watch(localFilters, (newVals) => {
               v-on="inputEvents" 
               placeholder="Seleccionar" 
               readonly 
-              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer" 
+              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-(--color-primary) cursor-pointer" 
             />
             <button v-if="localFilters.fecha_publicacion" @click.stop="localFilters.fecha_publicacion = null" class="absolute right-2 top-2 text-gray-400 hover:text-gray-700 bg-gray-50">
               <X class="w-4 h-4" />
@@ -126,7 +118,7 @@ watch(localFilters, (newVals) => {
               v-on="inputEvents" 
               placeholder="Seleccionar" 
               readonly 
-              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-[var(--color-primary)] cursor-pointer" 
+              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-(--color-primary) cursor-pointer" 
             />
             <button v-if="localFilters.fecha_creacion" @click.stop="localFilters.fecha_creacion = null" class="absolute right-2 top-2 text-gray-400 hover:text-gray-700 bg-gray-50">
               <X class="w-4 h-4" />

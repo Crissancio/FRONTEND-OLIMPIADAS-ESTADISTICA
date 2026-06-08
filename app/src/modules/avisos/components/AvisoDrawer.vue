@@ -19,12 +19,19 @@ const today = new Date()
 
 const tipos = ['CONVOCATORIA', 'INSCRIPCION', 'EXAMEN', 'RESULTADO', 'LOGISTICA', 'MANTENIMIENTO', 'SOPORTE', 'RECLAMO', 'CRONOGRAMA', 'MATERIAL', 'CEREMONIA', 'CAPACITACION', 'GENERAL']
 
+const getFutureDateString = () => {
+  const d = new Date()
+  d.setMinutes(d.getMinutes() + 10)
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`
+}
+
 const form = reactive({
   titulo: '',
   descripcion: '',
   tipo: '',
   prioridad: 'MEDIA',
-  fecha_publicacion: null as string | null
+  fecha_publicacion: ''
 })
 
 watch(() => props.isOpen, (newVal) => {
@@ -37,11 +44,17 @@ watch(() => props.isOpen, (newVal) => {
         descripcion: props.aviso.descripcion,
         tipo: props.aviso.tipo,
         prioridad: props.aviso.prioridad,
-        fecha_publicacion: props.aviso.fecha_publicacion
+        fecha_publicacion: props.aviso.fecha_publicacion || getFutureDateString()
       })
     } else {
       isEditing.value = true
-      Object.assign(form, { titulo: '', descripcion: '', tipo: '', prioridad: 'MEDIA', fecha_publicacion: null })
+      Object.assign(form, { 
+        titulo: '', 
+        descripcion: '', 
+        tipo: '', 
+        prioridad: 'MEDIA', 
+        fecha_publicacion: getFutureDateString() 
+      })
     }
   }
 })
@@ -49,12 +62,12 @@ watch(() => props.isOpen, (newVal) => {
 const isViewMode = computed(() => !!props.aviso && !isEditing.value)
 
 const handleSubmit = () => {
-  if (!form.titulo || !form.descripcion || !form.tipo) return
+  if (!form.titulo || !form.descripcion || !form.tipo || !form.fecha_publicacion) return
   emit('save', { isNew: !props.aviso, data: { ...form, estado: props.aviso ? props.aviso.estado : 'BORRADOR' } })
 }
 
-const formatFecha = (fechaStr: string | null) => {
-  if (!fechaStr) return 'Inmediata'
+const formatFecha = (fechaStr: string) => {
+  if (!fechaStr) return ''
   const date = new Date(fechaStr)
   if (isNaN(date.getTime())) return fechaStr
   return new Intl.DateTimeFormat('es-ES', {
@@ -146,18 +159,18 @@ const getPrioridadColor = (prioridad: string) => {
                   <div v-else class="space-y-5 relative" :class="{ 'opacity-80 pointer-events-none': loading }">
                     <div>
                       <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Título del Aviso *</label>
-                      <input v-model="form.titulo" type="text" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] transition-all" placeholder="Escriba el título del aviso..." />
+                      <input v-model="form.titulo" type="text" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-(--color-primary) transition-all" placeholder="Escriba el título del aviso..." />
                     </div>
 
                     <div>
                       <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Descripción General *</label>
-                      <textarea v-model="form.descripcion" rows="5" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] transition-all resize-none" placeholder="Detalle la información..."></textarea>
+                      <textarea v-model="form.descripcion" rows="5" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-(--color-primary) transition-all resize-none" placeholder="Detalle la información..."></textarea>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                       <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Tipo *</label>
-                        <select v-model="form.tipo" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] transition-all">
+                        <select v-model="form.tipo" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-(--color-primary) transition-all">
                           <option value="" disabled>Seleccione</option>
                           <option v-for="t in tipos" :key="t" :value="t">{{ t }}</option>
                         </select>
@@ -165,7 +178,7 @@ const getPrioridadColor = (prioridad: string) => {
 
                       <div>
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Prioridad *</label>
-                        <select v-model="form.prioridad" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-[var(--color-primary)] transition-all">
+                        <select v-model="form.prioridad" class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-(--color-primary) transition-all">
                           <option value="BAJA">BAJA</option>
                           <option value="MEDIA">MEDIA</option>
                           <option value="ALTA">ALTA</option>
@@ -174,14 +187,11 @@ const getPrioridadColor = (prioridad: string) => {
                     </div>
 
                     <div>
-                      <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Fecha de Publicación</label>
+                      <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Fecha de Publicación *</label>
                       <DatePicker v-model.string="form.fecha_publicacion" mode="dateTime" is24hr :min-date="today" :masks="{ modelValue: 'YYYY-MM-DD HH:mm:ss', input: 'DD/MM/YYYY HH:mm' }">
                         <template #default="{ inputValue, inputEvents }">
                           <div class="relative">
-                            <input :value="inputValue" v-on="inputEvents" placeholder="Opcional. Por defecto: Inmediata" readonly class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 cursor-pointer focus:ring-2 focus:ring-[var(--color-primary)] transition-all" />
-                            <button v-if="form.fecha_publicacion" @click.stop="form.fecha_publicacion = null" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-700">
-                              <X class="w-4 h-4" />
-                            </button>
+                            <input :value="inputValue" v-on="inputEvents" readonly class="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-sm text-gray-900 cursor-pointer focus:ring-2 focus:ring-(--color-primary) transition-all" />
                           </div>
                         </template>
                       </DatePicker>
@@ -211,7 +221,7 @@ const getPrioridadColor = (prioridad: string) => {
                     </template>
                     
                     <template v-else>
-                      <button @click="handleSubmit" :disabled="loading" class="w-full flex justify-center items-center gap-2 text-white px-4 py-3 rounded-md text-sm font-bold shadow-sm transition disabled:opacity-50" style="background-color: var(--color-accent)">
+                      <button @click="handleSubmit" :disabled="loading || !form.titulo || !form.descripcion || !form.tipo || !form.fecha_publicacion" class="w-full flex justify-center items-center gap-2 text-white px-4 py-3 rounded-md text-sm font-bold shadow-sm transition disabled:opacity-50" style="background-color: var(--color-accent)">
                         <Save class="w-4 h-4" /> {{ loading ? 'Guardando...' : 'Guardar Información' }}
                       </button>
                       <button @click="aviso ? isEditing = false : emit('close')" class="w-full px-4 py-3 border border-gray-300 rounded-md text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 transition">

@@ -66,7 +66,7 @@ export const adminRoutes: RouteRecordRaw[] = [
       {
         path: 'avisos',
         name: 'admin-avisos',
-        component: () => import('@/modules/admin/pages/AdminAvisosPage.vue'),
+        component: () => import('@/modules/avisos/pages/AdminAvisosPage.vue'),
         meta: { title: 'Admin - Avisos' }
       },
       {

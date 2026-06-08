@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, reactive } from 'vue'
 import { useAvisosStore } from '@/modules/avisos/stores/avisos.store'
+import { avisosService } from '../services/avisos.service'
 import AvisoFilters from '@/modules/avisos/components/AvisoFilters.vue'
 import AvisoCard from '@/modules/avisos/components/AvisoCard.vue'
 import AvisoDrawer from '@/modules/avisos/components/AvisoDrawer.vue'
@@ -10,7 +11,7 @@ const avisosStore = useAvisosStore()
 const scrollTrigger = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
-const currentFilters = ref({})
+const isLoading = ref(false)
 let currentPage = 1
 const limitPerPage = 12
 
@@ -19,27 +20,43 @@ const drawerConfig = reactive({
   data: null as any
 })
 
-onMounted(() => {
-  loadInitialData()
-  setupInfiniteScroll()
-})
-
-onUnmounted(() => {
-  if (observer) observer.disconnect()
-})
-
 const loadInitialData = async () => {
   currentPage = 1
-  await avisosStore.fetchAvisosAdmin(currentPage, limitPerPage, currentFilters.value)
+  isLoading.value = true
+  try {
+    const response = await avisosService.listarAvisosAdmin({
+      ...avisosStore.filters,
+      page: currentPage,
+      limit: limitPerPage
+    })
+    avisosStore.setAvisos(response.data.items)
+    avisosStore.setMeta(response.data.meta)
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const setupInfiniteScroll = () => {
   observer = new IntersectionObserver(async ([entry]) => {
-    if (entry.isIntersecting && !avisosStore.loading) {
-      const meta = avisosStore.meta
-      if (currentPage < meta.total_pages) {
+    if (entry.isIntersecting && !isLoading.value) {
+      if (currentPage < avisosStore.meta.total_pages) {
         currentPage++
-        await avisosStore.fetchAvisosAdmin(currentPage, limitPerPage, currentFilters.value)
+        isLoading.value = true
+        try {
+          const response = await avisosService.listarAvisosAdmin({
+            ...avisosStore.filters,
+            page: currentPage,
+            limit: limitPerPage
+          })
+          avisosStore.appendAvisos(response.data.items)
+          avisosStore.setMeta(response.data.meta)
+        } catch (err) {
+          console.error(err)
+        } finally {
+          isLoading.value = false
+        }
       }
     }
   }, { rootMargin: '200px' })
@@ -47,8 +64,18 @@ const setupInfiniteScroll = () => {
   if (scrollTrigger.value) observer.observe(scrollTrigger.value)
 }
 
+onMounted(() => {
+  loadInitialData()
+  setupInfiniteScroll()
+})
+
+onUnmounted(() => {
+  if (observer) observer.disconnect()
+  avisosStore.clearStore()
+})
+
 const handleFilters = async (filters: any) => {
-  currentFilters.value = filters
+  avisosStore.setFilters(filters)
   await loadInitialData()
 }
 
@@ -63,42 +90,51 @@ const handleCardClick = (aviso: any) => {
 }
 
 const handleSaveAviso = async ({ isNew, data }: { isNew: boolean, data: any }) => {
+  isLoading.value = true
   try {
     if (!isNew) {
-      await avisosStore.updateAviso(drawerConfig.data.id_aviso, data)
+      await avisosService.actualizarAviso(drawerConfig.data.id_aviso, data)
     } else {
-      await avisosStore.createAviso(data)
+      await avisosService.crearAviso(data)
     }
     drawerConfig.isOpen = false
     await loadInitialData()
   } catch (err) {
     console.error(err)
+  } finally {
+    isLoading.value = false
   }
 }
 
-const handleChangeState = async (nuevoEstado: 'PUBLICADO'|'OCULTO') => {
+const handleChangeState = async (nuevoEstado: 'PUBLICADO' | 'OCULTO') => {
+  isLoading.value = true
   try {
-    await avisosStore.toggleAvisoEstado(drawerConfig.data.id_aviso, nuevoEstado)
+    await avisosService.cambiarEstadoAviso(drawerConfig.data.id_aviso, { estado: nuevoEstado })
     drawerConfig.isOpen = false
     await loadInitialData()
   } catch (err) {
     console.error(err)
+  } finally {
+    isLoading.value = false
   }
 }
 
 const handleDelete = async (id: number) => {
+  isLoading.value = true
   try {
-    await avisosStore.removeAviso(id)
+    await avisosService.eliminarAviso(id)
     drawerConfig.isOpen = false
     await loadInitialData()
   } catch (err) {
     console.error(err)
+  } finally {
+    isLoading.value = false
   }
 }
 </script>
 
 <template>
-  <div class="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 bg-[var(--color-background)] min-h-screen">
+  <div class="p-4 md:p-6 lg:p-8 max-w-400 mx-auto space-y-6 bg-(--color-background) min-h-screen">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-200 pb-5">
       <div>
         <h1 class="text-2xl md:text-3xl font-black text-gray-900 tracking-tight" style="font-family: var(--font-heading)">Panel de Avisos</h1>
@@ -114,6 +150,7 @@ const handleDelete = async (id: number) => {
     </div>
 
     <AvisoFilters @filter="handleFilters" />
+
     <div class="flex flex-wrap items-center justify-start gap-6 px-2">
       <div class="flex items-center gap-2">
         <div class="w-2.5 h-2.5 rounded-full" style="background-color: var(--color-aviso-prioridad-alta)"></div>
@@ -128,7 +165,8 @@ const handleDelete = async (id: number) => {
         <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Prioridad Baja</span>
       </div>
     </div>
-    <div v-if="avisosStore.avisos.length === 0 && !avisosStore.loading" class="bg-white rounded-md border border-dashed border-gray-300 flex flex-col items-center justify-center py-20 text-center">
+
+    <div v-if="avisosStore.avisos.length === 0 && !isLoading" class="bg-white rounded-md border border-dashed border-gray-300 flex flex-col items-center justify-center py-20 text-center">
       <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
         <Search class="w-8 h-8 text-gray-400" />
       </div>
@@ -140,13 +178,13 @@ const handleDelete = async (id: number) => {
       <AvisoCard 
         v-for="aviso in avisosStore.avisos" 
         :key="aviso.id_aviso" 
-        :aviso="aviso"
+        :aviso="{ ...aviso, fecha_publicacion: aviso.fecha_publicacion ?? null }"
         @click="handleCardClick"
       />
     </div>
 
     <div ref="scrollTrigger" class="w-full h-20 flex items-center justify-center">
-      <div v-if="avisosStore.loading" class="flex items-center gap-3 px-4 py-2 bg-white rounded-md shadow-sm border border-gray-100 text-sm text-gray-600 font-bold">
+      <div v-if="isLoading" class="flex items-center gap-3 px-4 py-2 bg-white rounded-md shadow-sm border border-gray-100 text-sm text-gray-600 font-bold">
         <Loader2 class="w-4 h-4 animate-spin" style="color: var(--color-primary)" />
         Cargando registros...
       </div>
@@ -155,7 +193,7 @@ const handleDelete = async (id: number) => {
     <AvisoDrawer 
       :is-open="drawerConfig.isOpen" 
       :aviso="drawerConfig.data"
-      :loading="avisosStore.loading"
+      :loading="isLoading"
       @close="drawerConfig.isOpen = false"
       @save="handleSaveAviso"
       @change-state="handleChangeState"

@@ -12,14 +12,16 @@ const props = defineProps<{
     estado: 'BORRADOR' | 'PUBLICADO' | 'OCULTO'
     fecha_publicacion: string | null
     fecha_creacion: string
+    estado_temporal?: string | null
   }
 }>()
 
 const emit = defineEmits(['click'])
 
-const isTemporal = computed(() => {
-  if (!props.aviso.fecha_publicacion) return false
-  return new Date(props.aviso.fecha_publicacion) > new Date()
+const estadoActual = computed(() => props.aviso.estado_temporal || props.aviso.estado)
+
+const isGrayedOut = computed(() => {
+  return ['NO_VISIBLE', 'EN_ESPERA', 'BORRADOR', 'OCULTO'].includes(estadoActual.value)
 })
 
 const prioridadColor = computed(() => {
@@ -33,10 +35,10 @@ const prioridadColor = computed(() => {
 
 const estadoConfig = computed(() => {
   switch (props.aviso.estado) {
-    case 'BORRADOR': return { icon: FileEdit, color: 'var(--color-estado-borrador)', bg: 'var(--color-estado-borrador-soft)' }
-    case 'PUBLICADO': return { icon: Globe, color: 'var(--color-aviso-estado-publicado)', bg: 'var(--color-aviso-estado-publicado-soft)' }
-    case 'OCULTO': return { icon: EyeOff, color: 'var(--color-aviso-estado-oculto)', bg: 'var(--color-aviso-estado-oculto-soft)' }
-    default: return { icon: FileEdit, color: 'var(--color-text-muted)', bg: 'var(--color-background)' }
+    case 'BORRADOR': return { icon: FileEdit, color: 'var(--color-estado-borrador)' }
+    case 'PUBLICADO': return { icon: Globe, color: 'var(--color-aviso-estado-publicado)' }
+    case 'OCULTO': return { icon: EyeOff, color: 'var(--color-aviso-estado-oculto)' }
+    default: return { icon: FileEdit, color: 'var(--color-text-muted)' }
   }
 })
 
@@ -54,8 +56,8 @@ const formatFecha = (fechaStr: string | null) => {
 <template>
   <div 
     @click="emit('click', aviso)"
-    class="relative bg-white rounded-t-md shadow-sm border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-md hover:scale-[1.02] hover:z-30 group flex flex-col h-full"
-    :class="{ 'opacity-60 grayscale-[30%]': isTemporal }"
+    class="relative rounded-t-md shadow-sm border cursor-pointer transition-all duration-300 hover:shadow-md hover:scale-[1.02] hover:z-30 group flex flex-col h-full"
+    :class="isGrayedOut ? 'bg-gray-100 border-gray-300 grayscale' : 'bg-white border-gray-100'"
     :style="{ borderLeft: `4px solid ${prioridadColor}` }"
   >
     
@@ -68,7 +70,8 @@ const formatFecha = (fechaStr: string | null) => {
     </div>
 
     <div class="p-4 flex-1 flex flex-col relative z-10">
-      <h3 class="text-xl font-black text-gray-900 line-clamp-2 leading-tight group-hover:text-[var(--color-primary)] transition-colors mb-2">
+      <h3 class="text-xl font-black text-gray-900 line-clamp-2 leading-tight transition-colors mb-2"
+          :class="isGrayedOut ? 'group-hover:text-gray-700' : 'group-hover:text-(--color-primary)'">
         {{ aviso.titulo }}
       </h3>
       
@@ -77,20 +80,27 @@ const formatFecha = (fechaStr: string | null) => {
       </p>
 
       <div class="flex flex-wrap gap-1.5 mt-auto">
-        <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-gray-50 text-gray-600 border border-gray-200">
+        <span class="px-2 py-0.5 text-[10px] font-bold rounded-md border"
+              :class="isGrayedOut ? 'bg-gray-200 text-gray-500 border-gray-300' : 'bg-gray-50 text-gray-600 border-gray-200'">
           {{ aviso.tipo }}
+        </span>
+        
+        <span v-if="aviso.estado_temporal" class="px-2 py-0.5 text-[10px] font-bold rounded-md border"
+              :class="isGrayedOut ? 'bg-gray-200 text-gray-500 border-gray-300' : 'bg-amber-50 text-amber-700 border-amber-200'">
+          {{ aviso.estado_temporal }}
         </span>
       </div>
     </div>
 
-    <div class="absolute top-[calc(100%-1px)] left-[-4px] w-[calc(100%+4px)] bg-white border border-gray-100 border-t-0 rounded-b-md px-4 shadow-xl z-20 max-h-0 opacity-0 overflow-hidden group-hover:max-h-28 group-hover:opacity-100 group-hover:pb-4 transition-all duration-300 ease-out"
+    <div class="absolute top-[calc(100%-1px)] -left-1 w-[calc(100%+4px)] border border-t-0 rounded-b-md px-4 shadow-xl z-20 max-h-0 opacity-0 overflow-hidden group-hover:max-h-28 group-hover:opacity-100 group-hover:pb-4 transition-all duration-300 ease-out"
+         :class="isGrayedOut ? 'bg-gray-100 border-gray-300' : 'bg-white border-gray-100'"
          :style="{ borderLeft: `4px solid ${prioridadColor}` }">
-      <div class="flex flex-col gap-1.5 pt-3 mt-1 border-t border-gray-100">
-        <div class="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+      <div class="flex flex-col gap-1.5 pt-3 mt-1 border-t" :class="isGrayedOut ? 'border-gray-200' : 'border-gray-100'">
+        <div class="flex items-center gap-1.5 text-[11px] font-medium text-gray-500">
           <Calendar class="w-3.5 h-3.5" />
           <span>Creado: {{ formatFecha(aviso.fecha_creacion) }}</span>
         </div>
-        <div class="flex items-center gap-1.5 text-[11px] font-medium" :class="isTemporal ? 'text-amber-600' : 'text-gray-500'">
+        <div class="flex items-center gap-1.5 text-[11px] font-medium" :class="isGrayedOut ? 'text-gray-500' : 'text-gray-500'">
           <Clock class="w-3.5 h-3.5" />
           <span>Pub: {{ formatFecha(aviso.fecha_publicacion) }}</span>
         </div>
