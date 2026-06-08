@@ -62,10 +62,13 @@ const scrollDescriptionToEnd = () => {
 
 const getStatusBg = (estado?: string | EstadoTemporal) => {
   const e = (estado || '').toUpperCase()
+  if (e.includes('INSCRIPCIONES_PROXIMAS') || e.includes('INSCRIPCIONES PROXIMAS')) return 'bg-estado-inscripciones-proximas'
   if (e.includes('INSCRIPCION')) return 'bg-estado-inscripcion'
-  if (e === 'EN CURSO') return 'bg-estado-activa'
+  if (e === 'EN CURSO' || e === 'ACTIVA') return 'bg-estado-en-curso'
   if (e.includes('PROXIMA')) return 'bg-estado-proxima'
   if (e.includes('FINALIZADA')) return 'bg-estado-finalizada'
+  if (e.includes('OCULTA') || e.includes('OCULTO')) return 'bg-estado-oculta'
+  if (e.includes('CANCELADA') || e.includes('CANCELADO')) return 'bg-estado-cancelada'
   return 'bg-estado-borrador'
 }
 
@@ -113,17 +116,13 @@ onUnmounted(() => {
 
   <div class="relative z-20 flex-1 flex flex-col h-full w-full">
 
-    <!-- Logo y Bloque informativo en esquina superior izquierda -->
     <div class="absolute top-6 lg:top-8 left-6 lg:left-8 flex gap-3 lg:gap-4 z-50 pointer-events-none w-[90%] md:w-auto items-center">
-      
-      <!-- Logo Estadística -->
       <img 
         src="/logo-estadistica.png" 
         alt="Logo Estadística UMSA" 
         class="w-40 sm:w-40 lg:w-56 object-contain drop-shadow-xl transition-all duration-300 shrink-0 -ml-4 -mr-8" 
       />
 
-      <!-- Título de bloque informativo (cuando slide != 0) -->
       <Transition name="slide-up-fade" mode="out-in">
         <div v-if="currentSlide !== 0" class="flex gap-3 lg:gap-4 items-stretch">
           <div class="w-1.5 lg:w-2 rounded-full shadow-lg shrink-0" :class="getStatusBg(props.activeConv?.estado_temporal)"></div>
@@ -136,7 +135,6 @@ onUnmounted(() => {
       </Transition>
     </div>
 
-    <!-- Estado principal (solo slide 0) -->
     <div class="absolute top-[20%] lg:top-[25%] left-6 lg:left-16 h-8 flex items-center overflow-hidden z-30 pointer-events-none">
       <Transition name="expand-h">
         <div
@@ -149,7 +147,6 @@ onUnmounted(() => {
       </Transition>
     </div>
 
-    <!-- Título y gestión en “primer plano” (solo slide 0) -->
     <Transition name="slide-up-fade" mode="out-in">
       <div v-if="currentSlide === 0" class="absolute top-[calc(20%+2.5rem)] lg:top-[calc(25%+2.5rem)] left-6 lg:left-16 z-30 pointer-events-none max-w-[85%] lg:max-w-[72%]">
         <h1 class="text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight drop-shadow-2xl text-white">
@@ -160,7 +157,6 @@ onUnmounted(() => {
       </div>
     </Transition>
 
-    <!-- Título grande de los slides (cuando slide != 0) -->
     <Transition name="slide-up-fade" mode="out-in">
       <h2
         v-if="currentSlide !== 0"
@@ -171,8 +167,7 @@ onUnmounted(() => {
       </h2>
     </Transition>
 
-    <!-- Descripción con efecto typewriter -->
-    <div class="absolute bottom-40 lg:bottom-48 left-6 lg:left-16 w-[90%] lg:w-2/3 pr-6 z-30 pointer-events-none">
+    <div class="absolute bottom-48 lg:bottom-48 left-6 lg:left-16 w-[90%] lg:w-2/3 pr-6 z-30 pointer-events-none">
       <p
         ref="descriptionRef"
         class="hero-description text-lg md:text-xl text-white/90 leading-relaxed max-w-2xl drop-shadow-md"
@@ -181,8 +176,7 @@ onUnmounted(() => {
       </p>
     </div>
 
-    <!-- Botones -->
-    <div class="absolute bottom-8 lg:bottom-12 left-6 lg:left-16 flex flex-col sm:flex-row gap-4 z-40">
+    <div class="absolute bottom-16 lg:bottom-12 left-6 right-6 sm:right-auto lg:left-16 flex flex-col sm:flex-row gap-4 z-40">
       <Button
         v-if="props.showPreinscripcion"
         as="router-link"
@@ -205,8 +199,7 @@ onUnmounted(() => {
       </Button>
     </div>
 
-    <!-- Indicadores de slide -->
-    <div class="absolute bottom-8 lg:bottom-12 right-6 lg:right-16 flex gap-3 z-40">
+    <div class="absolute bottom-6 lg:bottom-12 left-1/2 -translate-x-1/2 lg:left-auto lg:right-16 lg:translate-x-0 flex gap-3 z-40">
       <button
         v-for="(slide, idx) in slides"
         :key="slide.id"

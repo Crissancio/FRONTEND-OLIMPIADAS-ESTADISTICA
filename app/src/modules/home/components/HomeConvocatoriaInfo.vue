@@ -127,17 +127,17 @@ const maxCalendarDate = computed(() => {
     
     <div class="grid grid-cols-1 gap-8 mb-8">
       
-      <div class="bg-background p-6 rounded-xl border border-gray-100 shadow-sm">
+      <div class="bg-background p-6 rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="flex items-center gap-2 mb-6 justify-center sm:justify-start">
           <Users class="w-6 h-6 text-secondary" />
           <h4 class="font-semibold text-xl text-text-main">Categorías Habilitadas</h4>
         </div>
         
-        <div class="flex justify-center gap-4">
+        <div class="flex flex-row lg:flex-wrap gap-4 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0 snap-x snap-mandatory lg:snap-none justify-start lg:justify-center hide-scrollbar">
           <div 
             v-for="cat in props.activeConv.categorias" 
             :key="cat.id_categoria" 
-            class="flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-primary transition-colors text-center w-36 sm:w-40 xl:w-44"
+            class="shrink-0 snap-center flex flex-col items-center justify-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-primary transition-colors text-center w-36 sm:w-40 xl:w-44"
           >
             <CategorySymbol :name="cat.nombre_categoria" class="h-10 w-10 mb-3 rounded-md text-xl" />
             <span class="text-sm font-semibold text-text-main">{{ cat.nombre_categoria }}</span>
@@ -203,6 +203,14 @@ const maxCalendarDate = computed(() => {
 </template>
 
 <style scoped>
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 :deep(.vc-yellow) {
   --vc-accent-50: var(--color-accent);
   --vc-accent-100: var(--color-accent);
