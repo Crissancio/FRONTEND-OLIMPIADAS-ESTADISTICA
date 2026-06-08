@@ -132,11 +132,11 @@ const totalValidos = computed(() => (analisis.value?.validos_nuevos.length ?? 0)
       <CardContent class="space-y-5 p-6">
         <div v-if="step === 'upload'" class="space-y-4">
           <div class="rounded-xl border border-info/20 bg-info/5 p-4">
-            <p class="mb-2 text-sm font-bold text-text-main">Columnas requeridas en el CSV</p>
+            <p class="mb-2 text-sm font-bold text-slate-800">Columnas requeridas en el CSV</p>
             <div class="flex flex-wrap gap-2 text-xs">
               <Badge variant="outline" class="border-primary/20 bg-primary/5 text-primary font-mono">carnet_identidad / carnet / ci / cedula / documento / nro_documento / numero_documento</Badge>
               <Badge variant="outline" class="border-accent/20 bg-accent/5 text-accent-dark font-mono">resultado / nota / puntaje / calificacion / score</Badge>
-              <Badge variant="outline" class="border-gray-300 bg-gray-100 text-text-muted font-mono">observaciones / observacion / comentarios / obs / detalle (opcional)</Badge>
+              <Badge variant="outline" class="border-gray-300 bg-gray-100 text-slate-600 font-mono">observaciones / observacion / comentarios / obs / detalle (opcional)</Badge>
             </div>
             <Button variant="outline" size="sm" class="mt-3 flex items-center gap-2 text-xs" @click="descargarPlantilla">
               <Download class="h-3.5 w-3.5" />
@@ -153,11 +153,11 @@ const totalValidos = computed(() => (analisis.value?.validos_nuevos.length ?? 0)
             @click="($refs.fileInput as HTMLInputElement)?.click()"
           >
             <input ref="fileInput" type="file" accept=".csv" class="hidden" @change="onFileInput" />
-            <FileText class="mx-auto mb-3 h-10 w-10 text-text-muted" />
-            <p class="text-sm font-medium text-text-main">
+            <FileText class="mx-auto mb-3 h-10 w-10 text-slate-400" />
+            <p class="text-sm font-medium text-slate-800">
               {{ archivo ? archivo.name : 'Arrastra tu CSV aquí o haz clic para seleccionar' }}
             </p>
-            <p v-if="!archivo" class="mt-1 text-xs text-text-muted">Solo archivos .csv</p>
+            <p v-if="!archivo" class="mt-1 text-xs text-slate-500">Solo archivos .csv</p>
           </div>
 
           <div class="flex justify-end gap-2">
@@ -177,38 +177,38 @@ const totalValidos = computed(() => (analisis.value?.validos_nuevos.length ?? 0)
 
         <div v-else-if="step === 'analisis' && analisis" class="space-y-4">
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div class="rounded-xl border border-success/20 bg-success/10 p-3 text-center">
-              <p class="text-2xl font-bold text-success">{{ analisis.validos_nuevos.length }}</p>
-              <p class="text-xs font-medium text-success">Válidos nuevos</p>
+            <div class="rounded-xl border border-green-200 bg-green-50 p-4 text-center shadow-sm">
+              <p class="text-3xl font-extrabold text-green-600">{{ analisis.validos_nuevos.length }}</p>
+              <p class="mt-1 text-sm font-bold text-green-700">Válidos nuevos</p>
             </div>
-            <div class="rounded-xl border border-info/20 bg-info/10 p-3 text-center">
-              <p class="text-2xl font-bold text-secondary">{{ analisis.existentes.length }}</p>
-              <p class="text-xs font-medium text-secondary">Ya existentes</p>
+            <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center shadow-sm">
+              <p class="text-3xl font-extrabold text-blue-600">{{ analisis.existentes.length }}</p>
+              <p class="mt-1 text-sm font-bold text-blue-700">Ya existentes</p>
             </div>
-            <div class="rounded-xl border border-error/20 bg-error/10 p-3 text-center">
-              <p class="text-2xl font-bold text-error">{{ analisis.errores.length }}</p>
-              <p class="text-xs font-medium text-error">Errores</p>
+            <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-center shadow-sm">
+              <p class="text-3xl font-extrabold text-red-600">{{ analisis.errores.length }}</p>
+              <p class="mt-1 text-sm font-bold text-red-700">Errores</p>
             </div>
           </div>
 
           <div v-if="analisis.validos_nuevos.length > 0" class="space-y-2">
-            <p class="text-sm font-bold text-text-main flex items-center gap-2">
-              <CheckCircle class="h-4 w-4 text-success" />Válidos nuevos
+            <p class="text-sm font-bold text-green-700 flex items-center gap-2">
+              <CheckCircle class="h-5 w-5 text-green-600" />Válidos nuevos
             </p>
-            <div class="max-h-40 overflow-y-auto rounded-xl border border-gray-200">
-              <table class="w-full text-xs">
-                <thead class="sticky top-0 bg-gray-50">
+            <div class="max-h-40 overflow-y-auto overflow-x-auto rounded-xl border border-green-200 shadow-sm">
+              <table class="w-full text-left text-xs">
+                <thead class="sticky top-0 border-b border-green-200 bg-green-100 text-green-800">
                   <tr>
-                    <th class="px-3 py-2 text-left text-text-muted">CI</th>
-                    <th class="px-3 py-2 text-left text-text-muted">Nota</th>
-                    <th class="px-3 py-2 text-left text-text-muted">Observación</th>
+                    <th class="px-4 py-3 font-bold whitespace-nowrap">CI</th>
+                    <th class="px-4 py-3 font-bold whitespace-nowrap">Nota</th>
+                    <th class="px-4 py-3 font-bold">Observación</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
-                  <tr v-for="row in analisis.validos_nuevos" :key="row.ci">
-                    <td class="px-3 py-1.5 font-mono">{{ row.ci }}</td>
-                    <td class="px-3 py-1.5 font-bold">{{ row.nota }}</td>
-                    <td class="px-3 py-1.5 text-text-muted">{{ row.observaciones ?? '-' }}</td>
+                <tbody class="text-slate-700">
+                  <tr v-for="row in analisis.validos_nuevos" :key="row.ci" class="border-b border-green-100 transition-colors odd:bg-white even:bg-green-50/50 hover:bg-green-100/50">
+                    <td class="px-4 py-2.5 font-medium">{{ row.ci }}</td>
+                    <td class="px-4 py-2.5 font-bold text-green-600">{{ row.nota }}</td>
+                    <td class="px-4 py-2.5">{{ row.observaciones ?? '-' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -216,23 +216,23 @@ const totalValidos = computed(() => (analisis.value?.validos_nuevos.length ?? 0)
           </div>
 
           <div v-if="analisis.existentes.length > 0" class="space-y-2">
-            <p class="text-sm font-bold text-text-main flex items-center gap-2">
-              <AlertCircle class="h-4 w-4 text-secondary" />Ya existentes
+            <p class="text-sm font-bold text-blue-700 flex items-center gap-2">
+              <AlertCircle class="h-5 w-5 text-blue-600" />Ya existentes
             </p>
-            <div class="max-h-40 overflow-y-auto rounded-xl border border-gray-200">
-              <table class="w-full text-xs">
-                <thead class="sticky top-0 bg-gray-50">
+            <div class="max-h-40 overflow-y-auto overflow-x-auto rounded-xl border border-blue-200 shadow-sm">
+              <table class="w-full text-left text-xs">
+                <thead class="sticky top-0 border-b border-blue-200 bg-blue-100 text-blue-800">
                   <tr>
-                    <th class="px-3 py-2 text-left text-text-muted">CI</th>
-                    <th class="px-3 py-2 text-left text-text-muted">Nota CSV</th>
-                    <th class="px-3 py-2 text-left text-text-muted">Nota Actual</th>
+                    <th class="px-4 py-3 font-bold whitespace-nowrap">CI</th>
+                    <th class="px-4 py-3 font-bold whitespace-nowrap">Nota CSV</th>
+                    <th class="px-4 py-3 font-bold whitespace-nowrap">Nota Actual</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
-                  <tr v-for="row in analisis.existentes" :key="row.ci">
-                    <td class="px-3 py-1.5 font-mono">{{ row.ci }}</td>
-                    <td class="px-3 py-1.5 font-bold text-accent-dark">{{ row.resultado_csv }}</td>
-                    <td class="px-3 py-1.5 font-bold text-primary">{{ row.resultado_actual }}</td>
+                <tbody class="text-slate-700">
+                  <tr v-for="row in analisis.existentes" :key="row.ci" class="border-b border-blue-100 transition-colors odd:bg-white even:bg-blue-50/50 hover:bg-blue-100/50">
+                    <td class="px-4 py-2.5 font-medium">{{ row.ci }}</td>
+                    <td class="px-4 py-2.5 font-bold text-blue-600">{{ row.resultado_csv }}</td>
+                    <td class="px-4 py-2.5 font-bold text-slate-500">{{ row.resultado_actual }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -241,61 +241,61 @@ const totalValidos = computed(() => (analisis.value?.validos_nuevos.length ?? 0)
 
           <div v-if="analisis.errores.length > 0" class="space-y-2">
             <div class="flex items-center justify-between">
-              <p class="text-sm font-bold text-text-main flex items-center gap-2">
-                <AlertCircle class="h-4 w-4 text-error" />Errores
+              <p class="text-sm font-bold text-red-700 flex items-center gap-2">
+                <AlertCircle class="h-5 w-5 text-red-600" />Errores
               </p>
               <Button
                 v-if="analisis.archivo_errores"
                 variant="outline"
                 size="sm"
-                class="flex items-center gap-1.5 text-xs"
+                class="flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 shadow-sm transition-colors hover:bg-red-50"
                 @click="descargarErrores"
               >
                 <Download class="h-3.5 w-3.5" />
                 Descargar errores CSV
               </Button>
             </div>
-            <div class="max-h-40 overflow-y-auto rounded-xl border border-error/20 bg-error/5">
-              <table class="w-full text-xs">
-                <thead class="sticky top-0 bg-error/10">
+            <div class="max-h-40 overflow-y-auto overflow-x-auto rounded-xl border border-red-200 shadow-sm">
+              <table class="w-full text-left text-xs">
+                <thead class="sticky top-0 border-b border-red-200 bg-red-100 text-red-800">
                   <tr>
-                    <th class="px-3 py-2 text-left text-error">Fila</th>
-                    <th class="px-3 py-2 text-left text-error">CI</th>
-                    <th class="px-3 py-2 text-left text-error">Error</th>
+                    <th class="px-4 py-3 font-bold whitespace-nowrap">Fila</th>
+                    <th class="px-4 py-3 font-bold whitespace-nowrap">CI</th>
+                    <th class="px-4 py-3 font-bold">Error</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-error/10">
-                  <tr v-for="row in analisis.errores" :key="row.fila">
-                    <td class="px-3 py-1.5 font-mono">{{ row.fila }}</td>
-                    <td class="px-3 py-1.5 font-mono">{{ row.ci ?? '-' }}</td>
-                    <td class="px-3 py-1.5 text-error">{{ row.error }}</td>
+                <tbody class="text-slate-700">
+                  <tr v-for="row in analisis.errores" :key="row.fila" class="border-b border-red-100 transition-colors odd:bg-white even:bg-red-50 hover:bg-red-100/50">
+                    <td class="px-4 py-2.5">{{ row.fila }}</td>
+                    <td class="px-4 py-2.5 font-medium">{{ row.ci ?? '-' }}</td>
+                    <td class="px-4 py-2.5 text-red-600 font-medium">{{ row.error }}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
 
-          <div class="flex items-center gap-2 rounded-xl border border-warning/20 bg-warning/10 p-3">
+          <div class="flex items-center gap-2 rounded-xl border border-warning/30 bg-warning/10 p-4 shadow-sm">
             <input
               id="sobreescribir"
               v-model="sobreescribir"
               type="checkbox"
-              class="h-4 w-4 rounded border-gray-300 text-primary"
+              class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
             />
-            <label for="sobreescribir" class="text-sm font-medium text-text-main cursor-pointer">
+            <label for="sobreescribir" class="text-sm font-semibold text-slate-800 cursor-pointer select-none">
               Sobreescribir resultados existentes ({{ analisis.existentes.length }} registros)
             </label>
           </div>
 
-          <div class="flex items-center justify-between">
-            <Button variant="outline" class="flex items-center gap-2" @click="reset">
+          <div class="flex items-center justify-between pt-2">
+            <Button variant="outline" class="flex items-center gap-2 border-gray-300 text-slate-700 hover:bg-gray-50" @click="reset">
               <RefreshCw class="h-4 w-4" />
               Nuevo archivo
             </Button>
             <div class="flex gap-2">
-              <Button variant="outline" @click="() => { reset(); emit('close') }">Cancelar</Button>
+              <Button variant="outline" class="border-gray-300 text-slate-700 hover:bg-gray-50" @click="() => { reset(); emit('close') }">Cancelar</Button>
               <Button
-                class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark"
+                class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="isImporting || (analisis.validos_nuevos.length === 0 && !sobreescribir)"
                 @click="confirmarImport"
               >

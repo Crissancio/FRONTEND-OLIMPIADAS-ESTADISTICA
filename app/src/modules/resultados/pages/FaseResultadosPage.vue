@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, Eye, EyeOff, Upload, Loader2 } from 'lucide-vue-next'
+import { Plus, Eye, EyeOff, Upload, Download, Loader2 } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import NavBarFaseResultados from '@/modules/resultados/components/NavBarFaseResultados.vue'
 import ResultadosFiltros from '@/modules/resultados/components/ResultadosFiltros.vue'
@@ -188,7 +188,7 @@ onUnmounted(() => { store.reset() })
             class="flex items-center gap-2"
             @click="isImportarOpen = true"
           >
-            <Upload class="h-4 w-4" />
+            <Download class="h-4 w-4" />
             Importar CSV
           </Button>
 
