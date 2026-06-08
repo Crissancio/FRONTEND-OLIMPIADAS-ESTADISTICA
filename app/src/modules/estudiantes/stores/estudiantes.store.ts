@@ -1,154 +1,75 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { estudiantesService } from '../services/estudiantes.service';
-import type {
-  EstudianteDTO,
-  EstudianteFilters,
-  EstudianteCreateDTO,
-  EstudianteUpdateDTO,
-  EstadoPersona,
-  ExportarEstudiantesDTO
-} from '../types/estudiantes.api';
-import type { PaginationMeta } from '@/shared/types/api.types';
-import type { ApiError } from '@/app/api/api-error';
+import { defineStore } from 'pinia'
+import type { NivelEducativo, EstadoPersona } from '../types/estudiantes.api'
 
-export const useEstudiantesStore = defineStore('estudiantes', () => {
-  // Estado
-  const estudiantes = ref<EstudianteDTO[]>([]);
-  const currentEstudiante = ref<EstudianteDTO | null>(null);
-  const loading = ref<boolean>(false);
-  const error = ref<ApiError | null>(null);
-  const meta = ref<PaginationMeta>({
-    page: 1,
-    limit: 10,
-    total: 0,
-    total_pages: 0
-  });
-
-  // Utilidad interna para mantener sincronizado el estado local
-  function updateLocalItem(updatedItem: EstudianteDTO) {
-    const index = estudiantes.value.findIndex(e => e.id_estudiante === updatedItem.id_estudiante);
-    if (index !== -1) {
-      estudiantes.value[index] = updatedItem;
-    }
-    if (currentEstudiante.value?.id_estudiante === updatedItem.id_estudiante) {
-      currentEstudiante.value = updatedItem;
-    }
+declare module 'pinia' {
+  export interface DefineStoreOptionsBase<S, Store> {
+    persist?: boolean | unknown
   }
+}
 
-  // Acciones
-  async function fetchEstudiantes(filters?: EstudianteFilters) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await estudiantesService.listarEstudiantes(filters);
-      estudiantes.value = response.data.items;
-      meta.value = response.data.meta;
-    } catch (err) {
-      error.value = err as ApiError;
-    } finally {
-      loading.value = false;
-    }
+interface EstudiantesState {
+  filters: {
+    search: string
+    estado: EstadoPersona | 'ALL'
+    curso: number | 'ALL'
+    nivel: NivelEducativo | 'ALL'
+    carnet: string | null
+    telefono: string | null
+    rude: string | null
+    mes_nacimiento: number | null
+    anio_nacimiento: number | null
+    id_colegio: number | null
   }
+}
 
-  async function fetchEstudianteById(id: number) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await estudiantesService.obtenerEstudiantePorId(id);
-      currentEstudiante.value = response.data;
-    } catch (err) {
-      error.value = err as ApiError;
-    } finally {
-      loading.value = false;
+export const useEstudiantesStore = defineStore('estudiantes', {
+  state: (): EstudiantesState => ({
+    filters: {
+      search: '',
+      estado: 'ALL',
+      curso: 'ALL',
+      nivel: 'ALL',
+      carnet: null,
+      telefono: null,
+      rude: null,
+      mes_nacimiento: null,
+      anio_nacimiento: null,
+      id_colegio: null
     }
-  }
-
-  async function createEstudiante(data: EstudianteCreateDTO) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await estudiantesService.crearEstudiante(data);
-      estudiantes.value.unshift(response.data);
-      return response.data;
-    } catch (err) {
-      error.value = err as ApiError;
-      throw err;
-    } finally {
-      loading.value = false;
+  }),
+  getters: {
+    getCleanFilters(state) {
+      const clean: Record<string, any> = {}
+      
+      if (state.filters.search?.trim()) clean.search = state.filters.search.trim()
+      if (state.filters.estado !== 'ALL') clean.estado = state.filters.estado
+      if (state.filters.curso !== 'ALL') clean.curso = Number(state.filters.curso)
+      if (state.filters.nivel !== 'ALL') clean.nivel = state.filters.nivel
+      if (state.filters.carnet?.trim()) clean.carnet = state.filters.carnet.trim()
+      if (state.filters.telefono?.trim()) clean.telefono = state.filters.telefono.trim()
+      if (state.filters.rude?.trim()) clean.rude = state.filters.rude.trim()
+      if (state.filters.mes_nacimiento) clean.mes_nacimiento = state.filters.mes_nacimiento
+      if (state.filters.anio_nacimiento) clean.anio_nacimiento = state.filters.anio_nacimiento
+      if (state.filters.id_colegio) clean.id_colegio = state.filters.id_colegio
+      
+      return clean
     }
-  }
-
-  async function updateEstudiante(id: number, data: EstudianteUpdateDTO) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await estudiantesService.actualizarEstudiante(id, data);
-      updateLocalItem(response.data);
-      return response.data;
-    } catch (err) {
-      error.value = err as ApiError;
-      throw err;
-    } finally {
-      loading.value = false;
+  },
+  actions: {
+    resetFilters() {
+      this.filters = {
+        search: '',
+        estado: 'ALL',
+        curso: 'ALL',
+        nivel: 'ALL',
+        carnet: null,
+        telefono: null,
+        rude: null,
+        mes_nacimiento: null,
+        anio_nacimiento: null,
+        id_colegio: null
+      }
     }
-  }
-
-  async function updateEstudianteEstado(id: number, nuevoEstado: EstadoPersona) {
-    loading.value = true;
-    error.value = null;
-    try {
-      const response = await estudiantesService.cambiarEstadoEstudiante(id, { estado: nuevoEstado });
-      updateLocalItem(response.data);
-      return response.data;
-    } catch (err) {
-      error.value = err as ApiError;
-      throw err;
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  // Métodos para desencadenar las exportaciones
-  async function exportStudentsCsv(data: ExportarEstudiantesDTO) {
-    loading.value = true;
-    error.value = null;
-    try {
-      // Puedes pasar { responseType: 'blob' } si tu mutador customInstance lo requiere
-      return await estudiantesService.exportarCsv(data);
-    } catch (err) {
-      error.value = err as ApiError;
-      throw err;
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  async function exportStudentsPdf(data: ExportarEstudiantesDTO) {
-    loading.value = true;
-    error.value = null;
-    try {
-      return await estudiantesService.exportarPdf(data);
-    } catch (err) {
-      error.value = err as ApiError;
-      throw err;
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  return {
-    estudiantes,
-    currentEstudiante,
-    loading,
-    error,
-    meta,
-    fetchEstudiantes,
-    fetchEstudianteById,
-    createEstudiante,
-    updateEstudiante,
-    updateEstudianteEstado,
-    exportStudentsCsv,
-    exportStudentsPdf
-  };
-});
+  },
+  persist: true
+})
