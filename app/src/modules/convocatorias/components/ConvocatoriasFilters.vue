@@ -89,7 +89,7 @@ watch(internalRange, (newVal) => {
           v-model.range="internalRange"
           :popover="{ visibility: 'click', placement: 'bottom-start' }"
         >
-          <template #default="{ togglePopover, inputValue }">
+          <template #default="{ togglePopover }">
             <Button 
               variant="outline" 
               class="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50 py-2 px-3 rounded-md text-sm font-medium transition-colors"

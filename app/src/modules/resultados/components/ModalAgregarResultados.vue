@@ -183,7 +183,7 @@ const save = async () => {
 <template>
   <div
     v-if="open"
-    class="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-4"
+    class="fixed inset-0 z-70 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-4"
   >
     <Card class="my-auto w-full max-w-5xl border-gray-200 bg-white shadow-soft">
       <CardHeader class="border-b border-gray-200">
@@ -210,7 +210,7 @@ const save = async () => {
               class="flex flex-col items-start gap-2 rounded-xl border-2 border-gray-200 bg-white p-4 text-left transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-soft"
               @click="cargarTodos"
             >
-              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-secondary to-secondary-dark">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-secondary to-secondary-dark">
                 <Users class="h-5 w-5 text-white" />
               </div>
               <div>
@@ -229,7 +229,7 @@ const save = async () => {
             >
               <div
                 class="flex h-10 w-10 items-center justify-center rounded-lg"
-                :class="tieneFaseAnterior ? 'bg-gradient-to-br from-accent to-accent-dark' : 'bg-gray-200'"
+                :class="tieneFaseAnterior ? 'bg-linear-to-br from-accent to-accent-dark' : 'bg-gray-200'"
               >
                 <Trophy class="h-5 w-5 text-white" />
               </div>
@@ -298,7 +298,7 @@ const save = async () => {
               </thead>
               <tbody class="divide-y divide-gray-100">
                 <tr
-                  v-for="(fila, idx) in filas"
+                  v-for="(fila) in filas"
                   :key="fila.id_inscripcion"
                   class="transition-colors hover:bg-gray-50"
                 >

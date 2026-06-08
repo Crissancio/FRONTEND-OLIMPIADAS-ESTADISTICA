@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Upload, FileText, Loader2, ChevronDown, Check, UploadIcon } from 'lucide-vue-next'
+import { Upload, FileText, Loader2, ChevronDown, Check } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import { resultadosService } from '@/modules/resultados/services/resultados.service'
 import type { ExportarFaseFilters, EstadoAprobacion } from '@/modules/resultados/types/resultados.api'

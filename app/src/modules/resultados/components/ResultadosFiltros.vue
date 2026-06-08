@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Search, SlidersHorizontal, X } from 'lucide-vue-next'
+import { Search,  X } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import type { ResultadoFilters, SortByResultados, SortOrder } from '@/modules/resultados/types/resultados.api'
 

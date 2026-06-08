@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Info, CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, AlertCircle, X } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'

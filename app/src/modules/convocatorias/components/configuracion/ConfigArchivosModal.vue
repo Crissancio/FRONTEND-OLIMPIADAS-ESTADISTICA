@@ -61,8 +61,6 @@ const fileType = computed<'image' | 'pdf' | 'doc' | 'none'>(() => {
   return 'none'
 })
 
-const isPreviewImage = computed(() => fileType.value === 'image')
-
 const openModal = async (tipo: TipoMaterialPrincipal, materialActualUrl?: string, materialActualNombre?: string) => {
   documentModifying.value = tipo
   attachedFile.value = null
