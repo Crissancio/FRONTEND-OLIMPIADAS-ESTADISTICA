@@ -101,16 +101,16 @@ const formatTime = (dateStr: string) => {
           v-for="act in activities" 
           :key="act.id_registro" 
           :class="[
-            'p-4 transition-colors flex items-start gap-4 border-l-2',
+            'p-4 transition-colors flex items-center gap-4 border-l-2',
             act.tipo_registro === 'ACTIVIDAD' 
               ? 'bg-indigo-50/30 border-indigo-200 hover:bg-indigo-50/60' 
               : 'bg-slate-50/20 border-transparent hover:bg-slate-50'
           ]"
         >
-          <div :style="{ backgroundColor: getConfig(act).bg }" class="mt-1 shrink-0 w-9 h-9 rounded-full flex items-center justify-center border shadow-xs" :style:borderColor="getConfig(act).color">
+          <div :style="{ backgroundColor: getConfig(act).bg }" class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-xs">
             <component 
               :is="getConfig(act).icon"
-              class="w-4 h-4"
+              class="w-8 h-8"
               :style="{ color: getConfig(act).color }"
             />
           </div>

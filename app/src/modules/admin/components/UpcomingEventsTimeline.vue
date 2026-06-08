@@ -84,15 +84,12 @@ const formatMonth = (dateStr: string) => {
           ></div>
           
           <div 
-            class="p-4 rounded-xl border transition-all hover:shadow-md"
-            :style="{ backgroundColor: getConfig(event.tipo).bg, borderColor: getConfig(event.tipo).color }"
+            class="p-4 rounded-xl transition-all hover:shadow-md"
+            :style="{ backgroundColor: getConfig(event.tipo).bg }"
           >
             <div class="flex items-start gap-3">
               
-              <div 
-                class="flex flex-col items-center justify-center shrink-0 w-12 h-12 rounded-lg bg-white shadow-sm border"
-                :style="{ borderColor: getConfig(event.tipo).color }"
-              >
+              <div class="flex flex-col items-center justify-center shrink-0 w-12 h-12 rounded-lg bg-white shadow-sm">
                 <span class="text-[10px] font-bold text-gray-500 uppercase -mb-0.5 mt-0.5">{{ formatMonth(event.fecha) }}</span>
                 <span class="text-lg font-black leading-none" :style="{ color: getConfig(event.tipo).color }">{{ formatDay(event.fecha) }}</span>
               </div>
@@ -114,7 +111,7 @@ const formatMonth = (dateStr: string) => {
 
         <div v-if="isLoadingMore" class="relative pl-6 mt-6">
           <div class="absolute -left-2.25 top-1.5 w-4 h-4 rounded-full border-2 border-white bg-gray-200 animate-pulse"></div>
-          <div class="p-3 rounded-xl border border-gray-100 bg-gray-50/50 text-center animate-pulse">
+          <div class="p-3 rounded-xl bg-gray-50/50 text-center animate-pulse">
             <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Recuperando más eventos...</span>
           </div>
         </div>
