@@ -133,6 +133,14 @@ const allSelected = computed(() =>
   filteredStudents.value.length > 0 && selectedIds.value.length === filteredStudents.value.length,
 )
 
+// Computada para extraer SOLO los IDs de estudiantes basados en las inscripciones seleccionadas
+const destinatariosEstudiantesIds = computed(() => {
+  return estudiantes.value
+    .filter((s) => selectedIds.value.includes(Number(s.id)))
+    .map((s) => s.idEstudiante)
+    .filter((id): id is number => id !== undefined)
+})
+
 const activarModoSeleccion = (modo: 'campania' | 'exportar') => {
   modoSeleccion.value = modo
   selectedIds.value = []
@@ -366,7 +374,7 @@ const onCreated = () => {
 
   <ModalCrearCampania
     :open="isCampaniaOpen"
-    :destinatarios-ids="selectedIds"
+    :destinatarios-ids="destinatariosEstudiantesIds"
     @close="isCampaniaOpen = false"
   />
 </template>

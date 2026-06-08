@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { X, Megaphone, Loader2, Plus, Trash2 } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
@@ -9,6 +9,8 @@ import CardTitle from '@/shared/components/ui/atoms/CardTitle.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import { campaniasService } from '@/modules/campanias/services/campanias.service'
 import type { EnlaceDTO } from '@/modules/campanias/types/campanias.api'
+import { DatePicker as VDatePicker } from 'v-calendar'
+import 'v-calendar/dist/style.css'
 
 const props = defineProps<{
   open: boolean
@@ -31,9 +33,47 @@ const form = ref({
   fecha_programada: '',
 })
 const enlaces = ref<EnlaceDTO[]>([])
+const fechaV = ref<Date | null>(null)
+const minDateTime = ref(new Date())
 
 const addEnlace = () => enlaces.value.push({ url: '', texto: '' })
 const removeEnlace = (idx: number) => enlaces.value.splice(idx, 1)
+
+const isFormValid = computed(() => {
+  return (
+    form.value.nombre.trim().length > 0 &&
+    form.value.asunto.trim().length > 0 &&
+    form.value.contenido_mensaje.trim().length > 0 &&
+    form.value.fecha_programada.trim().length > 0
+  )
+})
+
+watch(() => props.open, (val) => {
+  if (val) {
+    const now = new Date()
+    now.setMinutes(now.getMinutes() + 10)
+    minDateTime.value = now
+    fechaV.value = now // Asignamos por defecto +10 min
+
+    form.value = { 
+      nombre: '', 
+      asunto: '', 
+      contenido_mensaje: '', 
+      contenido_secundario: '', 
+      fecha_programada: now.toISOString() 
+    }
+    enlaces.value = []
+    errorMessage.value = ''
+  }
+})
+
+watch(fechaV, (val) => {
+  if (val) {
+    form.value.fecha_programada = val.toISOString()
+  } else {
+    form.value.fecha_programada = ''
+  }
+})
 
 const extractError = (err: any, fallbackMsg: string) => {
   console.log('Error recibido:', err)
@@ -46,10 +86,7 @@ const extractError = (err: any, fallbackMsg: string) => {
 }
 
 const crearCampania = async () => {
-  if (!form.value.nombre || !form.value.asunto || !form.value.contenido_mensaje) {
-    errorMessage.value = 'Nombre, asunto y contenido son requeridos.'
-    return
-  }
+  if (!isFormValid.value) return
   isSaving.value = true
   errorMessage.value = ''
   try {
@@ -58,7 +95,7 @@ const crearCampania = async () => {
       asunto: form.value.asunto.trim(),
       contenido_mensaje: form.value.contenido_mensaje.trim(),
       contenido_secundario: form.value.contenido_secundario.trim() || null,
-      fecha_programada: form.value.fecha_programada || null,
+      fecha_programada: form.value.fecha_programada, // Ya no es opcional
       enlaces: enlaces.value.filter((e) => e.url && e.texto).length > 0
         ? enlaces.value.filter((e) => e.url && e.texto)
         : null,
@@ -93,14 +130,14 @@ const textareaClass = 'min-h-24 w-full rounded-lg border border-gray-300 px-3 py
             <X class="h-4 w-4" />
           </Button>
         </div>
-        <p v-if="destinatariosIds.length > 0" class="mt-1 text-xs text-text-muted">
+        <p v-if="destinatariosIds.length > 0" class="mt-1 text-xs text-text-muted font-medium">
           {{ destinatariosIds.length }} destinatarios seleccionados
         </p>
       </CardHeader>
 
       <CardContent class="space-y-4 p-5">
-        <div v-if="errorMessage" class="rounded-xl border border-error/20 bg-error/10 px-4 py-2.5 text-sm text-error">
-          {{ errorMessage }}
+        <div v-if="errorMessage" class="rounded-xl border border-error/20 bg-error/10 px-4 py-2.5 text-sm text-error flex justify-between items-center">
+          <span>{{ errorMessage }}</span>
           <button class="ml-2 font-bold hover:opacity-70" @click="errorMessage = ''">✕</button>
         </div>
 
@@ -121,8 +158,25 @@ const textareaClass = 'min-h-24 w-full rounded-lg border border-gray-300 px-3 py
           <textarea v-model="form.contenido_secundario" :class="textareaClass" placeholder="Información adicional (opcional)..." />
         </div>
         <div>
-          <label class="mb-1 block text-xs font-bold text-text-muted">Fecha programada</label>
-          <input v-model="form.fecha_programada" type="datetime-local" :class="inputClass" />
+          <label class="mb-1 block text-xs font-bold text-text-muted">Fecha y hora programada *</label>
+          <VDatePicker
+            v-model="fechaV"
+            mode="dateTime"
+            is24hr
+            color="blue"
+            :min-date="minDateTime"
+          >
+            <template #default="{ inputValue, inputEvents }">
+              <input
+                :class="inputClass"
+                class="bg-white cursor-pointer"
+                :value="inputValue"
+                v-on="inputEvents"
+                placeholder="Seleccionar fecha y hora..."
+                readonly
+              />
+            </template>
+          </VDatePicker>
         </div>
 
         <div class="space-y-2">
@@ -144,8 +198,8 @@ const textareaClass = 'min-h-24 w-full rounded-lg border border-gray-300 px-3 py
         <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
           <Button variant="outline" :disabled="isSaving" @click="emit('close')">Cancelar</Button>
           <Button
-            class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark"
-            :disabled="isSaving"
+            class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="isSaving || !isFormValid"
             @click="crearCampania"
           >
             <Loader2 v-if="isSaving" class="h-4 w-4 animate-spin" />

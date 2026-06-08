@@ -55,6 +55,15 @@ const editForm = ref({
   nombres: '', paterno: '', materno: '', correo: '', telefono: '', rude: '', id_colegio: null as number | null
 })
 
+const isEditFormValid = computed(() => {
+  return (
+    editForm.value.nombres.trim().length > 0 &&
+    editForm.value.paterno.trim().length > 0 &&
+    editForm.value.id_colegio !== null &&
+    editForm.value.id_colegio > 0
+  )
+})
+
 let debounceTimer: ReturnType<typeof setTimeout>
 
 const buscarEstudiantes = async () => {
@@ -141,7 +150,7 @@ const calcEdad = (fechaNac: string) => {
 }
 
 const guardarEdicion = async () => {
-  if (!selectedEstudiante.value) return
+  if (!selectedEstudiante.value || !isEditFormValid.value) return
   isSavingEdit.value = true
   errorMessage.value = ''
   try {
@@ -191,6 +200,17 @@ const nuevoForm = ref<EstudianteCreateDTO>({
   rude: '', telefono: '', correo: '', id_colegio: 0,
 })
 
+const isNuevoFormValid = computed(() => {
+  return (
+    nuevoForm.value.nombres.trim().length > 0 &&
+    nuevoForm.value.paterno.trim().length > 0 &&
+    nuevoForm.value.carnet_identidad.trim().length > 0 &&
+    nuevoForm.value.fecha_nacimiento !== '' &&
+    nuevoForm.value.id_colegio !== null &&
+    nuevoForm.value.id_colegio > 0
+  )
+})
+
 const fechaNacimientoV = ref<Date | null>(null)
 const defaultDatePage = computed(() => ({
   month: new Date().getMonth() + 1,
@@ -231,6 +251,7 @@ const onBlurColegioNuevo = () => {
 }
 
 const crearNuevoYInscribir = async () => {
+  if (!isNuevoFormValid.value) return
   isCreatingNuevo.value = true
   errorMessage.value = ''
   try {
@@ -364,11 +385,11 @@ const inputClass = 'h-10 w-full rounded-lg border border-gray-300 px-3 text-sm t
 
               <div v-if="isEditingSelected" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label class="mb-1 block text-xs font-bold text-text-muted">Nombres</label>
+                  <label class="mb-1 block text-xs font-bold text-text-muted">Nombres *</label>
                   <input v-model="editForm.nombres" :class="inputClass" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs font-bold text-text-muted">Paterno</label>
+                  <label class="mb-1 block text-xs font-bold text-text-muted">Paterno *</label>
                   <input v-model="editForm.paterno" :class="inputClass" />
                 </div>
                 <div>
@@ -376,7 +397,7 @@ const inputClass = 'h-10 w-full rounded-lg border border-gray-300 px-3 text-sm t
                   <input v-model="editForm.materno" :class="inputClass" />
                 </div>
                 <div class="relative sm:col-span-2">
-                  <label class="mb-1 block text-xs font-bold text-text-muted">Colegio</label>
+                  <label class="mb-1 block text-xs font-bold text-text-muted">Colegio *</label>
                   <div class="relative">
                     <Building class="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-text-muted" />
                     <input
@@ -429,8 +450,8 @@ const inputClass = 'h-10 w-full rounded-lg border border-gray-300 px-3 text-sm t
                 </div>
                 <div class="sm:col-span-2 flex justify-end">
                   <Button
-                    class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark text-sm"
-                    :disabled="isSavingEdit"
+                    class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="isSavingEdit || !isEditFormValid"
                     @click="guardarEdicion"
                   >
                     <Loader2 v-if="isSavingEdit" class="h-4 w-4 animate-spin" />
@@ -443,7 +464,7 @@ const inputClass = 'h-10 w-full rounded-lg border border-gray-300 px-3 text-sm t
             <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
               <Button variant="outline" @click="emit('close')">Cancelar</Button>
               <Button
-                class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark"
+                class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
                 :disabled="!selectedEstudiante || isCreatingInsc"
                 @click="crearInscripcionExistente"
               >
@@ -538,8 +559,8 @@ const inputClass = 'h-10 w-full rounded-lg border border-gray-300 px-3 text-sm t
             <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
               <Button variant="outline" @click="emit('close')">Cancelar</Button>
               <Button
-                class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark"
-                :disabled="isCreatingNuevo"
+                class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="isCreatingNuevo || !isNuevoFormValid"
                 @click="crearNuevoYInscribir"
               >
                 <Loader2 v-if="isCreatingNuevo" class="h-4 w-4 animate-spin" />
