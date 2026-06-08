@@ -69,7 +69,7 @@ onUnmounted(() => {
       Buscar Colegio
     </label>
 
-    <div v-if="selectedColegio" class="w-full min-h-[44px] rounded-lg bg-success/5 border border-success/30 p-3 text-sm text-text-main shadow-sm flex items-center justify-between">
+    <div v-if="selectedColegio" class="w-full min-h-11 rounded-lg bg-success/5 border border-success/30 p-3 text-sm text-text-main shadow-sm flex items-center justify-between">
       <div>
         <span class="font-bold text-success-dark">{{ selectedColegio.nombre }}</span>
         <span class="text-xs text-text-muted ml-2">({{ selectedColegio.turno }} - {{ selectedColegio.municipio }})</span>
