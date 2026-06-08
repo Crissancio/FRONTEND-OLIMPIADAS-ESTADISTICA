@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { ref, nextTick, onUnmounted } from 'vue'
+import { ref, nextTick, onUnmounted, computed } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue'
 import { X, UploadCloud } from 'lucide-vue-next'
 import Cropper from 'cropperjs'
 import 'cropperjs/dist/cropper.css'
 import Button from '@/shared/components/ui/atoms/Button.vue'
-import { useColaboradoresStore } from '@/modules/colaborador/stores/colaboradores.store'
+import { personasService } from '@/modules/personas/services/personas.service'
+import type { TipoColaborador } from '@/modules/personas/types/personas.api'
 
 const props = defineProps<{ isOpen: boolean }>()
-const emit = defineEmits<{ (e: 'close'): void, (e: 'created'): void }>()
+const emit = defineEmits<{ 
+  (e: 'close'): void
+  (e: 'created'): void
+  (e: 'error', err: any): void 
+}>()
 
-const store = useColaboradoresStore()
+const isLoading = ref(false)
 
 const formData = ref({
   nombres: '',
@@ -18,9 +23,20 @@ const formData = ref({
   materno: '',
   correo: '',
   rol: '',
-  tipo: 'COLABORADOR',
+  tipo: 'COLABORADOR' as TipoColaborador,
   presentacion: ''
 })
+
+const isFormValid = computed(() => {
+  return (
+    formData.value.nombres.trim() !== '' &&
+    formData.value.paterno.trim() !== '' &&
+    formData.value.correo.trim() !== '' &&
+    formData.value.rol.trim() !== '' &&
+    formData.value.tipo.trim() !== ''
+  )
+})
+
 const ROLES_DISPONIBLES = [
   'DIRECTOR(A)',
   'DOCENTE TITULAR',
@@ -90,11 +106,22 @@ const handleClose = () => {
   }
   rawImageUrl.value = null
   isDragging.value = false
-  formData.value = { nombres: '', paterno: '', materno: '', correo: '', rol: '', tipo: 'COLABORADOR', presentacion: '' }
+  formData.value = { 
+    nombres: '', 
+    paterno: '', 
+    materno: '', 
+    correo: '', 
+    rol: '', 
+    tipo: 'COLABORADOR', 
+    presentacion: '' 
+  }
   emit('close')
 }
 
 const submitForm = async () => {
+  if (isLoading.value || !isFormValid.value) return
+  isLoading.value = true
+
   try {
     let perfilBlob: File | null = null
     
@@ -110,15 +137,23 @@ const submitForm = async () => {
       })
     }
 
-    await store.createColaborador({
-      ...formData.value,
+    await personasService.crearColaborador({
+      nombres: formData.value.nombres,
+      paterno: formData.value.paterno,
+      materno: formData.value.materno || null,
+      rol: formData.value.rol,
+      tipo: formData.value.tipo,
+      correo: formData.value.correo,
+      presentacion: formData.value.presentacion || null,
       perfil: perfilBlob
     })
     
     emit('created')
     handleClose()
   } catch (error) {
-    console.error(error)
+    emit('error', error)
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -236,9 +271,9 @@ onUnmounted(() => {
                   </div>
 
                   <div class="border-t border-gray-200 bg-gray-50 p-4 flex justify-end gap-3">
-                    <Button variant="ghost" @click="handleClose">Cancelar</Button>
-                    <Button variant="primary" @click="submitForm" :disabled="store.isLoading">
-                      {{ store.isLoading ? 'Guardando...' : 'Guardar Colaborador' }}
+                    <Button variant="ghost" @click="handleClose" :disabled="isLoading">Cancelar</Button>
+                    <Button variant="primary" @click="submitForm" :disabled="isLoading || !isFormValid" class="disabled:opacity-50">
+                      {{ isLoading ? 'Guardando...' : 'Guardar Colaborador' }}
                     </Button>
                   </div>
                 </div>

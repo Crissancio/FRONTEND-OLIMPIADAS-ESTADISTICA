@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { MoreHorizontal } from 'lucide-vue-next'
-import type { ColaboradorResponseDTO } from '@/modules/colaborador/types/colaboradores.api'
+import type { ColaboradorDTO } from '@/modules/personas/types/personas.api'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 
 const props = defineProps<{
-  colaborador: ColaboradorResponseDTO
+  colaborador: ColaboradorDTO
 }>()
 
 const emit = defineEmits<{
@@ -15,16 +15,20 @@ const emit = defineEmits<{
 }>()
 
 const iniciales = computed(() => {
-  const nombre = props.colaborador.nombres.charAt(0).toUpperCase()
-  const apellido = props.colaborador.paterno.charAt(0).toUpperCase()
+  const nombre = props.colaborador.nombres?.charAt(0).toUpperCase() || ''
+  const apellido = props.colaborador.paterno?.charAt(0).toUpperCase() || ''
   return `${nombre}${apellido}`
 })
 
 const badgeVariant = computed(() => {
   switch (props.colaborador.tipo) {
-    case 'PERSONAL ACADEMICO': return 'bg-[var(--color-estado-proxima-soft)] text-[var(--color-estado-proxima)] border-[var(--color-estado-proxima)]/20'
-    case 'ADMINISTRATIVO': return 'bg-[var(--color-estado-inscripcion-soft)] text-[var(--color-estado-inscripcion)] border-[var(--color-estado-inscripcion)]/20'
-    default: return 'bg-[var(--color-aviso-otro-soft)] text-[var(--color-aviso-otro)] border-[var(--color-aviso-otro)]/20'
+    case 'PERSONAL ACADEMICO': 
+      return 'bg-blue-50 text-blue-700 border-blue-200'
+    case 'ADMINISTRATIVO': 
+      return 'bg-amber-50 text-amber-700 border-amber-200'
+    case 'COLABORADOR':
+    default: 
+      return 'bg-gray-50 text-gray-700 border-gray-200'
   }
 })
 </script>
@@ -62,7 +66,7 @@ const badgeVariant = computed(() => {
         {{ colaborador.rol }}
       </p>
 
-      <Badge variant="outline" :class="['border px-2.5 py-1 text-xs font-semibold', badgeVariant]">
+      <Badge variant="outline" :class="['border px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider', badgeVariant]">
         {{ colaborador.tipo }}
       </Badge>
 

@@ -78,7 +78,7 @@ export const adminRoutes: RouteRecordRaw[] = [
       {
         path: 'colaboradores',
         name: 'admin-colaboradores',
-        component: () => import('@/modules/admin/pages/AdminColaboradoresPage.vue'),
+        component: () => import('@/modules/colaborador/pages/AdminColaboradoresPage.vue'),
         meta: { title: 'Admin - Colaboradores' }
       },
       {
