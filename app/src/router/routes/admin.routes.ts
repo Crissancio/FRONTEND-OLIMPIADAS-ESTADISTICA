@@ -72,7 +72,7 @@ export const adminRoutes: RouteRecordRaw[] = [
       {
         path: 'contactos',
         name: 'admin-contactos',
-        component: () => import('@/modules/admin/pages/AdminContactosPage.vue'),
+        component: () => import('@/modules/contacto/pages/AdminContactosPage.vue'),
         meta: { title: 'Admin - Mensajes de Contacto' }
       },
       {

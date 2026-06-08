@@ -243,6 +243,54 @@
   --vc-select-hover-bg: rgba(17, 50, 100, 0.1);
   --vc-day-content-hover-bg: rgba(17, 50, 100, 0.1);
   --vc-day-content-disabled-color: rgba(17, 50, 100, 0.38);
+
+  /*PENDIENTE*/
+  --color-contacto-pendiente: #D97706;
+  --color-contacto-pendiente-text: #B45309;
+  --color-contacto-pendiente-border: #FCD34D;
+  --color-contacto-pendiente-soft: #FFFBEB;
+  --color-contacto-pendiente-soft-hover: #FEF3C7;
+
+  /*LEIDO*/
+  --color-contacto-leido: #0284C7;
+  --color-contacto-leido-text: #0369A1;
+  --color-contacto-leido-border: #7DD3FC;
+  --color-contacto-leido-soft: #F0F9FF;
+  --color-contacto-leido-soft-hover: #E0F2FE;
+  /*RESPONDIDO*/
+  --color-contacto-respondido: #16A34A;
+  --color-contacto-respondido-text: #15803D;
+  --color-contacto-respondido-border: #86EFAC;
+  --color-contacto-respondido-soft: #F0FDF4;
+  --color-contacto-respondido-soft-hover: #DCFCE7;
+
+  /*ESTO DE EMAIL*/
+  --color-email-pendiente: #D97706;
+  --color-email-pendiente-text: #B45309;
+  --color-email-pendiente-border: #FCD34D;
+  --color-email-pendiente-soft: #FFFBEB;
+  --color-email-pendiente-soft-hover: #FEF3C7;
+
+  /*EN PROCESO*/
+  --color-email-proceso: #0284C7;
+  --color-email-proceso-text: #0369A1;
+  --color-email-proceso-border: #7DD3FC;
+  --color-email-proceso-soft: #F0F9FF;
+  --color-email-proceso-soft-hover: #E0F2FE;
+
+  /*ENVIADO*/
+  --color-email-enviado: #16A34A;
+  --color-email-enviado-text: #15803D;
+  --color-email-enviado-border: #86EFAC;
+  --color-email-enviado-soft: #F0FDF4;
+  --color-email-enviado-soft-hover: #DCFCE7;
+
+  /*FALLIDO*/
+  --color-email-fallido: #EF4444;
+  --color-email-fallido-text: #DC2626;
+  --color-email-fallido-border: #FCA5A5;
+  --color-email-fallido-soft: #FEF2F2;
+  --color-email-fallido-soft-hover: #FEE2E2;
 }
 
 .ope-calendar-theme .vc-container {
