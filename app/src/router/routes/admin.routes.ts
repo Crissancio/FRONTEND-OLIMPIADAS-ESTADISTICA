@@ -54,7 +54,7 @@ export const adminRoutes: RouteRecordRaw[] = [
       {
         path: 'colegios',
         name: 'admin-colegios',
-        component: () => import('@/modules/admin/pages/AdminColegiosPage.vue'),
+        component: () => import('@/modules/colegios/pages/AdminColegiosPage.vue'),
         meta: { title: 'Admin - Colegios' }
       },
       {
