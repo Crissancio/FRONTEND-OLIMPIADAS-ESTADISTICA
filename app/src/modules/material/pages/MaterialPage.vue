@@ -95,7 +95,7 @@ onUnmounted(() => observer?.disconnect())
 <template>
   <div class="w-full bg-gray-50 min-h-screen pb-20">
     <div class="bg-primary text-white pt-12 pb-12 relative overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-br from-slate-900/40 to-transparent" />
+      <div class="absolute inset-0 bg-linear-to-br from-slate-900/40 to-transparent" />
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
         <BookOpen class="w-16 h-16 mx-auto mb-6 opacity-90" />
         <h1 class="text-4xl md:text-5xl font-heading font-black mb-4">Material Academico</h1>

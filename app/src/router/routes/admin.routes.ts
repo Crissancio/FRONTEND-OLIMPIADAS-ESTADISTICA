@@ -48,7 +48,7 @@ export const adminRoutes: RouteRecordRaw[] = [
       {
         path: 'material',
         name: 'admin-material',
-        component: () => import('@/modules/admin/pages/AdminMaterialPage.vue'),
+        component: () => import('@/modules/material/pages/AdminMaterialPage.vue'),
         meta: { title: 'Admin - Material' }
       },
       {
@@ -60,7 +60,7 @@ export const adminRoutes: RouteRecordRaw[] = [
       {
         path: 'estudiantes',
         name: 'admin-estudiantes',
-        component: () => import('@/modules/admin/pages/AdminEstudiantesPage.vue'),
+        component: () => import('@/modules/estudiantes/pages/AdminEstudiantesPage.vue'),
         meta: { title: 'Admin - Estudiantes' }
       },
       {
