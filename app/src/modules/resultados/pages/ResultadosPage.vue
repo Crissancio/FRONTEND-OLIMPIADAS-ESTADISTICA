@@ -1,63 +1,111 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { 
-  Search, Trophy, Medal, Download, Award, Star 
-} from 'lucide-vue-next'
-import { usePublicStore } from '@/modules/public/stores/public.store'
+import { Trophy, Medal, Award, Star } from 'lucide-vue-next'
+import { publicService } from '@/modules/public/services/public.service'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
-import Button from '@/shared/components/ui/atoms/Button.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
+import type { 
+  ResultadoPublicoGeneralDTO, 
+  ConvocatoriaMinified, 
+  CategoriaDetalleDTO, 
+  GetResultadosFinalesPublicParams 
+} from '@/modules/public/types/public.api'
 
-const publicStore = usePublicStore()
-const searchTerm = ref('')
-const convFilter = ref('')
-const categoriaFilter = ref('')
+const resultados = ref<ResultadoPublicoGeneralDTO[]>([])
+const convocatoriasOptions = ref<ConvocatoriaMinified[]>([])
+const categoriasOptions = ref<CategoriaDetalleDTO[]>([])
+
+const convFilter = ref<string>('')
+const categoriaFilter = ref<string>('')
 const currentPage = ref(1)
+const totalPages = ref(1)
+const loading = ref(false)
 const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
-const filteredResultados = computed(() => {
-  const term = searchTerm.value.toLowerCase()
-  return publicStore.resultados.filter(r => 
-    r.carnet_identidad.toLowerCase().includes(term) ||
-    `${r.nombres} ${r.paterno} ${r.materno ?? ''}`.toLowerCase().includes(term)
-  )
-})
-
-const sortedResultados = computed(() => [...filteredResultados.value].sort((a, b) => b.nota - a.nota))
+const sortedResultados = computed(() => [...resultados.value].sort((a, b) => b.nota - a.nota))
 const top3 = computed(() => sortedResultados.value.slice(0, 3))
 const others = computed(() => sortedResultados.value.slice(3))
 
-const convocatoriaOptions = computed(() => {
-  return publicStore.convocatoriasMinified.map(conv => ({ id: String(conv.id_convocatoria), label: `${conv.nombre_convocatoria} (${conv.gestion})` }))
-})
-
 const loadResultados = async (reset = false) => {
-  if (reset) currentPage.value = 1
-  await publicStore.fetchResultados({
+  if (!convFilter.value) return
+  
+  loading.value = true
+  if (reset) {
+    currentPage.value = 1
+    resultados.value = []
+  }
+
+  const params: GetResultadosFinalesPublicParams = {
     page: currentPage.value,
     limit: 20,
-    id_convocatoria: convFilter.value ? Number(convFilter.value) : null,
-    id_categoria: categoriaFilter.value ? Number(categoriaFilter.value) : null,
-  }, !reset)
+    id_convocatoria: Number(convFilter.value),
+    id_categoria: categoriaFilter.value ? Number(categoriaFilter.value) : null
+  }
+
+  try {
+    const res = await publicService.obtenerResultadosFinales(params)
+    if (res && res.data) {
+      if (reset) {
+        resultados.value = res.data.items
+      } else {
+        resultados.value = [...resultados.value, ...res.data.items]
+      }
+      totalPages.value = res.data.meta.total_pages
+    }
+  } catch (err) {
+    resultados.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 const loadMore = async () => {
-  if (publicStore.loading || !publicStore.metaResultados || currentPage.value >= publicStore.metaResultados.total_pages) return
+  if (loading.value || currentPage.value >= totalPages.value) return
   currentPage.value += 1
   await loadResultados(false)
 }
 
-watch([convFilter, categoriaFilter], () => void loadResultados(true))
+watch(convFilter, async (newConv) => {
+  categoriaFilter.value = ''
+  categoriasOptions.value = []
+  if (newConv) {
+    try {
+      const res = await publicService.obtenerCategoriasPorConvocatoria(Number(newConv))
+      if (res && res.data) {
+        categoriasOptions.value = res.data
+      }
+    } catch (err) {
+      categoriasOptions.value = []
+    }
+    await loadResultados(true)
+  } else {
+    resultados.value = []
+  }
+})
+
+watch(categoriaFilter, async () => {
+  await loadResultados(true)
+})
 
 onMounted(async () => {
-  await publicStore.fetchConvocatoriasMinified()
-  convFilter.value = convocatoriaOptions.value[0]?.id ?? ''
-  await loadResultados(true)
+  try {
+    const res = await publicService.obtenerConvocatoriasMinified()
+    if (res && res.data) {
+      convocatoriasOptions.value = res.data
+      if (convocatoriasOptions.value.length > 0) {
+        convFilter.value = String(convocatoriasOptions.value[0].id_convocatoria)
+      }
+    }
+  } catch (err) {
+    convocatoriasOptions.value = []
+  }
+
   observer = new IntersectionObserver(([entry]) => {
     if (entry.isIntersecting) void loadMore()
   }, { rootMargin: '160px' })
+  
   if (sentinel.value) observer.observe(sentinel.value)
 })
 
@@ -78,54 +126,39 @@ onUnmounted(() => observer?.disconnect())
             Consulta las calificaciones y el cuadro de honor de las olimpiadas finalizadas.
           </p>
         </div>
-       
-        <Button variant="outline" class="px-6 py-6 rounded-xl font-bold shadow-sm h-fit">
-          <Download class="w-5 h-5" />
-          Descargar PDF Oficial
-        </Button>
       </div>
 
-      <!-- Filters -->
-      <Card class="rounded-2xl shadow-sm border-gray-200 mb-12">
-        <CardContent class="p-6 flex flex-col md:flex-row gap-4 items-center">
-          <div class="w-full md:w-1/3">
+      <Card class="rounded-2xl shadow-sm border-gray-200 mb-12 bg-white">
+        <CardContent class="p-6 flex flex-col md:flex-row gap-6 items-center">
+          <div class="w-full md:w-1/2">
             <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Convocatoria</label>
             <select 
               v-model="convFilter"
-              class="w-full bg-gray-50 border-gray-200 text-text-main rounded-xl px-4 py-3 focus-visible:ring-primary font-medium h-12.5"
+              class="w-full bg-gray-50 border border-gray-200 text-text-main rounded-xl px-4 py-3 focus-visible:ring-primary font-medium h-12.5 cursor-pointer"
             >
-              <option v-for="conv in convocatoriaOptions" :key="conv.id" :value="conv.id">
-                {{ conv.label }}
+              <option value="" disabled>Seleccione una convocatoria</option>
+              <option v-for="conv in convocatoriasOptions" :key="conv.id_convocatoria" :value="String(conv.id_convocatoria)">
+                {{ conv.nombre_convocatoria }} ({{ conv.gestion }})
               </option>
             </select>
           </div>
-          <div class="w-full md:w-1/3">
+          <div class="w-full md:w-1/2">
             <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Categoría</label>
             <select 
               v-model="categoriaFilter"
-              class="w-full bg-gray-50 border-gray-200 text-text-main rounded-xl px-4 py-3 focus-visible:ring-primary font-medium h-12.5"
+              :disabled="!convFilter"
+              class="w-full bg-gray-50 border border-gray-200 text-text-main rounded-xl px-4 py-3 focus-visible:ring-primary font-medium h-12.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              <option value="secundaria">Nivel Secundaria</option>
-              <option value="universitario">Nivel Universitario</option>
+              <option value="">Todas las categorías</option>
+              <option v-for="cat in categoriasOptions" :key="cat.id_categoria" :value="String(cat.id_categoria)">
+                {{ cat.nombre_categoria }} - {{ cat.curso }} ({{ cat.nivel }})
+              </option>
             </select>
-          </div>
-          <div class="w-full md:w-1/3">
-            <label class="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Buscar Participante</label>
-            <div class="relative">
-              <input 
-                v-model="searchTerm"
-                type="text" 
-                placeholder="Buscar por CI o Apellidos..." 
-                class="w-full bg-white border-gray-200 text-text-main rounded-xl pl-12 pr-4 py-3 focus-visible:ring-primary h-auto"
-              />
-              <Search class="w-5 h-5 text-text-muted absolute left-4 top-3.5" />
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      <!-- Podium -->
-      <template v-if="!searchTerm && top3.length > 0">
+      <template v-if="top3.length > 0">
         <div class="mb-16">
           <h2 class="text-2xl font-heading font-bold text-center text-text-main mb-12 flex items-center justify-center gap-2">
             <Star class="w-6 h-6 text-warning fill-amber-500" />
@@ -134,7 +167,6 @@ onUnmounted(() => observer?.disconnect())
           </h2>
           
           <div class="flex flex-col md:flex-row justify-center items-end gap-6 h-100 md:h-87.5 max-w-4xl mx-auto px-4">
-            <!-- 2nd Place -->
             <template v-if="top3[1]">
               <div class="w-full md:w-1/3 flex flex-col items-center order-2 md:order-1 h-[80%]">
                 <div class="bg-white border-2 border-slate-200 p-4 rounded-xl shadow-md w-full text-center relative mb-4 z-10 hover:-translate-y-2 transition-transform">
@@ -148,7 +180,6 @@ onUnmounted(() => observer?.disconnect())
               </div>
             </template>
             
-            <!-- 1st Place -->
             <template v-if="top3[0]">
               <div class="w-full md:w-1/3 flex flex-col items-center order-1 md:order-2 h-full">
                 <div class="bg-white border-2 border-warning/20 p-5 rounded-xl shadow-lg w-full text-center relative mb-4 z-10 hover:-translate-y-2 transition-transform scale-105">
@@ -162,7 +193,6 @@ onUnmounted(() => observer?.disconnect())
               </div>
             </template>
             
-            <!-- 3rd Place -->
             <template v-if="top3[2]">
               <div class="w-full md:w-1/3 flex flex-col items-center order-3 md:order-3 h-[70%]">
                 <div class="bg-white border-2 border-amber-700/30 p-4 rounded-xl shadow-md w-full text-center relative mb-4 z-10 hover:-translate-y-2 transition-transform">
@@ -179,8 +209,7 @@ onUnmounted(() => observer?.disconnect())
         </div>
       </template>
 
-      <!-- Table -->
-      <Card class="rounded-2xl shadow-sm border-gray-200 overflow-hidden">
+      <Card class="rounded-2xl shadow-sm border-gray-200 overflow-hidden bg-white">
         <CardContent class="p-0 overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead class="bg-slate-50 border-b border-gray-200">
@@ -192,10 +221,10 @@ onUnmounted(() => observer?.disconnect())
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-              <tr v-for="(res, index) in (searchTerm ? filteredResultados : others)" :key="res.carnet_identidad" class="hover:bg-gray-50/50 transition-colors">
+              <tr v-for="(res, index) in others" :key="res.carnet_identidad" class="hover:bg-gray-50/50 transition-colors">
                 <td class="py-4 px-6">
                   <Badge variant="secondary" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-text-muted font-bold text-sm">
-                    {{ searchTerm ? index + 1 : index + 4 }}
+                    {{ index + 4 }}
                   </Badge>
                 </td>
                 <td class="py-4 px-6 font-semibold text-text-main">{{ res.nombres }} {{ res.paterno }} {{ res.materno ?? '' }}</td>
@@ -206,16 +235,19 @@ onUnmounted(() => observer?.disconnect())
                   </Badge>
                 </td>
               </tr>
-              <tr v-if="filteredResultados.length === 0">
+              <tr v-if="resultados.length === 0 && !loading">
                 <td colspan="4" class="py-12 text-center text-text-muted font-medium">
-                  No se encontraron resultados para tu búsqueda.
+                  No se encontraron resultados disponibles para la selección actual.
                 </td>
               </tr>
             </tbody>
           </table>
         </CardContent>
       </Card>
-      <div ref="sentinel" class="h-16"></div>
+      
+      <div ref="sentinel" class="h-16 flex items-center justify-center text-sm text-text-muted w-full mt-4">
+        <span v-if="loading" class="font-medium animate-pulse">Cargando calificaciones...</span>
+      </div>
     </div>
   </div>
 </template>
