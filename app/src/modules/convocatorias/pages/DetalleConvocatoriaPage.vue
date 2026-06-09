@@ -11,7 +11,6 @@ import type {
 } from '@/modules/public/types/public.api'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 
-// Componentes extraídos
 import DetalleConvocatoriaHeader from '../components/DetalleConvocatoriaHeader.vue'
 import DetalleConvocatoriaCategorias from '../components/DetalleConvocatoriaCategorias.vue'
 import DetalleConvocatoriaMateriales from '../components/DetalleConvocatoriaMateriales.vue'
@@ -22,12 +21,10 @@ const detalle = ref<ConvocatoriaDetalleDTO | null>(null)
 const isLoading = ref(false)
 const loadError = ref<string | null>(null)
 
-// Datos anidados resueltos por ID
 const fasesByCategoria = ref<Record<string, FasePublicaUnionDTO[]>>({})
 const materialesByFase = ref<Record<string, MaterialPublicoRelacionDTO[]>>({})
 const materialGeneralList = ref<MaterialPublicoRelacionDTO[]>([])
 
-// Utilidades de formato
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : ''
 const formatRange = (start?: string | null, end?: string | null) => [formatDate(start), formatDate(end)].filter(Boolean).join(' - ')
 

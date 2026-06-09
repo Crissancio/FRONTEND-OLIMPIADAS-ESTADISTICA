@@ -43,6 +43,11 @@ export interface ResultadoDTO {
   nota: number;
   observaciones?: string | null;
   estado: EstadoResultado;
+  carnet_identidad: string;
+  nombres: string;
+  paterno: string;
+  materno?: string | ""
+
 }
 
 export interface ResultadoAprobatorioDTO {

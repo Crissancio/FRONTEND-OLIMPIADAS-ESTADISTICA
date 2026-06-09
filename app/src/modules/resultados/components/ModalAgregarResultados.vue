@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Loader2, UserCheck, X, Users, Trophy } from 'lucide-vue-next'
+import { Loader2, UserCheck, X, Users, Trophy, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import CardHeader from '@/shared/components/ui/molecules/CardHeader.vue'
@@ -16,14 +16,15 @@ interface FilaEditable {
   id_inscripcion: number
   id_resultado: number | null
   nombres: string
-  apellidos: string
-  carnet: string
+  paterno: string
+  materno: string
+  carnet_identidad: string
   nota: string
   observaciones: string
   esNuevo: boolean
 }
 
-type ModosCarga = 'todos' | 'aprobados_fase_anterior'
+type ModosCarga = 'todos' | 'aprobados_fase_anterior' | 'existentes'
 
 const props = defineProps<{
   open: boolean
@@ -37,6 +38,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'saved'): void
+  (e: 'refresh'): void
   (e: 'error', msg: string): void
 }>()
 
@@ -45,7 +47,11 @@ const isSaving = ref(false)
 const filas = ref<FilaEditable[]>([])
 const modoActual = ref<ModosCarga | null>(null)
 
+const sortKey = ref<keyof FilaEditable | null>(null)
+const sortOrder = ref<'asc' | 'desc'>('asc')
+
 const tieneFaseAnterior = computed(() => props.idFaseAnterior !== null)
+const hayNuevos = computed(() => filas.value.some((f) => f.esNuevo))
 
 const buildFilas = (inscripciones: InscripcionDTO[]): FilaEditable[] =>
   inscripciones.map((insc) => {
@@ -55,13 +61,44 @@ const buildFilas = (inscripciones: InscripcionDTO[]): FilaEditable[] =>
       id_inscripcion: insc.id_inscripcion,
       id_resultado: existente?.id_resultado ?? null,
       nombres: est?.nombres ?? '',
-      apellidos: [est?.paterno, est?.materno].filter(Boolean).join(' '),
-      carnet: est?.carnet_identidad ?? '',
+      paterno: est?.paterno ?? '',
+      materno: est?.materno ?? '',
+      carnet_identidad: est?.carnet_identidad ?? '',
       nota: existente ? String(existente.nota) : '',
       observaciones: existente?.observaciones ?? '',
       esNuevo: !existente,
     }
   })
+
+const cargarExistentes = async () => {
+  isLoading.value = true
+  modoActual.value = 'existentes'
+  filas.value = []
+  try {
+    const res = await resultadosService.listarResultados({
+      id_fase_prueba: props.faseId,
+      page: 1,
+      limit: 500,
+    })
+    
+    filas.value = res.data.items.map((r) => ({
+      id_inscripcion: r.id_inscripcion,
+      id_resultado: r.id_resultado,
+      nombres: r.nombres || '',
+      paterno: r.paterno || '',
+      materno: r.materno || '',
+      carnet_identidad: r.carnet_identidad || '', 
+      nota: r.nota !== null ? String(r.nota) : '',
+      observaciones: r.observaciones || '',
+      esNuevo: false,
+    }))
+  } catch {
+    emit('error', 'No se pudieron cargar los resultados existentes.')
+    modoActual.value = null
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const cargarTodos = async () => {
   isLoading.value = true
@@ -107,10 +144,47 @@ const cargarAprobadosFaseAnterior = async () => {
 }
 
 watch(() => props.open, (val) => {
-  if (!val) {
+  if (val) {
+    cargarExistentes()
+  } else {
     filas.value = []
     modoActual.value = null
+    sortKey.value = null
   }
+})
+
+const sortBy = (key: keyof FilaEditable) => {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortOrder.value = 'asc'
+  }
+}
+
+const filasOrdenadas = computed(() => {
+  if (!sortKey.value) return filas.value
+  
+  return [...filas.value].sort((a, b) => {
+    let valA = a[sortKey.value!]
+    let valB = b[sortKey.value!]
+
+    if (valA == null) valA = ''
+    if (valB == null) valB = ''
+
+
+    if (sortKey.value === 'nota') {
+      valA = parseFloat(valA as string) || 0
+      valB = parseFloat(valB as string) || 0
+    } else if (typeof valA === 'string' && typeof valB === 'string') {
+      valA = valA.toLowerCase()
+      valB = valB.toLowerCase()
+    }
+
+    if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1
+    if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1
+    return 0
+  })
 })
 
 const notaColor = (nota: string) => {
@@ -145,37 +219,81 @@ const handleKeyDown = (event: KeyboardEvent, campo: 'nota' | 'obs') => {
   }
 }
 
-const save = async () => {
+const accionarBotonPrincipal = async () => {
   isSaving.value = true
-  try {
-    const nuevas = filas.value.filter((f) => f.esNuevo && f.nota !== '')
-    const existentes = filas.value.filter((f) => !f.esNuevo && f.nota !== '' && f.id_resultado !== null)
 
-    if (nuevas.length > 0) {
+  try {
+    if (hayNuevos.value) {
+      const nuevas = filas.value.filter((f) => f.esNuevo)
+      
       await resultadosService.crearResultadosMasivos({
         id_fase_prueba: props.faseId,
         id_categoria: props.categoriaId,
         ids_inscripciones: nuevas.map((f) => f.id_inscripcion),
       })
-    }
 
-    if (existentes.length > 0) {
-      const items: ResultadoMasivoUpdateItemDTO[] = existentes.map((f) => ({
-        id_resultado: f.id_resultado!,
-        nota: parseFloat(f.nota),
-        observaciones: f.observaciones || null,
-      }))
-      await resultadosService.actualizarResultadosMasivos({
+      const res = await resultadosService.listarResultados({
         id_fase_prueba: props.faseId,
-        resultados: items,
+        page: 1,
+        limit: 500,
       })
-    }
 
-    emit('saved')
-  } catch {
-    emit('error', 'No se pudieron guardar los resultados.')
+      filas.value.forEach((fila) => {
+        if (fila.esNuevo) {
+          const match = res.data.items.find(r => r.id_inscripcion === fila.id_inscripcion)
+          if (match) {
+            fila.id_resultado = match.id_resultado
+            fila.esNuevo = false
+          }
+        }
+      })
+
+    } else {
+      const existentes = filas.value.filter((f) => !f.esNuevo && f.nota !== '' && f.id_resultado !== null)
+
+      if (existentes.length > 0) {
+        const items: ResultadoMasivoUpdateItemDTO[] = existentes.map((f) => ({
+          id_resultado: f.id_resultado!,
+          nota: parseFloat(f.nota),
+          observaciones: f.observaciones || null,
+        }))
+        await resultadosService.actualizarResultadosMasivos({
+          id_fase_prueba: props.faseId,
+          resultados: items,
+        })
+      }
+
+      emit('saved')
+      emit('refresh')
+      emit('close')
+    }
+  } catch (error) {
+    emit('error', hayNuevos.value 
+      ? 'Hubo un error al intentar crear los resultados.' 
+      : 'No se pudieron actualizar los resultados. Por favor, intenta nuevamente.')
   } finally {
     isSaving.value = false
+  }
+}
+
+const normalizarNota = (fila: FilaEditable, event: Event) => {
+  fila.nota = (event.target as HTMLInputElement).value.replace(',', '.')
+}
+
+const validarNota = (fila: FilaEditable) => {
+  const valor = parseFloat(fila.nota)
+
+  if (isNaN(valor)) {
+    fila.nota = ''
+    return
+  }
+
+  if (valor < 0) {
+    fila.nota = '0'
+  } else if (valor > 100) {
+    fila.nota = '100'
+  } else {
+    fila.nota = valor.toString()
   }
 }
 </script>
@@ -185,74 +303,43 @@ const save = async () => {
     v-if="open"
     class="fixed inset-0 z-70 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-4"
   >
-    <Card class="my-auto w-full max-w-5xl border-gray-200 bg-white shadow-soft">
+    <Card class="my-auto w-full max-w-7xl border-gray-200 bg-white shadow-soft">
       <CardHeader class="border-b border-gray-200">
-        <div class="flex items-center justify-between">
-          <CardTitle class="flex items-center gap-2">
-            <UserCheck class="h-5 w-5 text-primary" />
-            Agregar / Editar Resultados
-          </CardTitle>
-          <Button variant="ghost" size="sm" @click="emit('close')">
-            <X class="h-4 w-4" />
-          </Button>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle class="flex items-center gap-2">
+              <UserCheck class="h-5 w-5 text-primary" />
+              Agregar / Editar Resultados
+            </CardTitle>
+            <p class="mt-1 text-sm text-text-muted">
+              Criterio de aprobación: <span class="font-bold text-primary">{{ criterioAprobacion }}</span>
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" @click="cargarExistentes" class="bg-white hover:bg-gray-50">
+              Ver Actuales
+            </Button>
+            <Button variant="not_allowed" size="sm" @click="cargarTodos" class="bg-secondary text-white hover:bg-secondary/90 border-transparent">
+              <Users class="mr-1.5 h-4 w-4" /> Todos los inscritos
+            </Button>
+            <Button 
+              variant="accent" 
+              size="sm" 
+              :disabled="!tieneFaseAnterior" 
+              @click="cargarAprobadosFaseAnterior"
+              class="bg-accent text-white hover:bg-accent/90 disabled:opacity-50 border-transparent"
+            >
+              <Trophy class="mr-1.5 h-4 w-4" /> Aprobados fase anterior
+            </Button>
+            <Button variant="ghost" size="sm" @click="emit('close')" class="ml-2">
+              <X class="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <p class="mt-1 text-sm text-text-muted">
-          Criterio de aprobación: <span class="font-bold text-primary">{{ criterioAprobacion }}</span>
-        </p>
       </CardHeader>
 
       <CardContent class="p-0">
-        <div v-if="modoActual === null && !isLoading" class="space-y-4 p-6">
-          <p class="text-sm font-medium text-text-main">¿Desde qué listado quieres cargar los participantes?</p>
-
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <button
-              class="flex flex-col items-start gap-2 rounded-xl border-2 border-gray-200 bg-white p-4 text-left transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-soft"
-              @click="cargarTodos"
-            >
-              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-linear-to-br from-secondary to-secondary-dark">
-                <Users class="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p class="font-bold text-text-main">Todos los inscritos</p>
-                <p class="mt-0.5 text-xs text-text-muted">Carga todos los participantes aprobados de la categoría.</p>
-              </div>
-            </button>
-
-            <button
-              class="flex flex-col items-start gap-2 rounded-xl border-2 p-4 text-left transition-all"
-              :class="tieneFaseAnterior
-                ? 'border-gray-200 bg-white hover:border-accent/50 hover:bg-accent/5 hover:shadow-soft cursor-pointer'
-                : 'border-dashed border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'"
-              :disabled="!tieneFaseAnterior"
-              @click="tieneFaseAnterior && cargarAprobadosFaseAnterior()"
-            >
-              <div
-                class="flex h-10 w-10 items-center justify-center rounded-lg"
-                :class="tieneFaseAnterior ? 'bg-linear-to-br from-accent to-accent-dark' : 'bg-gray-200'"
-              >
-                <Trophy class="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p class="font-bold text-text-main">Aprobados de fase anterior</p>
-                <p class="mt-0.5 text-xs text-text-muted">
-                  {{ tieneFaseAnterior
-                    ? 'Carga solo los participantes que aprobaron la fase previa.'
-                    : 'Esta fase no tiene una fase anterior configurada.' }}
-                </p>
-              </div>
-              <Badge
-                v-if="!tieneFaseAnterior"
-                variant="outline"
-                class="border-gray-300 bg-gray-100 text-text-muted text-xs"
-              >
-                No disponible
-              </Badge>
-            </button>
-          </div>
-        </div>
-
-        <div v-else-if="isLoading" class="flex items-center justify-center py-16">
+        <div v-if="isLoading" class="flex items-center justify-center py-16">
           <Loader2 class="h-8 w-8 animate-spin text-primary" />
         </div>
 
@@ -261,24 +348,19 @@ const save = async () => {
             <div class="flex items-center gap-2">
               <Badge
                 variant="outline"
-                :class="modoActual === 'todos'
-                  ? 'border-secondary/20 bg-secondary/10 text-secondary'
-                  : 'border-accent/20 bg-accent/10 text-accent-dark'"
+                :class="{
+                  'border-primary/20 bg-primary/10 text-primary': modoActual === 'existentes',
+                  'border-secondary/20 bg-secondary/10 text-secondary': modoActual === 'todos',
+                  'border-accent/20 bg-accent/10 text-accent-dark': modoActual === 'aprobados_fase_anterior'
+                }"
               >
-                <Users v-if="modoActual === 'todos'" class="mr-1 h-3 w-3" />
+                <UserCheck v-if="modoActual === 'existentes'" class="mr-1 h-3 w-3" />
+                <Users v-else-if="modoActual === 'todos'" class="mr-1 h-3 w-3" />
                 <Trophy v-else class="mr-1 h-3 w-3" />
-                {{ modoActual === 'todos' ? 'Todos los inscritos' : 'Aprobados fase anterior' }}
+                {{ modoActual === 'existentes' ? 'Resultados Actuales de la Fase' : (modoActual === 'todos' ? 'Todos los inscritos' : 'Aprobados fase anterior') }}
               </Badge>
               <span class="text-xs text-text-muted">{{ filas.length }} participantes</span>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              class="text-xs text-text-muted hover:text-primary"
-              @click="() => { filas = []; modoActual = null }"
-            >
-              Cambiar listado
-            </Button>
           </div>
 
           <div v-if="filas.length === 0" class="py-12 text-center text-sm text-text-muted">
@@ -287,43 +369,111 @@ const save = async () => {
 
           <div v-else class="max-h-[55vh] overflow-y-auto">
             <table class="w-full text-sm">
-              <thead class="sticky top-0 z-10 border-b border-gray-200 bg-gray-50">
+              <thead class="sticky top-0 z-10 border-b border-gray-200 bg-white">
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">Estudiante</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">CI</th>
-                  <th class="w-32 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">Nota</th>
+                  <th 
+                    class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-50 select-none"
+                    @click="sortBy('carnet_identidad')"
+                  >
+                    <div class="flex items-center gap-1">
+                      CI
+                      <ArrowUp v-if="sortKey === 'carnet_identidad' && sortOrder === 'asc'" class="h-3 w-3" />
+                      <ArrowDown v-else-if="sortKey === 'carnet_identidad' && sortOrder === 'desc'" class="h-3 w-3" />
+                      <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+                    </div>
+                  </th>
+                  <th 
+                    class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-50 select-none"
+                    @click="sortBy('paterno')"
+                  >
+                    <div class="flex items-center gap-1">
+                      Paterno
+                      <ArrowUp v-if="sortKey === 'paterno' && sortOrder === 'asc'" class="h-3 w-3" />
+                      <ArrowDown v-else-if="sortKey === 'paterno' && sortOrder === 'desc'" class="h-3 w-3" />
+                      <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+                    </div>
+                  </th>
+                  <th 
+                    class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-50 select-none"
+                    @click="sortBy('materno')"
+                  >
+                    <div class="flex items-center gap-1">
+                      Materno
+                      <ArrowUp v-if="sortKey === 'materno' && sortOrder === 'asc'" class="h-3 w-3" />
+                      <ArrowDown v-else-if="sortKey === 'materno' && sortOrder === 'desc'" class="h-3 w-3" />
+                      <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+                    </div>
+                  </th>
+                  <th 
+                    class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-50 select-none"
+                    @click="sortBy('nombres')"
+                  >
+                    <div class="flex items-center gap-1">
+                      Nombres
+                      <ArrowUp v-if="sortKey === 'nombres' && sortOrder === 'asc'" class="h-3 w-3" />
+                      <ArrowDown v-else-if="sortKey === 'nombres' && sortOrder === 'desc'" class="h-3 w-3" />
+                      <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+                    </div>
+                  </th>
+                  <th 
+                    class="w-32 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-50 select-none"
+                    @click="sortBy('nota')"
+                  >
+                    <div class="flex items-center gap-1">
+                      Nota
+                      <ArrowUp v-if="sortKey === 'nota' && sortOrder === 'asc'" class="h-3 w-3" />
+                      <ArrowDown v-else-if="sortKey === 'nota' && sortOrder === 'desc'" class="h-3 w-3" />
+                      <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+                    </div>
+                  </th>
                   <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">Observación</th>
-                  <th class="w-24 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">Estado</th>
+                  <th 
+                    class="w-24 px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-50 select-none"
+                    @click="sortBy('esNuevo')"
+                  >
+                    <div class="flex items-center gap-1">
+                      Estado
+                      <ArrowUp v-if="sortKey === 'esNuevo' && sortOrder === 'asc'" class="h-3 w-3" />
+                      <ArrowDown v-else-if="sortKey === 'esNuevo' && sortOrder === 'desc'" class="h-3 w-3" />
+                      <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
                 <tr
-                  v-for="(fila) in filas"
+                  v-for="(fila) in filasOrdenadas"
                   :key="fila.id_inscripcion"
-                  class="transition-colors hover:bg-gray-50"
+                  class="transition-colors"
+                  :class="fila.esNuevo ? 'bg-gray-50 hover:bg-gray-100' : 'bg-yellow-50/50 hover:bg-yellow-50'"
                 >
-                  <td class="px-4 py-2 font-medium text-text-main">
-                    {{ fila.nombres }} {{ fila.apellidos }}
-                  </td>
-                  <td class="px-4 py-2 font-mono text-xs text-text-muted">{{ fila.carnet }}</td>
+                  <td class="px-4 py-2 font-mono text-xs text-text-muted">{{ fila.carnet_identidad }}</td>
+                  <td class="px-4 py-2 font-medium text-text-main">{{ fila.paterno }}</td>
+                  <td class="px-4 py-2 font-medium text-text-main">{{ fila.materno }}</td>
+                  <td class="px-4 py-2 font-medium text-text-main">{{ fila.nombres }}</td>
+                  
                   <td class="px-4 py-2">
                     <input
                       v-model="fila.nota"
-                      type="number"
+                      type="text"
+                      inputmode="decimal"
                       min="0"
                       max="100"
                       step="0.01"
-                      class="resultado-input h-9 w-28 rounded-lg border px-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                      class="resultado-input h-9 w-28 rounded-lg border px-2 text-sm font-bold bg-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                       :class="fila.nota ? notaColor(fila.nota) : 'border-gray-300'"
                       @wheel.prevent
                       @keydown="handleKeyDown($event, 'nota')"
+                      @input="normalizarNota(fila, $event)"
+                      oninput="this.value=this.value.slice(0,6)"
+                      @blur="validarNota(fila)"
                     />
                   </td>
                   <td class="px-4 py-2">
                     <input
                       v-model="fila.observaciones"
                       type="text"
-                      class="resultado-input h-9 w-full rounded-lg border border-gray-300 px-2 text-sm transition-colors focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                      class="resultado-input h-9 w-full rounded-lg border border-gray-300 bg-white px-2 text-sm transition-colors focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
                       placeholder="Opcional"
                       @keydown="handleKeyDown($event, 'obs')"
                     />
@@ -331,15 +481,15 @@ const save = async () => {
                   <td class="px-4 py-2">
                     <Badge
                       v-if="!fila.esNuevo"
-                      variant="outline"
-                      class="border-info/20 bg-info/10 text-info text-xs"
+                      variant="not_allowed"
+                      class="border-info/20 bg-white text-info text-xs"
                     >
                       Existente
                     </Badge>
                     <Badge
                       v-else
-                      variant="outline"
-                      class="border-success/20 bg-success/10 text-success text-xs"
+                      variant="not_allowed"
+                      class="border-gray-300 bg-white text-text-muted text-xs"
                     >
                       Nuevo
                     </Badge>
@@ -349,7 +499,7 @@ const save = async () => {
             </table>
           </div>
 
-          <div class="flex items-center justify-between border-t border-gray-200 p-4">
+          <div class="flex items-center justify-between border-t border-gray-200 p-4 bg-white">
             <p class="text-xs text-text-muted">
               Usa ↑ ↓ → ← para navegar. El scroll no altera las notas.
             </p>
@@ -359,10 +509,10 @@ const save = async () => {
                 variant="accent"
                 class="flex items-center gap-2"
                 :disabled="isSaving || filas.length === 0"
-                @click="save"
+                @click="accionarBotonPrincipal"
               >
                 <Loader2 v-if="isSaving" class="h-4 w-4 animate-spin" />
-                Guardar Resultados
+                {{ hayNuevos ? 'Crear Nuevos' : 'Guardar Resultados' }}
               </Button>
             </div>
           </div>

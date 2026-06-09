@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Loader2, CheckCircle, XCircle, Minus } from 'lucide-vue-next'
+import { Loader2, CheckCircle, XCircle, Minus, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-vue-next'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 import type { ResultadoDTO } from '@/modules/resultados/types/resultados.api'
 
@@ -20,6 +20,10 @@ const emit = defineEmits<{
 
 const observerTarget = ref<HTMLElement | null>(null)
 const observer = ref<IntersectionObserver | null>(null)
+
+// Estados para el ordenamiento
+const sortKey = ref<keyof ResultadoDTO | null>(null)
+const sortOrder = ref<'asc' | 'desc'>('asc')
 
 onMounted(() => {
   if (!observerTarget.value) return
@@ -56,6 +60,37 @@ const toggleAll = () => {
 
 const allSelected = computed(() => props.resultados.length > 0 && props.selectedIds.length === props.resultados.length)
 
+// Lógica de ordenamiento local
+const sortBy = (key: keyof ResultadoDTO) => {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortOrder.value = 'asc'
+  }
+}
+
+const resultadosOrdenados = computed(() => {
+  if (!sortKey.value) return props.resultados
+  
+  return [...props.resultados].sort((a, b) => {
+    let valA = a[sortKey.value!] ?? ''
+    let valB = b[sortKey.value!] ?? ''
+
+    if (sortKey.value === 'nota') {
+      valA = Number(valA) || 0
+      valB = Number(valB) || 0
+    } else if (typeof valA === 'string' && typeof valB === 'string') {
+      valA = valA.toLowerCase()
+      valB = valB.toLowerCase()
+    }
+
+    if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1
+    if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1
+    return 0
+  })
+})
+
 const notaClass = (nota: number) =>
   nota >= props.criterioAprobacion
     ? 'text-success font-bold'
@@ -83,21 +118,86 @@ const estadoBadgeClass = (estado: ResultadoDTO['estado']) => {
               <input
                 type="checkbox"
                 :checked="allSelected"
-                class="h-4 w-4 rounded border-gray-300"
+                class="h-4 w-4 rounded border-gray-300 transition-colors focus-visible:ring-primary/50"
                 @change="toggleAll"
               />
             </th>
             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">#</th>
-            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">Inscripción</th>
-            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">Nota</th>
+            
+            <th 
+              class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-100 select-none transition-colors"
+              @click="sortBy('carnet_identidad')"
+            >
+              <div class="flex items-center gap-1">
+                CI
+                <ArrowUp v-if="sortKey === 'carnet_identidad' && sortOrder === 'asc'" class="h-3 w-3" />
+                <ArrowDown v-else-if="sortKey === 'carnet_identidad' && sortOrder === 'desc'" class="h-3 w-3" />
+                <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+              </div>
+            </th>
+            <th 
+              class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-100 select-none transition-colors"
+              @click="sortBy('paterno')"
+            >
+              <div class="flex items-center gap-1">
+                Paterno
+                <ArrowUp v-if="sortKey === 'paterno' && sortOrder === 'asc'" class="h-3 w-3" />
+                <ArrowDown v-else-if="sortKey === 'paterno' && sortOrder === 'desc'" class="h-3 w-3" />
+                <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+              </div>
+            </th>
+            <th 
+              class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-100 select-none transition-colors"
+              @click="sortBy('materno')"
+            >
+              <div class="flex items-center gap-1">
+                Materno
+                <ArrowUp v-if="sortKey === 'materno' && sortOrder === 'asc'" class="h-3 w-3" />
+                <ArrowDown v-else-if="sortKey === 'materno' && sortOrder === 'desc'" class="h-3 w-3" />
+                <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+              </div>
+            </th>
+            <th 
+              class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-100 select-none transition-colors"
+              @click="sortBy('nombres')"
+            >
+              <div class="flex items-center gap-1">
+                Nombres
+                <ArrowUp v-if="sortKey === 'nombres' && sortOrder === 'asc'" class="h-3 w-3" />
+                <ArrowDown v-else-if="sortKey === 'nombres' && sortOrder === 'desc'" class="h-3 w-3" />
+                <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+              </div>
+            </th>
+            <th 
+              class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-100 select-none transition-colors"
+              @click="sortBy('nota')"
+            >
+              <div class="flex items-center gap-1">
+                Nota
+                <ArrowUp v-if="sortKey === 'nota' && sortOrder === 'asc'" class="h-3 w-3" />
+                <ArrowDown v-else-if="sortKey === 'nota' && sortOrder === 'desc'" class="h-3 w-3" />
+                <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+              </div>
+            </th>
+            
             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">Resultado</th>
             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">Observación</th>
-            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">Estado</th>
+            <th 
+              class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:bg-gray-100 select-none transition-colors"
+              @click="sortBy('estado')"
+            >
+              <div class="flex items-center gap-1">
+                Estado
+                <ArrowUp v-if="sortKey === 'estado' && sortOrder === 'asc'" class="h-3 w-3" />
+                <ArrowDown v-else-if="sortKey === 'estado' && sortOrder === 'desc'" class="h-3 w-3" />
+                <ArrowUpDown v-else class="h-3 w-3 opacity-30" />
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
           <tr
-            v-for="(resultado, idx) in resultados"
+            v-for="(resultado, idx) in resultadosOrdenados"
             :key="resultado.id_resultado"
             class="hover:bg-gray-50 transition-colors"
             :class="selectedIds.includes(resultado.id_resultado) ? 'bg-primary/5' : ''"
@@ -106,13 +206,22 @@ const estadoBadgeClass = (estado: ResultadoDTO['estado']) => {
               <input
                 type="checkbox"
                 :checked="selectedIds.includes(resultado.id_resultado)"
-                class="h-4 w-4 rounded border-gray-300"
+                class="h-4 w-4 rounded border-gray-300 transition-colors focus-visible:ring-primary/50"
                 @change="toggleSelect(resultado.id_resultado)"
               />
             </td>
             <td class="px-4 py-3 text-text-muted text-xs font-mono">{{ idx + 1 }}</td>
+            <td class="px-4 py-3 font-mono text-xs text-text-muted">
+              {{ resultado.carnet_identidad }}
+            </td>
             <td class="px-4 py-3 font-medium text-text-main">
-              ID: {{ resultado.id_inscripcion }}
+              {{ resultado.paterno }}
+            </td>
+            <td class="px-4 py-3 font-medium text-text-main">
+              {{ resultado.materno }}
+            </td>
+            <td class="px-4 py-3 font-medium text-text-main">
+              {{ resultado.nombres }}
             </td>
             <td class="px-4 py-3">
               <span :class="notaClass(resultado.nota)">{{ resultado.nota }}</span>
@@ -137,11 +246,11 @@ const estadoBadgeClass = (estado: ResultadoDTO['estado']) => {
       </table>
     </div>
 
-    <div ref="observerTarget" class="py-2 text-center">
-    <Loader2 v-if="isLoading" class="mx-auto h-5 w-5 animate-spin text-primary" />
-    <p v-else-if="!hasMore && resultados.length > 0" class="text-xs text-text-muted">
+    <div ref="observerTarget" class="py-2 text-center bg-gray-50 border-t border-gray-200">
+      <Loader2 v-if="isLoading" class="mx-auto h-5 w-5 animate-spin text-primary" />
+      <p v-else-if="!hasMore && resultados.length > 0" class="text-xs text-text-muted py-1">
         Mostrando {{ resultados.length }} de {{ totalItems }} resultados
-    </p>
+      </p>
     </div>
   </div>
 </template>

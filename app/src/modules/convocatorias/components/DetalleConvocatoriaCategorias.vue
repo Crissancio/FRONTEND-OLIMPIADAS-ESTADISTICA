@@ -19,19 +19,16 @@ const isLoadingMaterials = ref(false)
 
 const activeCategory = computed(() => props.categorias[activeTab.value] || null)
 
-// Función para cambiar de tab con efecto de carga
 const selectTab = (idx: number) => {
   if (activeTab.value === idx) return
   isLoadingMaterials.value = true
   activeTab.value = idx
   
-  // Simulamos un pequeño delay de carga visual para la transición (o puedes quitar el timeout si tus props ya son reactivas al 100%)
   setTimeout(() => {
     isLoadingMaterials.value = false
   }, 400)
 }
 
-// Resuelve qué componente renderizar basado en la fase
 const getPhaseComponent = (fase: any) => {
   if (fase.tipo === 'Preparación') return FasePreparacionPublicCard
   if (fase.tipo === 'Prueba') {
