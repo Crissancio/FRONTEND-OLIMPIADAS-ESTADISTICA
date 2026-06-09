@@ -29,19 +29,24 @@ const top3 = computed(() => sortedResultados.value.slice(0, 3))
 const others = computed(() => sortedResultados.value.slice(3))
 
 const loadResultados = async (reset = false) => {
-  if (!convFilter.value) return
-  
   loading.value = true
   if (reset) {
     currentPage.value = 1
     resultados.value = []
   }
 
+  // Construir los parámetros, omitiendo los filtros si no hay selección
   const params: GetResultadosFinalesPublicParams = {
     page: currentPage.value,
     limit: 20,
-    id_convocatoria: Number(convFilter.value),
-    id_categoria: categoriaFilter.value ? Number(categoriaFilter.value) : null
+  }
+
+  if (convFilter.value) {
+    params.id_convocatoria = Number(convFilter.value)
+  }
+  
+  if (categoriaFilter.value) {
+    params.id_categoria = Number(categoriaFilter.value)
   }
 
   try {
@@ -70,6 +75,8 @@ const loadMore = async () => {
 watch(convFilter, async (newConv) => {
   categoriaFilter.value = ''
   categoriasOptions.value = []
+  
+  // Si hay una convocatoria seleccionada, cargar sus categorías
   if (newConv) {
     try {
       const res = await publicService.obtenerCategoriasPorConvocatoria(Number(newConv))
@@ -79,10 +86,10 @@ watch(convFilter, async (newConv) => {
     } catch (err) {
       categoriasOptions.value = []
     }
-    await loadResultados(true)
-  } else {
-    resultados.value = []
   }
+  
+  // Siempre recargar los resultados (ya sea filtrados o todos)
+  await loadResultados(true)
 })
 
 watch(categoriaFilter, async () => {
@@ -94,13 +101,13 @@ onMounted(async () => {
     const res = await publicService.obtenerConvocatoriasMinified()
     if (res && res.data) {
       convocatoriasOptions.value = res.data
-      if (convocatoriasOptions.value.length > 0) {
-        convFilter.value = String(convocatoriasOptions.value[0].id_convocatoria)
-      }
     }
   } catch (err) {
     convocatoriasOptions.value = []
   }
+
+  // Cargar resultados iniciales (sin filtros por defecto)
+  await loadResultados(true)
 
   observer = new IntersectionObserver(([entry]) => {
     if (entry.isIntersecting) void loadMore()
@@ -136,7 +143,7 @@ onUnmounted(() => observer?.disconnect())
               v-model="convFilter"
               class="w-full bg-gray-50 border border-gray-200 text-text-main rounded-xl px-4 py-3 focus-visible:ring-primary font-medium h-12.5 cursor-pointer"
             >
-              <option value="" disabled>Seleccione una convocatoria</option>
+              <option value="">Todas las convocatorias</option>
               <option v-for="conv in convocatoriasOptions" :key="conv.id_convocatoria" :value="String(conv.id_convocatoria)">
                 {{ conv.nombre_convocatoria }} ({{ conv.gestion }})
               </option>
