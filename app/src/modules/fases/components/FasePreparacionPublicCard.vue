@@ -10,7 +10,7 @@ const isExpanded = ref(false)
 </script>
 
 <template>
-  <Card class="relative bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-xl hover:scale-[1.02] hover:z-10 transition-all duration-300 overflow-hidden group">
+  <Card class="relative bg-white border border-gray-100 rounded-xl p-2 lg:p-6 shadow-sm hover:shadow-xl hover:scale-[1.02] hover:z-10 transition-all duration-300 overflow-hidden group">
     
     <BookOpen class="absolute -right-8 top-1/2 -translate-y-1/2 w-48 h-48 opacity-[0.25] text-(--color-secondary) pointer-events-none group-hover:opacity-[0.3] transition-opacity duration-300" />
     

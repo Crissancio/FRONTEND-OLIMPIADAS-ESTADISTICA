@@ -5,7 +5,6 @@ import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import CategorySymbol from '@/shared/components/ui/atoms/CategorySymbol.vue'
 
-// Importación de los subcomponentes de las fases
 import FasePreparacionPublicCard from '@/modules/fases/components/FasePreparacionPublicCard.vue'
 import FasePruebaPublicCard from '@/modules/fases/components/FasePruebaPublicCard.vue'
 import FasePruebaFinalPublicCard from '@/modules/fases/components/FasePruebaFinalPublicCard.vue'
@@ -34,12 +33,12 @@ const getPhaseComponent = (fase: any) => {
   if (fase.tipo === 'Prueba') {
     return fase.es_prueba_final ? FasePruebaFinalPublicCard : FasePruebaPublicCard
   }
-  return FasePreparacionPublicCard // Default fallback
+  return FasePreparacionPublicCard
 }
 </script>
 
 <template>
-  <Card class="rounded-2xl shadow-sm border-gray-100 overflow-hidden">
+  <Card class="rounded-2xl shadow-sm border-gray-100 overflow-hidden sm:p-0">
     <div class="bg-gray-50 border-b border-gray-200 px-8 py-6">
       <h2 class="text-2xl font-heading font-bold text-text-main flex items-center gap-3">
         <Users class="w-6 h-6 text-primary" />

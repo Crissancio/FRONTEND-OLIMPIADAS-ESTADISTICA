@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Calendar, Monitor, MapPin, ChevronDown,  Trophy, Table, ExternalLink, FileText, Video, Link as LinkIcon, File} from 'lucide-vue-next'
+import { Calendar, Monitor, MapPin, ChevronDown, Trophy, Table, ExternalLink, FileText, Video, Link as LinkIcon, File} from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
@@ -11,7 +11,7 @@ const isExpandedResults = ref(true) // En la final, los resultados suelen estar 
 </script>
 
 <template>
-  <Card class="relative bg-linear-to-br from-white to-orange-50/30 border border-orange-100 rounded-xl p-6 shadow-md hover:shadow-xl hover:scale-[1.02] hover:z-10 transition-all duration-300 overflow-hidden group">
+  <Card class="relative bg-linear-to-br from-white to-orange-50/30 border border-orange-100 rounded-xl p-2 lg:p-6 shadow-md hover:shadow-xl hover:scale-[1.02] hover:z-10 transition-all duration-300 overflow-hidden group">
     
     <Trophy class="absolute -right-8 top-1/2 -translate-y-1/2 w-56 h-56 opacity-[0.25] text-(--color-accent) pointer-events-none group-hover:opacity-[0.3] group-hover:scale-110 transition-all duration-500" />
     
@@ -68,21 +68,21 @@ const isExpandedResults = ref(true) // En la final, los resultados suelen estar 
           <ChevronDown class="w-4 h-4 transition-transform duration-300" :class="isExpandedResults ? 'rotate-180' : ''" />
         </button>
 
-        <div v-show="isExpandedResults" class="mt-4 overflow-hidden rounded-xl border border-orange-200 bg-white shadow-sm">
-          <table class="w-full text-left text-sm">
+        <div v-show="isExpandedResults" class="mt-4 w-full overflow-x-auto lg:overflow-x-visible rounded-xl border border-orange-200 bg-white shadow-sm">
+          <table class="w-full min-w-100 lg:min-w-full text-left text-sm">
             <thead class="bg-orange-50 border-b border-orange-100 text-text-main font-bold">
               <tr>
-                <th class="px-4 py-3 text-center w-24">Puesto</th>
-                <th class="px-4 py-3">Cédula de Identidad</th>
-                <th class="px-4 py-3 text-right">Nota Final</th>
+                <th class="px-4 py-3 text-center w-24 whitespace-nowrap">Puesto</th>
+                <th class="px-4 py-3 text-center whitespace-nowrap">Cédula de Identidad</th>
+                <th class="px-4 py-3 text-right whitespace-nowrap">Nota Final</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
               <tr v-for="(res, idx) in fase.resultados" :key="idx" class="hover:bg-orange-50/30 transition-colors" :class="{'bg-orange-50/20 font-bold': Number(idx) < 3}">
                 <td class="px-4 py-4 text-center text-lg font-black" :class="Number(idx) === 0 ? 'text-yellow-500' : Number(idx) === 1 ? 'text-gray-400' : Number(idx) === 2 ? 'text-amber-700' : 'text-text-muted text-base'">
-                  {{ Number(idx) < 3 ? '🏆' : '#' }}{{ res.posicion }}
+                  {{ Number(idx) < 3 ? '🏆' : '' }}{{ Number(idx) + 1 }}
                 </td>
-                <td class="px-4 py-4 font-medium text-text-main">{{ res.carnet }}</td>
+                <td class="px-4 py-4 text-center font-medium text-text-main">{{ res.carnet_identidad }}</td>
                 <td class="px-4 py-4 text-right font-bold text-(--color-accent)">{{ res.nota }} pts</td>
               </tr>
             </tbody>

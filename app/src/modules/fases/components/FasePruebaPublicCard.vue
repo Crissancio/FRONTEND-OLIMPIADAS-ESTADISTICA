@@ -11,7 +11,7 @@ const isExpandedResults = ref(false)
 </script>
 
 <template>
-  <Card class="relative bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-xl hover:scale-[1.02] hover:z-10 transition-all duration-300 overflow-hidden group">
+  <Card class="relative bg-white border border-gray-100 rounded-xl p-2 lg:p-6 shadow-sm hover:shadow-xl hover:scale-[1.02] hover:z-10 transition-all duration-300 overflow-hidden group">
     
     <GraduationCap class="absolute -right-8 top-1/2 -translate-y-1/2 w-48 h-48 opacity-[0.25] text-(--color-primary) pointer-events-none group-hover:opacity-[0.3] transition-opacity duration-300" />
     
@@ -62,26 +62,26 @@ const isExpandedResults = ref(false)
         </div>
       </div>
 
-      <div v-if="fase.resultados && fase.resultados.length > 0" class="mt-4 border-t border-gray-100 pt-4">
+      <div v-if="fase.resultados && fase.resultados.length > 0" class="mt-4 border-t border-gray-100 pt-4 pl-0 pr-0">
         <button @click="isExpandedResults = !isExpandedResults" class="flex items-center gap-2 text-sm font-bold text-success hover:opacity-80 transition-opacity">
           <Table class="w-4 h-4" />
           Resultados publicados ({{ fase.resultados.length }})
           <ChevronDown class="w-4 h-4 transition-transform duration-300" :class="isExpandedResults ? 'rotate-180' : ''" />
         </button>
 
-        <div v-show="isExpandedResults" class="mt-4 overflow-hidden rounded-xl border border-gray-200">
-          <table class="w-full text-left text-sm">
+        <div v-show="isExpandedResults" class="mt-4 w-full overflow-x-auto lg:overflow-x-visible rounded-xl border border-gray-200">
+          <table class="w-full min-w-100 lg:min-w-full text-left text-sm">
             <thead class="bg-gray-50 border-b border-gray-200 text-text-main font-bold">
               <tr>
-                <th class="px-4 py-3 text-center w-24">Posición</th>
-                <th class="px-4 py-3">Cédula de Identidad</th>
-                <th class="px-4 py-3 text-right">Nota / Puntaje</th>
+                <th class="px-4 py-3 text-center w-24 whitespace-nowrap">Posición</th>
+                <th class="px-4 py-3 text-center whitespace-nowrap">Cédula de Identidad</th>
+                <th class="px-4 py-3 text-right whitespace-nowrap">Nota / Puntaje</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
               <tr v-for="(res, idx) in fase.resultados" :key="idx" class="hover:bg-gray-50/50 transition-colors">
-                <td class="px-4 py-3 text-center font-bold text-(--color-primary)">#{{ res.posicion }}</td>
-                <td class="px-4 py-3 font-medium text-text-main">{{ res.carnet }}</td>
+                <td class="px-4 py-3 text-center font-bold text-(--color-primary)">{{ Number(idx) + 1 }}</td>
+                <td class="px-4 py-3 font-medium text-center text-text-main">{{ res.carnet_identidad }}</td>
                 <td class="px-4 py-3 text-right font-bold">{{ res.nota }} pts</td>
               </tr>
             </tbody>

@@ -7,7 +7,8 @@ import type {
   CategoriaDetalleDTO, 
   ConvocatoriaDetalleDTO, 
   FasePublicaUnionDTO, 
-  MaterialPublicoRelacionDTO 
+  MaterialPublicoRelacionDTO,
+  ResultadoPublicoFaseDTO
 } from '@/modules/public/types/public.api'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 
@@ -23,6 +24,7 @@ const loadError = ref<string | null>(null)
 
 const fasesByCategoria = ref<Record<string, FasePublicaUnionDTO[]>>({})
 const materialesByFase = ref<Record<string, MaterialPublicoRelacionDTO[]>>({})
+const resultadosByFase = ref<Record<string, ResultadoPublicoFaseDTO[]>>({})
 const materialGeneralList = ref<MaterialPublicoRelacionDTO[]>([])
 
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString() : ''
@@ -37,13 +39,10 @@ const mapMaterial = (mat: MaterialPublicoRelacionDTO, index: number) => ({
   url: mat.enlace_acceso,
   descripcion: mat.descripcion,
   tipo: mat.tipo_material === 'VIDEO_EXTERNO' ? 'Video' : mat.tipo_material.includes('DOCUMENTO') ? 'Documento' : 'PDF',
-  tamano: '', // Backend no devuelve tamaño en este DTO
+  tamano: '',
 })
 
-// En DetalleConvocatoriaPage.vue
-
 const mapFase = (fase: FasePublicaUnionDTO) => {
-  // Extraemos de forma segura si es prueba final (por si TypeScript aún no lo tiene en el interface)
   const esPruebaFinal = fase.tipo_fase === 'PRUEBA' && (fase as any).es_prueba_final === true;
 
   return {
@@ -52,11 +51,8 @@ const mapFase = (fase: FasePublicaUnionDTO) => {
     descripcion: fase.descripcion ?? 'Sin descripción registrada.',
     tipo: fase.tipo_fase === 'PRUEBA' ? 'Prueba' : 'Preparación',
     subtipo: '',
-    
     es_prueba_final: esPruebaFinal, 
-    
-     resultados: (fase as any).resultados || [],
-
+    resultados: resultadosByFase.value[String(fase.id_fase)] ?? [],
     fechas: fase.tipo_fase === 'PRUEBA' 
       ? formatDate(fase.fecha_realizacion) 
       : formatRange((fase as any).fecha_inicio, (fase as any).fecha_fin),
@@ -93,7 +89,6 @@ const reglamentoUrl = computed(() => detalle.value?.material_principal?.reglamen
 const primaryVisualUrl = computed(() => aficheUrl.value ?? convocatoriaDocumentoUrl.value)
 const primaryVisualLabel = computed(() => aficheUrl.value ? 'Afiche oficial' : convocatoriaDocumentoUrl.value ? 'Convocatoria oficial' : 'Sin afiche/convocatoria')
 
-// Validación del estado para mostrar el botón de inscripción
 const showInscripcion = computed(() => conv.value?.estado === 'INSCRIPCION EN CURSO')
 
 const loadDetalle = async () => {
@@ -104,12 +99,10 @@ const loadDetalle = async () => {
   loadError.value = null
   
   try {
-    // 1. Cargar detalle principal de la convocatoria
     const resConv = await publicService.obtenerConvocatoriaDetalle(id)
     const data = resConv.data
     detalle.value = data
 
-    // 2. Cargar material general de la convocatoria
     try {
       const resMatGeneral = await publicService.obtenerMaterialesPorConvocatoria(id)
       materialGeneralList.value = resMatGeneral.data
@@ -117,7 +110,6 @@ const loadDetalle = async () => {
       console.warn("No se pudo obtener el material general:", e)
     }
 
-    // 3. Cargar fases para cada categoría
     const catsWithId = data.categorias?.filter((cat) => cat.id_categoria != null) || []
     if (catsWithId.length > 0) {
       const faseEntries = await Promise.all(catsWithId.map(async (cat) => {
@@ -130,18 +122,32 @@ const loadDetalle = async () => {
       }))
       fasesByCategoria.value = Object.fromEntries(faseEntries)
 
-      // 4. Cargar materiales para cada fase encontrada
       const fases = faseEntries.flatMap(([, items]) => items)
       if (fases.length > 0) {
-        const materialEntries = await Promise.all(fases.map(async (fase) => {
-          try {
-            const res = await publicService.obtenerMaterialesPorFase(fase.id_fase)
-            return [String(fase.id_fase), res.data] as const
-          } catch {
+        const [materialEntries, resultadosEntries] = await Promise.all([
+          Promise.all(fases.map(async (fase) => {
+            try {
+              const res = await publicService.obtenerMaterialesPorFase(fase.id_fase)
+              return [String(fase.id_fase), res.data] as const
+            } catch {
+              return [String(fase.id_fase), []] as const
+            }
+          })),
+          Promise.all(fases.map(async (fase) => {
+            if (fase.tipo_fase === 'PRUEBA') {
+              try {
+                const res = await publicService.obtenerResultadosPorFase(fase.id_fase)
+                return [String(fase.id_fase), res.data] as const
+              } catch {
+                return [String(fase.id_fase), []] as const
+              }
+            }
             return [String(fase.id_fase), []] as const
-          }
-        }))
+          }))
+        ])
+
         materialesByFase.value = Object.fromEntries(materialEntries)
+        resultadosByFase.value = Object.fromEntries(resultadosEntries)
       }
     }
 
@@ -161,16 +167,14 @@ onMounted(() => {
 <template>
   <div class="bg-gray-50 w-full min-h-screen">
     
-    <!-- Renderizamos el header solo cuando la data base existe -->
     <DetalleConvocatoriaHeader 
       v-if="conv"
       :convocatoria="conv"
       :show-inscripcion="showInscripcion"
     />
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-20 pb-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-2 lg:px-8 mt-8 relative z-20 pb-20">
       
-      <!-- Estado de Carga -->
       <template v-if="isLoading && !conv">
         <div class="flex-1 flex flex-col items-center justify-center min-h-[50vh] bg-gray-50">
           <Loader2 class="w-12 h-12 text-primary animate-spin mb-4" />
@@ -179,7 +183,6 @@ onMounted(() => {
         </div>
       </template>
 
-      <!-- Estado de Error / No Encontrado -->
       <template v-else-if="!conv">
         <div class="flex-1 flex flex-col items-center justify-center min-h-[50vh] bg-gray-50">
           <AlertCircle class="w-16 h-16 text-text-muted mb-6" />
@@ -197,7 +200,6 @@ onMounted(() => {
         </div>
       </template>
 
-      <!-- Contenido Principal -->
       <template v-else>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
