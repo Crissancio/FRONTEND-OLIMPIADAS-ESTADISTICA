@@ -43,3 +43,4 @@ proyecto-descripcion/*
 /app/src/.env
 /app/src/app/api/gen/*
 /app/src/app/api/gen
+/app/.env
