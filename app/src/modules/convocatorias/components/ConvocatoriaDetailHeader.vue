@@ -32,19 +32,15 @@ async function executePublish() {
   try {
     const response = await convocatoriasService.publicarConvocatoria(props.convocatoria.id_convocatoria)
     
-    // 1. Emitir la nueva convocatoria al componente padre para que se oculte el botón
     emit('update:convocatoria', response.data)
     
-    // 2. Mostrar globo de éxito
     publishSuccess.value = true
     setTimeout(() => { publishSuccess.value = false }, 5000)
 
-    // 3. Actualizar el Store de convocatorias en segundo plano
     if (convocatoriasStore.fetchConvocatorias) {
       convocatoriasStore.fetchConvocatorias({ page: 1 }, false).catch(() => {})
     }
   } catch (error: any) {
-    // Capturar y mostrar el error del backend en el globo
     publishError.value = error.response?.data?.message || 'Error al publicar. Asegúrese de haber configurado las categorías y el material principal.'
     setTimeout(() => { publishError.value = null }, 8000)
   } finally {
@@ -52,7 +48,6 @@ async function executePublish() {
   }
 }
 
-// Adaptamos el color de los badges para que resalten sobre el fondo oscuro
 function statusClass(status: string) {
   switch (status) {
     case 'BORRADOR': return 'bg-warning text-white border-white/20'

@@ -124,7 +124,7 @@ const getPrioridadColor = (prioridad: string) => {
 
                 <div class="flex-1 overflow-y-auto p-6 space-y-6">
                   
-                  <div v-if="aviso && isViewMode" class="flex items-center gap-3 p-3 rounded-md border" :style="{ backgroundColor: 'var(--color-background)' }">
+                  <div v-if="aviso && isViewMode" class="flex items-center gap-3 p-3 rounded-md " :style="{ backgroundColor: 'var(--color-background)' }">
                     <div class="flex-1">
                       <p class="text-[10px] uppercase font-bold text-gray-500 mb-0.5">Estado Operativo</p>
                       <p class="text-sm font-bold text-gray-900">{{ aviso.estado }}</p>

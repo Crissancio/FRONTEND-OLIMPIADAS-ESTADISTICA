@@ -12,7 +12,7 @@ import type { NivelEducativo, EstadoEntidad } from '@/modules/categorias/types/c
 
 interface CategoriaLocal {
   nombre: string
-  curso: string | number
+  curso: number
   grado: string
   estado: EstadoEntidad
 }
@@ -35,7 +35,7 @@ const categoryModalTab = ref<'upper' | 'lower'>('upper')
 
 const form = ref({
   nombre: props.categoria.nombre,
-  curso: Number(props.categoria.curso) || 1,
+  curso: props.categoria.curso || 1,
   grado: props.categoria.grado as NivelEducativo
 })
 
@@ -69,7 +69,7 @@ const GREEK_LETTERS = [
 const startEdit = () => {
   form.value = {
     nombre: props.categoria.nombre,
-    curso: Number(props.categoria.curso),
+    curso: props.categoria.curso,
     grado: props.categoria.grado as NivelEducativo
   }
   categoryModalTab.value = 'upper'
@@ -79,7 +79,7 @@ const startEdit = () => {
 const cancelEdit = () => {
   form.value = {
     nombre: props.categoria.nombre,
-    curso: Number(props.categoria.curso),
+    curso: props.categoria.curso,
     grado: props.categoria.grado as NivelEducativo
   }
   isEditing.value = false
@@ -91,13 +91,13 @@ const saveCategoria = async () => {
   try {
     await categoriasService.actualizarCategoria(props.categoriaId, {
       nombre_categoria: form.value.nombre.trim(),
-      curso: Number(form.value.curso),
+      curso: form.value.curso,
       nivel: form.value.grado as NivelEducativo,
     })
     
     emit('updated', { 
       nombre: form.value.nombre, 
-      curso: String(form.value.curso), 
+      curso: form.value.curso, 
       grado: form.value.grado,
       estado: props.categoria.estado
     })
@@ -146,12 +146,11 @@ const estadoBadgeClass = (estado: EstadoEntidad) => {
   return 'border-gray-200 bg-gray-100 text-text-muted'
 }
 
-// Mantener el form local actualizado si la prop cambia externamente
 watch(() => props.categoria, (newVal) => {
   if (!isEditing.value) {
     form.value = {
       nombre: newVal.nombre,
-      curso: Number(newVal.curso),
+      curso: newVal.curso,
       grado: newVal.grado as NivelEducativo
     }
   }
@@ -170,7 +169,6 @@ watch(() => props.categoria, (newVal) => {
         </div>
         <div class="flex flex-wrap gap-2">
           
-          <!-- Botones de Edición / Guardado -->
           <template v-if="!isEditing">
             <Button 
               variant="outline" 
@@ -195,7 +193,6 @@ watch(() => props.categoria, (newVal) => {
             </Button>
           </template>
 
-          <!-- Acciones de Estado -->
           <Button
             v-if="estadoTransicion(categoria.estado)"
             class="flex items-center gap-2"
@@ -220,7 +217,6 @@ watch(() => props.categoria, (newVal) => {
 
     <CardContent class="space-y-6 p-6">
       
-      <!-- Estado y Aviso de Bloqueo -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <span class="text-sm font-bold text-text-main">Estado actual:</span>
@@ -234,7 +230,6 @@ watch(() => props.categoria, (newVal) => {
         </div>
       </div>
 
-      <!-- VISTA MODO LECTURA -->
       <div v-if="!isEditing" class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
           <label class="mb-1 block text-sm font-bold text-text-main">Símbolo (Nombre)</label>
@@ -262,10 +257,8 @@ watch(() => props.categoria, (newVal) => {
         </div>
       </div>
 
-      <!-- VISTA MODO EDICIÓN -->
       <div v-else class="space-y-5 rounded-xl border border-primary/20 bg-primary/5 p-5 shadow-inner transition-all animate-fade-in">
         
-        <!-- Grid de Símbolos -->
         <div>
           <div class="flex items-center justify-between mb-2">
             <label class="block text-sm font-bold text-text-main">Símbolo de la Categoría <span class="text-error">*</span></label>
@@ -306,7 +299,6 @@ watch(() => props.categoria, (newVal) => {
           </div>
         </div>
 
-        <!-- Selectores de Nivel y Curso -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-primary/10">
           <div>
             <label class="mb-1.5 block text-sm font-bold text-text-main">Nivel Educativo <span class="text-error">*</span></label>

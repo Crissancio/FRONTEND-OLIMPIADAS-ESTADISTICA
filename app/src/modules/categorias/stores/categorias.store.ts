@@ -42,6 +42,16 @@ export const useCategoriasStore = defineStore('categorias', () => {
     }
   }
 
+  const actualizarCategoriaLocal = (id: number, datosActualizados: Partial<CategoriaDTO>) => {
+    const index = categorias.value.findIndex(c => c.id_categoria === id) 
+    if (index !== -1) {
+      categorias.value[index] = { 
+        ...categorias.value[index], 
+        ...datosActualizados 
+      }
+    }
+  }
+
   const agregarCategoriaLocal = (nuevaCategoria: CategoriaDTO) => {
     categorias.value.push(nuevaCategoria)
   }
@@ -56,6 +66,7 @@ export const useCategoriasStore = defineStore('categorias', () => {
     fetchCategorias,
     crearYAgregarCategoria,
     agregarCategoriaLocal,
-    clearCategorias
+    clearCategorias,
+    actualizarCategoriaLocal
   }
 })

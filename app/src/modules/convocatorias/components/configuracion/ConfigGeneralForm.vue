@@ -21,11 +21,10 @@ const isEditingData = ref(false)
 const isLoading = ref(false)
 const localError = ref('')
 
-// Almacenamos el formulario local
 const form = ref({
   nombre: props.convocatoria.nombre_convocatoria,
   gestion: props.convocatoria.gestion,
-  montoInscripcion: props.convocatoria.monto_inscripcion || '',
+  montoInscripcion: props.convocatoria.monto_inscripcion || 0,
   descripcion: props.convocatoria.descripcion || '',
   inicioOlimpiada: props.convocatoria.inicio_olimpiadas,
   finOlimpiada: props.convocatoria.fin_olimpiadas,
@@ -33,14 +32,12 @@ const form = ref({
   finInscripcion: props.convocatoria.fecha_fin_inscripcion,
 })
 
-// === SINCRONIZACIÓN REACTIVA (Soluciona el problema de refresco) ===
-// Si el padre detecta un cambio y actualiza la prop, reflejamos los datos si no estamos editando
 watch(() => props.convocatoria, (newVal) => {
   if (!isEditingData.value) {
     form.value = {
       nombre: newVal.nombre_convocatoria,
       gestion: newVal.gestion,
-      montoInscripcion: newVal.monto_inscripcion || '',
+      montoInscripcion: newVal.monto_inscripcion || 0,
       descripcion: newVal.descripcion || '',
       inicioOlimpiada: newVal.inicio_olimpiadas,
       finOlimpiada: newVal.fin_olimpiadas,
@@ -50,7 +47,6 @@ watch(() => props.convocatoria, (newVal) => {
   }
 }, { deep: true, immediate: true })
 
-// === REGLAS DE NEGOCIO (Estados Temporales) ===
 const estadoTemp = computed(() => props.convocatoria.estado_temporal)
 
 const isCompletelyDisabled = computed(() => {
@@ -68,7 +64,6 @@ const canEditInicioInscripcion = computed(() => {
 })
 
 
-// === UTILIDADES DE FECHAS (Soporte UTC/Z) ===
 const startOfDay = (date: Date) => { const next = new Date(date); next.setHours(0, 0, 0, 0); return next }
 const endOfDay = (date: Date) => { const next = new Date(date); next.setHours(23, 59, 59, 999); return next }
 
@@ -84,7 +79,6 @@ const hasDateChanged = (val1: string | null | undefined, val2: string | null | u
   return new Date(val1).getTime() !== new Date(val2).getTime()
 }
 
-// === LÓGICA DE DEPENDENCIAS EN FECHAS ===
 const minEditInicioOlimpiada = computed(() => startOfDay(new Date()))
 
 const editInicioOlimpiadaDate = computed({
@@ -133,7 +127,7 @@ function cancelDataEdit() {
   form.value = {
     nombre: props.convocatoria.nombre_convocatoria,
     gestion: props.convocatoria.gestion,
-    montoInscripcion: props.convocatoria.monto_inscripcion || '',
+    montoInscripcion: props.convocatoria.monto_inscripcion ||0,
     descripcion: props.convocatoria.descripcion || '',
     inicioOlimpiada: props.convocatoria.inicio_olimpiadas,
     finOlimpiada: props.convocatoria.fin_olimpiadas,

@@ -70,7 +70,6 @@ async function fetchConvocatoria() {
 
   <div v-else class="space-y-6 p-4">
     <ConvocatoriaDetailHeader 
-      v-if="activeTab !== 'general'" 
       :convocatoria="convocatoria"
       @update:convocatoria="convocatoria = $event"
     />
