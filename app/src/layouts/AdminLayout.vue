@@ -18,10 +18,12 @@ import {
   Menu,
   X,
   Send,
-  Inbox
+  Inbox,
+  Album
 } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import AdminProfileDrawer from '@/modules/auth/components/AdminProfileDrawer.vue'
+import TutorialesPipGlobal from '@/modules/tutoriales/components/TutorialesPipGlobal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -43,6 +45,7 @@ const navigation = [
   { name: 'Colaboradores',   href: '/admin/colaboradores',    icon: UsersRound },
   { name: 'Administradores', href: '/admin/administradores',  icon: Shield },
   { name: 'Auditoría',       href: '/admin/auditoria',        icon: BarChart4 },
+  { name: 'Tutoriales',      href: '/admin/tutoriales',       icon: Album }
 ]
 
 const adminInitials = computed(() => {
@@ -75,13 +78,11 @@ onMounted(async () => {
     }
   }
 })
-
 </script>
 
 <template>
   <div v-if="isAuthenticated" class="flex h-screen bg-background font-sans overflow-hidden z-50">
    
-    <!-- Sidebar -->
     <aside 
       class="hidden w-64 flex-col border-r border-primary/20 bg-primary-dark text-white lg:static lg:flex"
     >
@@ -127,9 +128,7 @@ onMounted(async () => {
       </div>
     </aside>
     
-    <!-- Main Content -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <!-- Topbar -->
       <header class="relative z-30 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0 shadow-sm">
         <div class="flex items-center gap-4">
           <Button 
@@ -167,7 +166,6 @@ onMounted(async () => {
               </button>
             </nav>
           </div>
-
         </div>
       
         <div class="flex items-center gap-4 sm:gap-6">
@@ -191,6 +189,9 @@ onMounted(async () => {
         </router-view>
       </main>
     </div>
+
     <AdminProfileDrawer v-model:open="isProfileDrawerOpen" :user="user" />
   </div>
+
+  <TutorialesPipGlobal />
 </template>
