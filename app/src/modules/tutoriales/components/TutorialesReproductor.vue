@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Maximize2, X, ExternalLink, AlertCircle } from 'lucide-vue-next'
 import { useTutorialesStore } from '../stores/tutoriales.store'
+import { MODULO_LABELS } from '../data/tutoriales.data'
 
 const store = useTutorialesStore()
 
@@ -21,13 +22,14 @@ function abrirEnDrive() {
     v-if="store.tutorialActivo"
     class="flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden shadow-soft"
   >
+    <!-- Header -->
     <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50/50">
       <div class="min-w-0 flex-1">
         <h3 class="truncate text-sm font-bold text-slate-800">
           {{ store.tutorialActivo.title }}
         </h3>
         <p class="text-[11px] text-slate-400 font-medium mt-0.5">
-          {{ store.tutorialActivo.module }}
+          {{ MODULO_LABELS[store.tutorialActivo.module] }}
         </p>
       </div>
       <div class="flex items-center gap-0.5 shrink-0">
@@ -50,6 +52,7 @@ function abrirEnDrive() {
       </div>
     </div>
 
+    <!-- Video -->
     <div class="relative w-full bg-slate-900" style="aspect-ratio: 16/9">
       <iframe
         id="inline-iframe"
@@ -61,6 +64,14 @@ function abrirEnDrive() {
       />
     </div>
 
+    <!-- Descripción -->
+    <div class="px-4 py-3 border-t border-gray-100">
+      <p class="text-xs text-slate-500 leading-relaxed">
+        {{ store.tutorialActivo.description }}
+      </p>
+    </div>
+
+    <!-- Footer -->
     <div class="flex items-center gap-2 px-4 py-2.5 border-t border-gray-100 bg-gray-50/50">
       <AlertCircle class="size-3.5 text-slate-400 shrink-0" />
       <span class="text-xs text-slate-400 font-medium">

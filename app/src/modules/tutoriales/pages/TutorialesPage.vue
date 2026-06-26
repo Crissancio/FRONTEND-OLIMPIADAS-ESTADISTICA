@@ -8,7 +8,7 @@ import TutorialesReproductor from '../components/TutorialesReproductor.vue'
 import { useTutoriales } from '../composables/useTutoriales'
 import { useTutorialesStore } from '../stores/tutoriales.store'
 
-const { moduloActivo, tutorialesFiltrados, modulos } = useTutoriales()
+const { moduloActivo, busqueda, tutorialesFiltrados, modulos } = useTutoriales()
 const store = useTutorialesStore()
 </script>
 
@@ -30,7 +30,9 @@ const store = useTutorialesStore()
           <TutorialesModuloFiltro
             :modulos="modulos"
             :modulo-activo="moduloActivo"
+            :busqueda="busqueda"
             @cambiar-modulo="moduloActivo = $event"
+            @cambiar-busqueda="busqueda = $event"
           />
         </div>
 
