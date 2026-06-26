@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { TUTORIALES, MODULOS_TUTORIALES, MODULO_LABELS } from '../data/tutoriales.data'
+import { TUTORIALES, MODULOS_TUTORIALES, MODULO_LABELS, normalizar } from '../data/tutoriales.data'
 import type { TutorialModule } from '../data/tutoriales.data'
 
 export function useTutoriales() {
@@ -11,12 +11,12 @@ export function useTutoriales() {
       ? TUTORIALES
       : TUTORIALES.filter((t) => t.module === moduloActivo.value)
 
-    const q = busqueda.value.trim().toLowerCase()
+    const q = normalizar(busqueda.value)
     if (q) {
       lista = lista.filter(
         (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.description.toLowerCase().includes(q),
+          normalizar(t.title).includes(q) ||
+          normalizar(t.description).includes(q),
       )
     }
 

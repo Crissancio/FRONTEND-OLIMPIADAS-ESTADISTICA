@@ -67,9 +67,9 @@ export const TUTORIALES: Tutorial[] = [
     id: '3',
     title: 'Creación de Convocatoria',
     module: 'CONVOCATORIA',
-    duration: '00:00',
+    duration: '04:33',
     driveUrl: 'https://drive.google.com/file/d/1c9e-YsfLer8WvB6bvyHKw_L7yJJVVxbe/view?usp=sharing',
-    description: 'Guía completa para crear una nueva convocatoria, configurar sus datos generales y asociarle categorías y fases.',
+    description: 'Guía completa para crear una nueva convocatoria, configurar sus datos generales.',
   },
   {
     id: '4',
@@ -270,7 +270,14 @@ export const TUTORIALES: Tutorial[] = [
     duration: '03:22',
     driveUrl: 'https://drive.google.com/file/d/16JlAsxgutdE8vowwjORmYIztGSQNGlkh/view?usp=sharing',
     description: 'Gestión de cuentas de administrador del sistema: creación, edición de permisos y desactivación de usuarios.',
-  },
+  }, {
+    id: '29',
+    title: 'Creación de Categorias',
+    module: 'CATEGORIA',
+    duration: '02:29',
+    driveUrl: 'https://drive.google.com/file/d/1HEHzeDRVaBktTl3VclnkqBrO_2VGu2fJ/view?usp=sharing',
+    description: 'Cómo crear y gestionar categorías para organizar los tutoriales de forma más eficiente.',
+  }
 ]
 
 export const MODULOS_TUTORIALES = [...new Set(TUTORIALES.map((t) => t.module))] as TutorialModule[]
@@ -280,4 +287,12 @@ export function getDriveEmbedUrl(driveUrl: string): string {
   if (!match) return ''
   const fileId = match[1]
   return `https://drive.google.com/file/d/${fileId}/preview?rm=minimal&hd=1`
+}
+
+export function normalizar(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
 }
