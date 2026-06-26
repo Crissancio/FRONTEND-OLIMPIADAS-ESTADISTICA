@@ -213,7 +213,6 @@ onMounted(() => {
   void loadInicio()
 })
 </script>
-
 <template>
   <div class="w-full bg-background min-h-screen">
     
@@ -223,6 +222,34 @@ onMounted(() => {
         :hasBackendConvocatoria="hasBackendConvocatoria"
         :showPreinscripcion="showPreinscripcion"
       />
+
+      <HomeAvisosList 
+        class="hidden lg:flex"
+        :avisosData="avisosData"
+        :inicioLoadedOk="inicioLoadedOk"
+        @load-more="loadMoreAvisos"
+      />
+
+      <div class="absolute bottom-14 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5 lg:hidden pointer-events-none select-none">
+        <span
+          class="text-[10px] sm:text-xs font-bold tracking-[0.2em] uppercase text-white animate-pulse"
+          style="text-shadow: 0 0 10px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.4), 0 0 40px rgba(255,255,255,0.2)"
+        >
+          Desliza abajo
+        </span>
+        <svg
+          class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white animate-bounce opacity-60"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </section>
+
+    <section class="lg:hidden bg-primary border-b-[6px] border-accent">
       <HomeAvisosList 
         :avisosData="avisosData"
         :inicioLoadedOk="inicioLoadedOk"
