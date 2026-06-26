@@ -23,8 +23,6 @@ import {
 } from 'lucide-vue-next'
 import Button from '@/shared/components/ui/atoms/Button.vue'
 import AdminProfileDrawer from '@/modules/auth/components/AdminProfileDrawer.vue'
-import TutorialesPipGlobal from '@/modules/tutoriales/components/TutorialesPipGlobal.vue'
-
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -192,6 +190,4 @@ onMounted(async () => {
 
     <AdminProfileDrawer v-model:open="isProfileDrawerOpen" :user="user" />
   </div>
-
-  <TutorialesPipGlobal />
 </template>
