@@ -54,25 +54,6 @@ watch(() => props.resultados.length, async () => {
     observer.value.observe(observerTarget.value)
   }
 })
-
-const toggleSelect = (id: number) => {
-  const current = [...props.selectedIds]
-  const idx = current.indexOf(id)
-  if (idx === -1) current.push(id)
-  else current.splice(idx, 1)
-  emit('update:selectedIds', current)
-}
-
-const toggleAll = () => {
-  if (props.selectedIds.length === props.resultados.length) {
-    emit('update:selectedIds', [])
-  } else {
-    emit('update:selectedIds', props.resultados.map((r) => r.id_resultado))
-  }
-}
-
-const allSelected = computed(() => props.resultados.length > 0 && props.selectedIds.length === props.resultados.length)
-
 const sortBy = (key: keyof ResultadoDTO) => {
   if (sortKey.value === key) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'

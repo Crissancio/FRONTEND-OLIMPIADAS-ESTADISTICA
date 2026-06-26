@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { BookOpen, Settings, FileText, BarChart3, Plus } from 'lucide-vue-next'
+import { BookOpen, Settings, FileText, BarChart3 } from 'lucide-vue-next'
 
 defineProps<{
   activeTab: string
