@@ -74,12 +74,6 @@ const handleTabClick = (tabKey: string) => {
         v-if="isDesktop && tab.key === 'categorias'"
         class="overflow-hidden transition-all duration-500 max-h-0 group-hover/tab:max-h-25 opacity-0 group-hover/tab:opacity-100 pl-10 pr-2 flex flex-col gap-1 mt-1"
       >
-        <button
-          @click.stop="emit('openCreateCategoria')"
-          class="w-full text-left text-xs py-2 px-2 mt-1 rounded-md text-accent font-bold hover:bg-accent/10 hover:translate-x-1 transition-all flex items-center gap-1.5"
-        >
-          <Plus class="h-3.5 w-3.5" /> Crear Categoría
-        </button>
       </div>
     </div>
   </aside>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Plus, RefreshCw, Search, ShieldCheck, UsersRound, Eye, EyeOff, Loader2, AlertTriangle, X } from 'lucide-vue-next'
+import { Plus, RefreshCw, Search, ShieldCheck, UsersRound, Eye, EyeOff, Loader2, AlertTriangle, X, CheckCircle2, Circle } from 'lucide-vue-next'
 import Card from '@/shared/components/ui/molecules/Card.vue'
 import CardContent from '@/shared/components/ui/molecules/CardContent.vue'
 import Button from '@/shared/components/ui/atoms/Button.vue'
@@ -22,6 +22,27 @@ const estadoFilter = ref<'todos' | 'activo' | 'inactivo'>('todos')
 const isCreateOpen = ref(false)
 const showPassword = ref(false)
 const createForm = ref({ nombre: '', correo: '', contrasena: '' })
+
+// --- VALIDACIONES EN TIEMPO REAL ---
+const pwd = computed(() => createForm.value.contrasena)
+
+const hasLength = computed(() => pwd.value.length >= 8)
+const hasUpper = computed(() => /[A-Z]/.test(pwd.value))
+const hasLower = computed(() => /[a-z]/.test(pwd.value))
+const hasNumber = computed(() => /[0-9]/.test(pwd.value))
+const hasSpecial = computed(() => /[!@#$%^&*(),.?":{}|<>_+\-=\[\]\\\/]/.test(pwd.value))
+
+const isCreateFormValid = computed(() => {
+  return (
+    createForm.value.nombre.trim().length > 0 &&
+    createForm.value.correo.trim().length > 0 &&
+    hasLength.value &&
+    hasUpper.value &&
+    hasLower.value &&
+    hasNumber.value &&
+    hasSpecial.value
+  )
+})
 
 const isDrawerOpen = ref(false)
 const selectedAdminId = ref<number | null>(null)
@@ -154,7 +175,7 @@ const onAdminDeleted = (id: number) => {
 }
 
 const createAdmin = async () => {
-  if (!createForm.value.nombre.trim() || !createForm.value.correo.trim() || !createForm.value.contrasena.trim()) return
+  if (!isCreateFormValid.value) return
   isActionLoading.value = true
   clearError()
   try {
@@ -223,27 +244,64 @@ const createAdmin = async () => {
           </select>
         </div>
 
-        <form v-if="isCreateOpen" class="grid grid-cols-1 gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 lg:grid-cols-4 animate-fade-in" @submit.prevent="createAdmin">
+        <form v-if="isCreateOpen" class="grid grid-cols-1 gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 lg:grid-cols-4 animate-fade-in items-start" @submit.prevent="createAdmin">
           <input v-model="createForm.nombre" required class="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Nombre completo" />
+          
           <input v-model="createForm.correo" type="email" required class="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Correo electrónico" />
-          <div class="relative">
-            <input
-              v-model="createForm.contrasena"
-              required
-              :type="showPassword ? 'text' : 'password'"
-              class="h-11 w-full rounded-md border border-gray-300 bg-white pr-10 pl-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="Contraseña"
-            />
-            <button
-              type="button"
-              class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-primary"
-              @click="showPassword = !showPassword"
-            >
-              <Eye v-if="!showPassword" class="h-4 w-4" />
-              <EyeOff v-else class="h-4 w-4" />
-            </button>
+          
+          <div class="flex flex-col w-full">
+            <div class="relative w-full">
+              <input
+                v-model="createForm.contrasena"
+                required
+                :type="showPassword ? 'text' : 'password'"
+                class="h-11 w-full rounded-md border border-gray-300 bg-white pr-10 pl-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="Contraseña"
+              />
+              <button
+                type="button"
+                class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-primary focus:outline-none"
+                @click="showPassword = !showPassword"
+              >
+                <Eye v-if="!showPassword" class="h-4 w-4" />
+                <EyeOff v-else class="h-4 w-4" />
+              </button>
+            </div>
+
+            <div v-if="createForm.contrasena.length > 0" class="mt-2 rounded-lg bg-white/80 p-2.5 border border-primary/10 space-y-1 shadow-2xs">
+              <div class="flex items-center gap-1.5 text-xs transition-colors" :class="hasLength ? 'text-emerald-600 font-medium' : 'text-gray-400'">
+                <CheckCircle2 v-if="hasLength" class="h-3 w-3 text-emerald-600 shrink-0" />
+                <Circle v-else class="h-3 w-3 opacity-40 shrink-0" />
+                <span>Mínimo 8 caracteres</span>
+              </div>
+
+              <div class="flex items-center gap-1.5 text-xs transition-colors" :class="hasUpper ? 'text-emerald-600 font-medium' : 'text-gray-400'">
+                <CheckCircle2 v-if="hasUpper" class="h-3 w-3 text-emerald-600 shrink-0" />
+                <Circle v-else class="h-3 w-3 opacity-40 shrink-0" />
+                <span>Una letra mayúscula</span>
+              </div>
+
+              <div class="flex items-center gap-1.5 text-xs transition-colors" :class="hasLower ? 'text-emerald-600 font-medium' : 'text-gray-400'">
+                <CheckCircle2 v-if="hasLower" class="h-3 w-3 text-emerald-600 shrink-0" />
+                <Circle v-else class="h-3 w-3 opacity-40 shrink-0" />
+                <span>Una letra minúscula</span>
+              </div>
+
+              <div class="flex items-center gap-1.5 text-xs transition-colors" :class="hasNumber ? 'text-emerald-600 font-medium' : 'text-gray-400'">
+                <CheckCircle2 v-if="hasNumber" class="h-3 w-3 text-emerald-600 shrink-0" />
+                <Circle v-else class="h-3 w-3 opacity-40 shrink-0" />
+                <span>Al menos un número</span>
+              </div>
+
+              <div class="flex items-center gap-1.5 text-xs transition-colors" :class="hasSpecial ? 'text-emerald-600 font-medium' : 'text-gray-400'">
+                <CheckCircle2 v-if="hasSpecial" class="h-3 w-3 text-emerald-600 shrink-0" />
+                <Circle v-else class="h-3 w-3 opacity-40 shrink-0" />
+                <span>Carácter especial (!@#$...)</span>
+              </div>
+            </div>
           </div>
-          <Button type="submit" variant="accent" class="h-11 w-full justify-center disabled:opacity-50" :disabled="isActionLoading">
+
+          <Button type="submit" variant="accent" class="h-11 w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed" :disabled="isActionLoading || !isCreateFormValid">
             <Loader2 v-if="isActionLoading" class="mr-2 h-4 w-4 animate-spin" />
             {{ isActionLoading ? 'Creando...' : 'Crear Administrador' }}
           </Button>

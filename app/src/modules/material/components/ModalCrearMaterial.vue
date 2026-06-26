@@ -264,11 +264,6 @@ const saveMaterial = async () => {
             </transition>
 
             <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-semibold text-slate-800 mb-1.5">Nombre del Material <span class="text-red-500">*</span></label>
-                <input v-model="form.nombre_material" type="text" placeholder="Ej: Práctica de Algoritmos" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
-              </div>
-
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-semibold text-slate-800 mb-1.5">Tipo de Material <span class="text-red-500">*</span></label>
@@ -314,7 +309,10 @@ const saveMaterial = async () => {
                   </VDatePicker>
                 </div>
               </div>
-
+              <div>
+                <label class="block text-sm font-semibold text-slate-800 mb-1.5">Nombre del Material <span class="text-red-500">*</span></label>
+                <input v-model="form.nombre_material" type="text" placeholder="Ej: Práctica de Algoritmos" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+              </div>
               <div>
                 <label class="block text-sm font-semibold text-slate-800 mb-1.5">Descripción Corta</label>
                 <textarea v-model="form.descripcion" rows="2" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all resize-none" placeholder="Opcional..."></textarea>

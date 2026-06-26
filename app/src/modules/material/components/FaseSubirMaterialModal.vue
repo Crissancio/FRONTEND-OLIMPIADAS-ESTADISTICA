@@ -376,17 +376,11 @@ defineExpose({ openModal })
 
             <template v-if="modalTab === 'archivo' || modalTab === 'externo'">
               <div class="space-y-4">
-                <div>
-                  <label class="block text-sm font-semibold text-text-main mb-1.5">Nombre del Material <span class="text-error">*</span></label>
-                  <input v-model="form.nombre_material" type="text" placeholder="Ej: Práctica de Algoritmos" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
-                </div>
-
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-sm font-semibold text-text-main mb-1.5">Clasificación <span class="text-error">*</span></label>
                     <select v-if="modalTab === 'archivo'" v-model="form.tipo_material_archivo" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm bg-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all">
                       <option value="DOCUMENTO">DOCUMENTO</option>
-                      <option value="VIDEO">VIDEO</option>
                       <option value="EXAMEN">EXAMEN</option>
                       <option value="SOLUCIONARIO">SOLUCIONARIO</option>
                       <option value="EJERCICIOS">EJERCICIOS</option>
@@ -425,7 +419,10 @@ defineExpose({ openModal })
                     </VDatePicker>
                   </div>
                 </div>
-
+                <div>
+                  <label class="block text-sm font-semibold text-text-main mb-1.5">Nombre del Material <span class="text-error">*</span></label>
+                  <input v-model="form.nombre_material" type="text" placeholder="Ej: Práctica de Algoritmos" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all" />
+                </div>
                 <div>
                   <label class="block text-sm font-semibold text-text-main mb-1.5">Descripción Corta</label>
                   <textarea v-model="form.descripcion" rows="2" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-all resize-none" placeholder="Opcional..."></textarea>

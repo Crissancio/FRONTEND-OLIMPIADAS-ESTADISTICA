@@ -152,7 +152,7 @@ onUnmounted(() => { store.reset() })
 </script>
 
 <template>
-  <div class="min-h-screen bg-background">
+  <div class="h-screen bg-background flex flex-col overflow-hidden">
     <div
       v-if="errorMessage"
       class="fixed top-4 right-4 z-100 max-w-sm rounded-xl border border-error/30 bg-error/10 px-4 py-3 text-sm font-medium text-error shadow-soft"
@@ -161,79 +161,83 @@ onUnmounted(() => { store.reset() })
       <button class="ml-3 font-bold hover:opacity-70" @click="errorMessage = ''">✕</button>
     </div>
 
-    <div class="space-y-4 p-4">
-      <NavBarFaseResultados
-        :nombre-fase="fase?.nombre_fase ?? 'Cargando...'"
-        :nombre-categoria="`Categoría ${categoriaId}`"
-        :estado-resultados="estadoResultados"
-        :total-resultados="store.totalItems"
-        :is-loading="isLoadingFase"
-        @back="goBack"
-      />
+    <div class="flex flex-col flex-1 h-full p-4 gap-4 overflow-hidden">
+      <div class="flex flex-col gap-4 shrink-0">
+        <NavBarFaseResultados
+          :nombre-fase="fase?.nombre_fase ?? 'Cargando...'"
+          :nombre-categoria="`Categoría ${categoriaId}`"
+          :estado-resultados="estadoResultados"
+          :total-resultados="store.totalItems"
+          :is-loading="isLoadingFase"
+          @back="goBack"
+        />
 
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap gap-2">
-          <Button
-            v-if="canEdit"
-            class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark"
-            @click="isAgregarOpen = true"
-          >
-            <Plus class="h-4 w-4" />
-            Agregar resultados
-          </Button>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap gap-2">
+            <Button
+              v-if="canEdit"
+              class="flex items-center gap-2 bg-primary text-white hover:bg-primary-dark"
+              @click="isAgregarOpen = true"
+            >
+              <Plus class="h-4 w-4" />
+              Agregar resultados
+            </Button>
 
-          <Button
-            v-if="canEdit"
-            variant="outline"
-            class="flex items-center gap-2"
-            @click="isImportarOpen = true"
-          >
-            <Download class="h-4 w-4" />
-            Importar CSV
-          </Button>
+            <Button
+              v-if="canEdit"
+              variant="outline"
+              class="flex items-center gap-2"
+              @click="isImportarOpen = true"
+            >
+              <Download class="h-4 w-4" />
+              Importar CSV
+            </Button>
 
-          <Button
-            v-if="canPublish"
-            class="flex items-center gap-2 bg-success text-white hover:bg-success/90"
-            @click="isPublicarOpen = true"
-          >
-            <Eye class="h-4 w-4" />
-            Publicar resultados
-          </Button>
+            <Button
+              v-if="canPublish"
+              class="flex items-center gap-2 bg-success text-white hover:bg-success/90"
+              @click="isPublicarOpen = true"
+            >
+              <Eye class="h-4 w-4" />
+              Publicar resultados
+            </Button>
 
-          <Button
-            v-if="canHide"
-            variant="outline"
-            class="flex items-center gap-2 text-text-muted"
-            @click="isOcultarOpen = true"
-          >
-            <EyeOff class="h-4 w-4" />
-            Ocultar resultados
-          </Button>
+            <Button
+              v-if="canHide"
+              variant="outline"
+              class="flex items-center gap-2 text-text-muted"
+              @click="isOcultarOpen = true"
+            >
+              <EyeOff class="h-4 w-4" />
+              Ocultar resultados
+            </Button>
+          </div>
+
+          <ExportarResultados
+            :fase-id="faseId"
+            :selected-ids="selectedIds"
+            @error="(msg) => { errorMessage = msg }"
+          />
         </div>
 
-        <ExportarResultados
-          :fase-id="faseId"
-          :selected-ids="selectedIds"
-          @error="(msg) => { errorMessage = msg }"
+        <ResultadosFiltros
+          :model-value="store.filtros"
+          @update:model-value="onFiltrosChange"
         />
       </div>
 
-      <ResultadosFiltros
-        :model-value="store.filtros"
-        @update:model-value="onFiltrosChange"
-      />
-
-      <ResultadosTabla
-        :resultados="store.resultados"
-        :criterio-aprobacion="fase?.criterio_aprobacion ?? 51"
-        :is-loading="isLoadingResultados"
-        :has-more="store.hasMore"
-        :total-items="store.totalItems"
-        :selected-ids="selectedIds"
-        @load-more="loadResultados(false)"
-        @update:selected-ids="(ids) => { selectedIds = ids }"
-      />
+      <div class="flex-1 min-h-0 overflow-hidden">
+        <ResultadosTabla
+          :resultados="store.resultados"
+          :criterio-aprobacion="fase?.criterio_aprobacion ?? 51"
+          :is-loading="isLoadingResultados"
+          :has-more="store.hasMore"
+          :total-items="store.totalItems"
+          :selected-ids="selectedIds"
+          @load-more="loadResultados(false)"
+          @update:selected-ids="(ids) => { selectedIds = ids }"
+        />
+      </div>
     </div>
 
     <ModalAgregarResultados

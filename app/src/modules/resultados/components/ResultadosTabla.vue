@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { Loader2, CheckCircle, XCircle, Minus, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-vue-next'
 import Badge from '@/shared/components/ui/atoms/Badge.vue'
 import type { ResultadoDTO } from '@/modules/resultados/types/resultados.api'
@@ -21,25 +21,38 @@ const emit = defineEmits<{
 const observerTarget = ref<HTMLElement | null>(null)
 const observer = ref<IntersectionObserver | null>(null)
 
-// Estados para el ordenamiento
 const sortKey = ref<keyof ResultadoDTO | null>(null)
 const sortOrder = ref<'asc' | 'desc'>('asc')
 
-onMounted(() => {
+const initObserver = () => {
   if (!observerTarget.value) return
+  observer.value?.disconnect()
+
   observer.value = new IntersectionObserver(
     (entries) => {
       if (entries[0].isIntersecting && props.hasMore && !props.isLoading) {
         emit('load-more')
       }
     },
-    { threshold: 0.1 },
+    { threshold: 0.1 }
   )
   observer.value.observe(observerTarget.value)
+}
+
+onMounted(() => {
+  initObserver()
 })
 
 onUnmounted(() => {
   observer.value?.disconnect()
+})
+
+watch(() => props.resultados.length, async () => {
+  await nextTick()
+  if (props.hasMore && !props.isLoading && observerTarget.value && observer.value) {
+    observer.value.unobserve(observerTarget.value)
+    observer.value.observe(observerTarget.value)
+  }
 })
 
 const toggleSelect = (id: number) => {
@@ -60,7 +73,6 @@ const toggleAll = () => {
 
 const allSelected = computed(() => props.resultados.length > 0 && props.selectedIds.length === props.resultados.length)
 
-// Lógica de ordenamiento local
 const sortBy = (key: keyof ResultadoDTO) => {
   if (sortKey.value === key) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
@@ -104,24 +116,17 @@ const estadoBadgeClass = (estado: ResultadoDTO['estado']) => {
 </script>
 
 <template>
-  <div class="rounded-xl border border-gray-200 bg-white shadow-soft overflow-hidden">
+  <div class="rounded-xl border border-gray-200 bg-white shadow-soft flex flex-col w-full overflow-hidden">
     <div v-if="resultados.length === 0 && !isLoading" class="py-16 text-center text-sm text-text-muted">
       <Minus class="mx-auto mb-3 h-8 w-8 text-gray-300" />
       No hay resultados para mostrar.
     </div>
 
-    <div v-else class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-gray-50 border-b border-gray-200">
+    <div v-else class="overflow-auto w-full max-h-[70vh]">
+      <table class="w-full text-sm border-collapse">
+        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
           <tr>
-            <th class="px-4 py-3 w-10">
-              <input
-                type="checkbox"
-                :checked="allSelected"
-                class="h-4 w-4 rounded border-gray-300 transition-colors focus-visible:ring-primary/50"
-                @change="toggleAll"
-              />
-            </th>
+            
             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-text-muted">#</th>
             
             <th 
@@ -202,14 +207,6 @@ const estadoBadgeClass = (estado: ResultadoDTO['estado']) => {
             class="hover:bg-gray-50 transition-colors"
             :class="selectedIds.includes(resultado.id_resultado) ? 'bg-primary/5' : ''"
           >
-            <td class="px-4 py-3">
-              <input
-                type="checkbox"
-                :checked="selectedIds.includes(resultado.id_resultado)"
-                class="h-4 w-4 rounded border-gray-300 transition-colors focus-visible:ring-primary/50"
-                @change="toggleSelect(resultado.id_resultado)"
-              />
-            </td>
             <td class="px-4 py-3 text-text-muted text-xs font-mono">{{ idx + 1 }}</td>
             <td class="px-4 py-3 font-mono text-xs text-text-muted">
               {{ resultado.carnet_identidad }}
@@ -244,13 +241,13 @@ const estadoBadgeClass = (estado: ResultadoDTO['estado']) => {
           </tr>
         </tbody>
       </table>
-    </div>
 
-    <div ref="observerTarget" class="py-2 text-center bg-gray-50 border-t border-gray-200">
-      <Loader2 v-if="isLoading" class="mx-auto h-5 w-5 animate-spin text-primary" />
-      <p v-else-if="!hasMore && resultados.length > 0" class="text-xs text-text-muted py-1">
-        Mostrando {{ resultados.length }} de {{ totalItems }} resultados
-      </p>
+      <div ref="observerTarget" class="py-4 text-center w-full border-t border-gray-100">
+        <Loader2 v-if="isLoading" class="mx-auto h-5 w-5 animate-spin text-primary" />
+        <p v-else-if="!hasMore && resultados.length > 0" class="text-xs text-text-muted py-1">
+          Mostrando {{ resultados.length }} de {{ totalItems }} resultados
+        </p>
+      </div>
     </div>
   </div>
 </template>

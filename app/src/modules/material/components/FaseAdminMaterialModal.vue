@@ -264,7 +264,7 @@ defineExpose({ openModal })
 
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-120 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm overflow-y-auto">
-    <Card class="w-full max-w-lg border-gray-200 bg-white shadow-xl relative overflow-visible my-auto">
+    <Card class="w-full max-w-lg border-gray-200 bg-white shadow-xl relative overflow-visible my-auto flex flex-col max-h-[90vh]">
       
       <div v-if="showUnlinkConfirm" class="absolute inset-0 z-50 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center rounded-xl">
         <div class="h-16 w-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-4 shadow-sm">

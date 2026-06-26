@@ -264,7 +264,7 @@ defineExpose({ openModal })
 
 <template>
   <div v-if="isOpen" class="fixed inset-0 z-100 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-    <Card class="w-full max-w-lg border-gray-200 bg-white shadow-xl relative overflow-hidden">
+    <Card class="w-full max-w-lg border-gray-200 bg-white shadow-2xl relative overflow-visible my-auto flex flex-col max-h-[90vh]">
       
       <div v-if="showUnlinkConfirm" class="absolute inset-0 z-50 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 text-center">
         <div class="h-16 w-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-4 shadow-sm">
@@ -339,7 +339,7 @@ defineExpose({ openModal })
 
             <div v-if="categoryType !== 'PRINCIPAL'">
               <label class="block text-sm font-semibold text-text-main mb-1.5">Fecha de Publicación <span v-if="canEditAdvanced" class="text-error">*</span></label>
-              <VDatePicker v-if="canEditAdvanced" v-model="form.fecha_publicacion" mode="dateTime" is24hr hide-time-header :min-date="minDate" :rules="timeRules">
+              <VDatePicker v-if="canEditAdvanced" v-model="form.fecha_publicacion" mode="dateTime" is24hr hide-time-header :min-date="minDate" :rules="timeRules" :popover="{placement: 'top-start'}">
                 <template #default="{ inputValue, inputEvents }">
                   <div class="relative w-full cursor-pointer">
                     <CalendarIcon class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />

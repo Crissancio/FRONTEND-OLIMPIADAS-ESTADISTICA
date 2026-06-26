@@ -274,7 +274,7 @@ defineExpose({ openCreate, close })
                 v-model="form.faseAnteriorId"
                 class="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-colors"
               >
-                <option value="">Ninguna / Primera Prueba</option>
+                <option value="">Ninguna</option>
                 <option v-for="fase in fasesPruebaDisponibles" :key="fase.id_fase" :value="fase.id_fase">
                   {{ fase.nombre_fase }}
                 </option>
