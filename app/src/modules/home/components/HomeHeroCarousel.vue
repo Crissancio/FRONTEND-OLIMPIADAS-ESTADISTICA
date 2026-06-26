@@ -117,12 +117,11 @@ onUnmounted(() => {
   <div class="relative z-20 flex-1 flex flex-col h-full w-full">
 
     <div class="absolute top-6 lg:top-8 left-6 lg:left-8 flex gap-3 lg:gap-4 z-50 pointer-events-none w-[90%] md:w-auto items-center">
-      <img 
-        src="/logo-estadistica.png" 
-        alt="Logo Estadística UMSA" 
-        class="w-40 sm:w-40 lg:w-56 object-contain drop-shadow-xl transition-all duration-300 shrink-0 -ml-4 -mr-8" 
+      <img
+        src="/logo-estadistica.png"
+        alt="Logo Estadística UMSA"
+        class="w-40 sm:w-40 lg:w-56 object-contain drop-shadow-xl transition-all duration-300 shrink-0 -ml-4 -mr-8"
       />
-
       <Transition name="slide-up-fade" mode="out-in">
         <div v-if="currentSlide !== 0" class="flex gap-3 lg:gap-4 items-stretch">
           <div class="w-1.5 lg:w-2 rounded-full shadow-lg shrink-0" :class="getStatusBg(props.activeConv?.estado_temporal)"></div>
@@ -167,16 +166,18 @@ onUnmounted(() => {
       </h2>
     </Transition>
 
-    <div class="absolute bottom-48 lg:bottom-48 left-6 lg:left-16 w-[90%] lg:w-2/3 pr-6 z-30 pointer-events-none">
+    <!-- Descripción — sube más para separarse de los botones -->
+    <div class="absolute bottom-38 sm:bottom-42 lg:bottom-52 left-6 lg:left-16 w-[85%] lg:w-2/3 pr-6 z-30 pointer-events-none">
       <p
         ref="descriptionRef"
-        class="hero-description text-lg md:text-xl text-white/90 leading-relaxed max-w-2xl drop-shadow-md"
+        class="hero-description text-base sm:text-lg md:text-xl text-white/90 leading-relaxed max-w-2xl drop-shadow-md"
       >
         {{ typedText }}<span class="animate-pulse">|</span>
       </p>
     </div>
 
-    <div class="absolute bottom-16 lg:bottom-12 left-6 right-6 sm:right-auto lg:left-16 flex flex-col sm:flex-row gap-4 z-40">
+    <!-- Botones -->
+    <div class="absolute bottom-14 sm:bottom-16 lg:bottom-12 left-6 right-6 sm:right-auto lg:left-16 flex flex-col sm:flex-row gap-3 z-40">
       <Button
         v-if="props.showPreinscripcion"
         as="router-link"
@@ -199,57 +200,40 @@ onUnmounted(() => {
       </Button>
     </div>
 
-    <div class="absolute bottom-6 lg:bottom-12 left-1/2 -translate-x-1/2 lg:left-auto lg:right-16 lg:translate-x-0 flex gap-3 z-40">
+    <!-- Dots de slide -->
+    <div class="absolute bottom-11 sm:bottom-14 lg:bottom-12 left-1/2 -translate-x-1/2 lg:left-auto lg:right-16 lg:translate-x-0 flex gap-3 z-40">
       <button
         v-for="(slide, idx) in slides"
         :key="slide.id"
         @click="currentSlide = idx"
-        class="w-2.5 h-2.5 rounded-full transition-all duration-500"
-        :class="currentSlide === idx ? 'bg-secondary w-10' : 'bg-white/30 hover:bg-white/60'"
+        class="h-2.5 rounded-full transition-all duration-500"
+        :class="currentSlide === idx ? 'bg-secondary w-10' : 'w-2.5 bg-white/30 hover:bg-white/60'"
       ></button>
+    </div>
+
+    <!-- Desliza abajo -->
+    <div class="absolute bottom-1 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-0.5 pointer-events-none select-none">
+      <span class="scroll-hint-text font-bold tracking-[0.2em] uppercase text-white animate-pulse"
+        style="text-shadow: 0 0 10px rgba(255,255,255,0.7), 0 0 20px rgba(255,255,255,0.4)">
+        Desliza abajo
+      </span>
+      <svg class="scroll-hint-icon text-white animate-bounce opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+      </svg>
     </div>
   </div>
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 1.2s ease-in-out;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 1.2s ease-in-out; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
-.slide-up-fade-enter-active,
-.slide-up-fade-leave-active {
-  transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-}
-.slide-up-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-40px);
-}
-.slide-up-fade-enter-from {
-  opacity: 0;
-  transform: translateY(40px);
-}
+.slide-up-fade-enter-active, .slide-up-fade-leave-active { transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1); }
+.slide-up-fade-leave-to { opacity: 0; transform: translateY(-40px); }
+.slide-up-fade-enter-from { opacity: 0; transform: translateY(40px); }
 
-.expand-h-enter-active {
-  transition: transform 0.5s ease, opacity 0.5s ease;
-  transform-origin: left center;
-}
-.expand-h-leave-active {
-  transition: transform 0.5s ease, opacity 0.5s ease;
-  transform-origin: left center;
-}
-.expand-h-enter-from {
-  transform: scaleX(0);
-  opacity: 0;
-}
-.expand-h-leave-to {
-  transform: scaleX(0);
-  opacity: 0;
-}
+.expand-h-enter-active, .expand-h-leave-active { transition: transform 0.5s ease, opacity 0.5s ease; transform-origin: left center; }
+.expand-h-enter-from, .expand-h-leave-to { transform: scaleX(0); opacity: 0; }
 
 .hero-description {
   max-height: 3.5rem;
@@ -259,15 +243,23 @@ onUnmounted(() => {
   -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
   mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
 }
-
-.hero-description::-webkit-scrollbar {
-  display: none;
-}
+.hero-description::-webkit-scrollbar { display: none; }
 
 @media (min-width: 768px) {
-  .hero-description {
-    max-height: 3.75rem;
-    min-height: 3.75rem;
-  }
+  .hero-description { max-height: 3.75rem; min-height: 3.75rem; }
+}
+
+/* Tamaño del hint según dispositivo */
+.scroll-hint-text { font-size: 9px; }
+.scroll-hint-icon { width: 10px; height: 10px; }
+
+@media (min-width: 768px) {
+  .scroll-hint-text { font-size: 11px; }
+  .scroll-hint-icon { width: 12px; height: 12px; }
+}
+
+@media (min-width: 1024px) {
+  .scroll-hint-text { font-size: 13px; }
+  .scroll-hint-icon { width: 14px; height: 14px; }
 }
 </style>

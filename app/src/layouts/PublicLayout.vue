@@ -6,7 +6,7 @@ import Footer from '@/shared/components/ui/organisms/Footer.vue'
 <template>
   <div class="flex flex-col min-h-screen font-sans">
     <Navbar />
-    <main class="flex-grow flex flex-col w-full">
+    <main class="grow flex flex-col w-full">
       <router-view v-slot="{ Component, route }">
         <transition name="page-fade" mode="out-in">
           <component :is="Component" :key="route.fullPath" />

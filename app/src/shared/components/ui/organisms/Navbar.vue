@@ -32,17 +32,12 @@ const navigation = [
   { name: 'Contacto', href: '/contacto' },
 ]
 
-const toggleMobileMenu = () => {
-  isMobileMenuOpen.value = !isMobileMenuOpen.value
-}
-
-const closeMobileMenu = () => {
-  isMobileMenuOpen.value = false
-}
+const toggleMobileMenu = () => { isMobileMenuOpen.value = !isMobileMenuOpen.value }
+const closeMobileMenu = () => { isMobileMenuOpen.value = false }
 </script>
 
 <template>
-  <header 
+  <header
     :class="[
       isHomePage ? 'fixed left-0 right-0' : 'sticky',
       'top-0 z-50 bg-white shadow-sm border-b border-gray-200 transition-transform duration-300 ease-in-out',
@@ -51,7 +46,6 @@ const closeMobileMenu = () => {
   >
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-20">
-        <!-- Logo Institucional -->
         <router-link to="/" class="flex items-center gap-3 group" @click="closeMobileMenu">
           <div class="flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
             <img :src="logoOpeSrc" alt="Logo OPE" class="h-14 w-24 object-contain" />
@@ -66,8 +60,7 @@ const closeMobileMenu = () => {
           </div>
         </router-link>
 
-        <!-- Desktop Navigation -->
-        <nav class="hidden md:flex space-x-1 lg:space-x-4 items-center">
+        <nav class="hidden lg:flex space-x-1 lg:space-x-4 items-center">
           <router-link
             v-for="item in navigation"
             :key="item.name"
@@ -77,11 +70,9 @@ const closeMobileMenu = () => {
           >
             {{ item.name }}
           </router-link>
-
         </nav>
 
-        <!-- Mobile menu button -->
-        <div class="flex items-center md:hidden">
+        <div class="flex items-center lg:hidden">
           <button
             type="button"
             class="inline-flex items-center justify-center p-2 rounded-md text-text-muted hover:text-primary hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
@@ -94,8 +85,7 @@ const closeMobileMenu = () => {
       </div>
     </div>
 
-    <!-- Mobile menu -->
-    <div class="md:hidden bg-white border-t border-gray-100" :class="isMobileMenuOpen ? 'block' : 'hidden'">
+    <div class="lg:hidden bg-white border-t border-gray-100" :class="isMobileMenuOpen ? 'block' : 'hidden'">
       <div class="px-4 pt-2 pb-4 space-y-1">
         <router-link
           v-for="item in navigation"
